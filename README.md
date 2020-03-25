@@ -2,6 +2,14 @@
 
 CERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation
 
+Contains:
+- README.md
+- Meetings.txt with past meetings notes
+- config.ini file with parameters for initial configuration
+- data directory
+- cervoise.py (main)
+
+
 TODO:
 - Get data from cases/deaths 
 - Get connections between regions (surface of contact) 
