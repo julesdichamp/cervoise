@@ -1,0 +1,14 @@
+2020-03-25 meeting: 
+
+Next steps
+
+1. Generation of the graph for links between regions, taking into account traffic by cars / buses, trains, plane lines. 
+	1. a. Connect every region (administrative) with its nearest neighbor region  
+	1. b. Add a connection of Ile de France to every other region. 
+	1. c. Link regions according to direct connection by train + plane with significant transport 
+
+2. Formulate extended SIR model in terms of chemical reactions. Formulate master equation for it (-> DD) 
+
+3. Limiting case: Extended SIR for entire France -> serves to estimate the rates for the extended SIR model, that can later be used as starting rates for fit in each region. 
+(the well mixed whole France-model corresponds to a summation over all regions) 
+
