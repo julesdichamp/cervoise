@@ -105,19 +105,19 @@ def InitGraph(params):
 	"Saint-Martin" ]
 	
 	# from kaggle data on death/reported cases in France animated map
-	DIC_POSITIONS_METROPOLE = {'Auvergne-Rhône-Alpes': [45.2968119,4.6604809],
-							 'Bourgogne-Franche-Comté' : [47.0510946,5.0740568],							 
-							 'Bretagne' : [48.2640845,-2.9202408],
-							 'Centre-Val de Loire' : [47.5490251,1.7324062],
-							 'Corse' : [42.188089649999995,9.068413771427695],
-							 'Grand Est' : [48.4845157,6.113035],
-							 'Hauts-de-France' : [50.1024606,2.7247515],
-							 'Ile-de-France' : [48.6443057,2.7537863],
-							 'Normandie' : [49.0677708,0.3138532],
-							 'Nouvelle-Aquitaine' : [45.4039367,0.3756199],
-							 'Occitanie' : [43.6487851,2.3435684],
-							 'Pays de la Loire' : [47.6594864,-0.8186143],
-							 'Provence-Alpes-Côte d’Azur' : [44.0580563,6.0638506]
+	DIC_POSITIONS_METROPOLE = {'Auvergne-Rhône-Alpes': [772022.9490728247, 2059666.8371020914],
+							 'Bourgogne-Franche-Comté' : [787177.8408282029, 2251335.950928572],							 
+							 'Bretagne' : [215039.24516678863, 2365217.5071779615],
+							 'Centre-Val de Loire' : [550917.5994336334, 2275882.307395058],
+							 'Corse' : [1160476.2800258105, 1706885.7403624766],
+							 'Grand Est' : [841720.2901229224, 2415159.5340459584],
+							 'Hauts-de-France' : [631486.0019718618, 2552427.4478215473],
+							 'Ile-de-France' : [612377.0469593473, 2412305.1064892523],
+							 'Normandie' : [437037.0999347288, 2460471.8503777585],
+							 'Nouvelle-Aquitaine' : [431896.2266105056, 2023453.7858529706],
+							 'Occitanie' : [583863.6352416947, 1855575.2526474672],
+							 'Pays de la Loire' : [361717.2237577763, 2279805.18747009],
+							 'Provence-Alpes-Côte d’Azur' : [899251.0580184147, 1890939.1725853563]
 							 }
 							 
 	DIC_POSITIONS_OUTREMER = {'Guadeloupe' : [16.2490067,-61.5650444],
