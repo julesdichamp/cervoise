@@ -6,6 +6,7 @@ Created on Wen Mar 25 12:35:45
 """
 # pyximport.install(pyimport=True)
 import sys
+import os
 import bisect
 import fastrand
 import multiprocessing
@@ -31,10 +32,9 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import networkx as nx
 
-# from regions import 
-
-# sys.path.append("/home/florian/PycharmProjects/drunkWalker/")
-# import computeMSD
+from getFranceGeomDpts import *
+from models import *
+from plotModels import *
 
 print("\nCERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation = Starting")
 t0 = time.time()
@@ -47,9 +47,11 @@ if len(sys.argv) > 1:
 else:
     inputFile = "config.ini"
 
-
-
 def LoadRoads(road_names):
+	"""
+	Test function to display main roads in France metropole
+	In: file name with roads, should be 'road.shp'
+	"""
 	print('LoadRoads')
 	shapefile = gpd.read_file(road_names)
 	shapefile = shapefile.drop(shapefile[shapefile["geometry"] == None].index)
@@ -57,7 +59,6 @@ def LoadRoads(road_names):
 	shapefile.plot(ax=ax)	
 	ax.set_axis_off()
 	plt.show()
-
 
 def InitParams(config_name):	
 	"""
@@ -69,17 +70,47 @@ def InitParams(config_name):
 	config.read(config_name)		
 	params={}
 	# load input data infos
-	params['graph_name'] = config.get('input_data','graph_name')
-	params['data_fname'] = config.get('input_data','data_name')
-	params['roads_name'] = config.get('input_data','roads_name')
+	params['graph_name'] = config.get('inputs','graph_name')
+	params['data_fname'] = config.get('inputs','data_name')
+	params['roads_name'] = config.get('inputs','roads_name')
+	params['shapefile_name'] = config.get('inputs','shapefile_name')
+	params['gareFile_name'] = config.get('inputs','gareFile_name')
+	params['ageFile_name'] = config.get('inputs','ageFile_name')
 	
 	# load options infos
 	params['location'] = config.get('options','location')
-	return params
+	
+	# load model infos
+	params['model_name'] =  config.get('model','model_name')
+	if (params['model_name'] == 'SIRWellMixed'): # load parameters needed for this model
+		params['k_SI']  = config.getfloat('model', 'k_SI') 
+		params['k_IR']  = config.getfloat('model', 'k_IR')
+		params['S_ini'] = config.getfloat('model', 'S_ini')
+		params['I_ini'] = config.getfloat('model', 'I_ini')
+		params['R_ini'] = config.getfloat('model', 'R_ini')
 
+	else:
+		print('[ERROR]: model name not found. Exit here.')
+		exit(0)
+		
+	# load settigns infos
+	params['time_start'] =  config.getfloat('settings','time_start')	
+	params['time_end'] =  config.getfloat('settings','time_end')
+	
+	# load outputs infos
+	params['outputs_dir'] = config.get('outputs', 'outputs_dir')
+	if not(os.path.exists(params['outputs_dir'])): # if directory does not exist, create it
+		os.mkdir(params['outputs_dir'])
+		
+	return params
 
 def InitGraph(params):
 	print('InitGraph')
+	"""
+	initialize a graph of regions with positions, and ids per regions
+	in: params, dictionnary with all needed parameters
+	out: a graph of type networkx.Graph() 
+	"""
 	LIST_METROPOLE = [
 	'Auvergne-Rhône-Alpes',
 	'Bourgogne-Franche-Comté',
@@ -104,7 +135,7 @@ def InitGraph(params):
 	"Saint-Barthélémy",
 	"Saint-Martin" ]
 	
-	# from kaggle data on death/reported cases in France animated map
+	# from Florian 
 	DIC_POSITIONS_METROPOLE = {'Auvergne-Rhône-Alpes': [772022.9490728247, 2059666.8371020914],
 							 'Bourgogne-Franche-Comté' : [787177.8408282029, 2251335.950928572],							 
 							 'Bretagne' : [215039.24516678863, 2365217.5071779615],
@@ -160,9 +191,9 @@ def InitGraph(params):
 			dic_regions[x] = dic_regions_outremer[x]
 			dic_regions_positions[x] = dic_regions_outremer_positions[x]
 
+    # add nodes of graph
 	G = nx.Graph()
-	for x in dic_regions.keys():
-		print(x, dic_regions[x])
+	for x in dic_regions.keys():		
 		G.add_node(x)	
 		
 	# All neighborings connections ONLY FOR METROPOLE NOW
@@ -190,17 +221,35 @@ def InitGraph(params):
 			id2 = list(dic_regions.keys())[list(dic_regions.values()).index(value)]
 			edge = (id1, id2)
 			G.add_edge(*edge)  # unpack edge tuple*
+		
+	# fig, ax = plt.subplots()
+	# nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions, labels=dic_regions)
+	# plt.show()
 	
-	# print("edges = " , G.edges())	
-	fig, ax = plt.subplots()
-	nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions)	
-	ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
-	plt.show()
-
+	return G
+		
+def LaunchModel(params):
+	if (params['model_name'] == 'SIRWellMixed'):
+		outputs = SIRWellMixed(params)
+		plot_SIRWellMixed(params,outputs)
+	elif (params['model_name'] == 'SIROnRegions'):
+		SIRonRegions(params)
+	elif (params['model_name'] == 'SIROnDepartments'):
+		SIROnDepartments(params)
+	else:
+		print('[ERROR]: invalid name in parser for model name. Exit here.\n')
+		exit(0)
+		
 # =============================================================================
 # LAUNCH WORKFLOW
 # =============================================================================
 params = InitParams(inputFile)
-graph = InitGraph(params)
-
+# franceGeom = getFranceGeomDpts(params)
+# graph = InitGraph(params)
 # LoadRoads(params['roads_name'])
+LaunchModel(params)
+
+
+
+
+

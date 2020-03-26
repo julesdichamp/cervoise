@@ -8,6 +8,10 @@ Contains:
 - config.ini file with parameters for initial configuration
 - data directory
 - cervoise.py (main)
+- getFranceGeomDpts.py: compute data between and inside departments
+- models.py: compute models 
+- plotModels.py: plot models results
+
 
 
 TODO:
