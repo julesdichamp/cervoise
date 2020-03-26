@@ -19,14 +19,18 @@ def plot_SIRWellMixed(params,outputs):
         time[i] = outputs[i][0]
         x[i,:] = outputs[i][1]
 
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
     plt.plot(time,x[:,0], 'red', label='Susceptible')
     plt.plot(time,x[:,1], 'green', label='Infected')
     plt.plot(time,x[:,2], 'blue', label='Recovered')
     plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
     string_for_title='SIRWellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
     plt.title(string_for_title)
     string_for_savefig = 'SIRWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+
     # plt.show()
 
 def plot_SIRonRegions(params,outputs):

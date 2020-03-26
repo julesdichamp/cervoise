@@ -38,6 +38,10 @@ def SIRWellMixed(params):
     M[2][1] = 1
     R = N - M
 
+
+    # JD: this loop is quite general and can be used whatever the model
+    # only minor modifiactions have to be made to use on another model
+    
     # intialize states and time
     x = x_ini
     t = params["time_start"]
@@ -52,11 +56,20 @@ def SIRWellMixed(params):
         for j in range(0, nbReactions):
             t_forward_plus[j] = 1.0
             for i in range(0, nbStates):
-                t_forward_plus[j] = (
-                    t_forward_plus[j]
-                    * np.math.factorial(x[i])
-                    / np.math.factorial(x[i] - N[i, j])
-                )
+                # JD: very ineffective way to compute t_forward_plus: if x[i] 
+                # is too big factorial will explode
+                # t_forward_plus[j] = (
+                    # t_forward_plus[j]
+                    # * np.math.factorial(x[i])
+                    # / np.math.factorial(x[i] - N[i, j])
+                # )
+                # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
+                y = 1.0
+                for k in range(0,int(N[i,j])):
+                    y = y * (x[i] -k)                                                
+                t_forward_plus[j] = t_forward_plus[j] * y
+            
+            # finally multiply the forward reaction rate by the reaction rate k+
             t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
 
         # total rate which the state can be left with
