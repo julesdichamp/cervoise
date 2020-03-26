@@ -52,9 +52,9 @@ else:
 
 def LoadRoads(road_names):
     """
-	Test function to display main roads in France metropole
-	In: file name with roads, should be 'road.shp'
-	"""
+    Test function to display main roads in France metropole
+    In: file name with roads, should be 'road.shp'
+    """
     print("LoadRoads")
     shapefile = gpd.read_file(road_names)
     shapefile = shapefile.drop(shapefile[shapefile["geometry"] == None].index)
@@ -66,14 +66,14 @@ def LoadRoads(road_names):
 
 def InitParams(config_name):
     """
-	in: config file name 
-	out: dictionnary with all needed parameters
-	"""
+    in: config file name
+    out: dictionnary with all needed parameters
+    """
     print("InitParams")
     config = configparser.ConfigParser()
     config.read(config_name)
     params = {}
-    #  load input data infos
+    #  load input data infos
     params["graph_name"] = config.get("inputs", "graph_name")
     params["data_fname"] = config.get("inputs", "data_name")
     params["roads_name"] = config.get("inputs", "roads_name")
@@ -101,11 +101,11 @@ def InitParams(config_name):
     params["time_start"] = config.getfloat("settings", "time_start")
     params["time_end"] = config.getfloat("settings", "time_end")
 
-    #  load outputs infos
+    #  load outputs infos
     params["outputs_dir"] = config.get("outputs", "outputs_dir")
     if not (
         os.path.exists(params["outputs_dir"])
-    ):  #  if directory does not exist, create it
+    ):  # if directory does not exist, create it
         os.mkdir(params["outputs_dir"])
 
     return params
@@ -114,10 +114,10 @@ def InitParams(config_name):
 def InitGraph(params):
     print("InitGraph")
     """
-	initialize a graph of regions with positions, and ids per regions
-	in: params, dictionnary with all needed parameters
-	out: a graph of type networkx.Graph() 
-	"""
+    initialize a graph of regions with positions, and ids per regions
+    in: params, dictionnary with all needed parameters
+    out: a graph of type networkx.Graph()
+    """
     LIST_METROPOLE = [
         "Auvergne-Rhône-Alpes",
         "Bourgogne-Franche-Comté",
@@ -186,7 +186,7 @@ def InitGraph(params):
             len(dic_regions_metropole) + i
         ] = DIC_POSITIONS_OUTREMER[LIST_OUTREMER[i]]
 
-    #  set full dictionnary depending on option
+    #  set full dictionnary depending on option
     dic_regions = {}
     dic_regions_positions = {}
     if params["location"] == "metropole":
@@ -208,8 +208,8 @@ def InitGraph(params):
     for x in dic_regions.keys():
         G.add_node(x)
 
-    #  All neighborings connections ONLY FOR METROPOLE NOW
-    #  Corse to be better dealt with?
+    #  All neighborings connections ONLY FOR METROPOLE NOW
+    #  Corse to be better dealt with?
     dic_all_connections = {}
     dic_all_connections["Bretagne"] = ["Normandie", "Pays de la Loire"]
     dic_all_connections["Normandie"] = [
@@ -275,7 +275,7 @@ def InitGraph(params):
         # get id of region
         id1 = list(dic_regions.keys())[list(dic_regions.values()).index(key)]
         for value in dic_all_connections[key]:  # loop over all connections regions
-            #  get id of conected region
+            #  get id of conected region
             id2 = list(dic_regions.keys())[list(dic_regions.values()).index(value)]
             edge = (id1, id2)
             G.add_edge(*edge)  # unpack edge tuple*
