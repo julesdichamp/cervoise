@@ -102,5 +102,3 @@ if __name__ == "__main__":
     params['ageFile_name']   = ageFile
     getFranceGeomDpts(params)
 
-
-

@@ -82,21 +82,33 @@ def InitParams(config_name):
     params["ageFile_name"] = config.get("inputs", "ageFile_name")
 
     # load options infos
-    params["location"] = config.get("options", "location")
-
+    params["location"] = config.get("graph", "location")
+    if (params["location"] != "metropole") :
+        print('[ERROR]: location can only be metropole for now. Exit here.')
+        exit(0)
+    
+    params["type"] = config.get("graph", "type")
+    
     # load model infos
     params["model_name"] = config.get("model", "model_name")
+    print(params["model_name"])
     if params["model_name"] == "SIRWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
         params["S_ini"] = config.getfloat("model", "S_ini")
         params["I_ini"] = config.getfloat("model", "I_ini")
         params["R_ini"] = config.getfloat("model", "R_ini")
-
+    elif params["model_name"] == "SIROnGraph":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["S_ini"] = config.getfloat("model", "S_ini")
+        params["I_ini"] = config.getfloat("model", "I_ini")
+        params["R_ini"] = config.getfloat("model", "R_ini")
     else:
         print("[ERROR]: model name not found. Exit here.")
         exit(0)
-
+    
     # load settigns infos
     params["time_start"] = config.getfloat("settings", "time_start")
     params["time_end"] = config.getfloat("settings", "time_end")
@@ -106,10 +118,13 @@ def InitParams(config_name):
     if not (
         os.path.exists(params["outputs_dir"])
     ):  # if directory does not exist, create it
-        os.mkdir(params["outputs_dir"])
-
+        os.mkdir(params["outputs_dir"])        
+    plot_options = config.get("outputs", "plot_options")
+    params["plot_options"] = [p.replace(" ","") for p in plot_options.split(",")] # remove spaces in different plot options
+    params["save_frequency"] = config.getint("outputs", "save_frequency")
+    
     return params
-
+    
 
 def InitGraph(params):
     print("InitGraph")
@@ -145,6 +160,7 @@ def InitGraph(params):
     ]
 
     # from Florian
+    # TODO: add source
     DIC_POSITIONS_METROPOLE = {
         "Auvergne-Rhône-Alpes": [772022.9490728247, 2059666.8371020914],
         "Bourgogne-Franche-Comté": [787177.8408282029, 2251335.950928572],
@@ -160,7 +176,7 @@ def InitGraph(params):
         "Pays de la Loire": [361717.2237577763, 2279805.18747009],
         "Provence-Alpes-Côte d’Azur": [899251.0580184147, 1890939.1725853563],
     }
-
+    # from Kaggle
     DIC_POSITIONS_OUTREMER = {
         "Guadeloupe": [16.2490067, -61.5650444],
         "Guyane": [4.8417097, -58.6416891],
@@ -203,11 +219,15 @@ def InitGraph(params):
             dic_regions[x] = dic_regions_outremer[x]
             dic_regions_positions[x] = dic_regions_outremer_positions[x]
 
-            # add nodes of graph
+    # add nodes of graph
     G = nx.Graph()
     for x in dic_regions.keys():
         G.add_node(x)
-
+    
+    # add attributes with positions to graph
+    nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
+    nx.set_node_attributes(G, name='names', values=dic_regions)
+    
     #  All neighborings connections ONLY FOR METROPOLE NOW
     #  Corse to be better dealt with?
     dic_all_connections = {}
@@ -271,6 +291,7 @@ def InitGraph(params):
     dic_all_connections["Corse"] = ["Provence-Alpes-Côte d’Azur"]
     dic_all_connections["Ile-de-France"] = LIST_METROPOLE
 
+    # add edges of graph
     for key in dic_all_connections.keys():
         # get id of region
         id1 = list(dic_regions.keys())[list(dic_regions.values()).index(key)]
@@ -283,18 +304,29 @@ def InitGraph(params):
     # fig, ax = plt.subplots()
     # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions, labels=dic_regions)
     # plt.show()
-
+    
+    print("num_edges = ", G.number_of_edges())
+    print("num_nodes = ", G.number_of_nodes())
     return G
 
 
-def LaunchModel(params):
+def LaunchModel(params, graph):
+    """
+    Launch given model depending on name
+    In: - params, dictionnary that contains all needed parameters
+        - graph
+    """
+    print('LaunchModel')
     if params["model_name"] == "SIRWellMixed":
         outputs = SIRWellMixed(params)
         plot_SIRWellMixed(params, outputs)
+    elif params["model_name"] == "SIROnGraph":
+        outputs , graph = SIROnGraph(params, graph)
+        plot_SIROnGraph(params,outputs, graph)
     elif params["model_name"] == "SIROnRegions":
-        SIRonRegions(params)
+        SIROnRegions(params, graph)
     elif params["model_name"] == "SIROnDepartments":
-        SIROnDepartments(params)
+        SIROnDepartments(params, graph)
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)
@@ -305,6 +337,6 @@ def LaunchModel(params):
 # =============================================================================
 params = InitParams(inputFile)
 # franceGeom = getFranceGeomDpts(params)
-# graph = InitGraph(params)
+G = InitGraph(params)
 # LoadRoads(params['roads_name'])
-LaunchModel(params)
+LaunchModel(params, G)

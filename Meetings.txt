@@ -12,3 +12,16 @@ Next steps
 3. Limiting case: Extended SIR for entire France -> serves to estimate the rates for the extended SIR model, that can later be used as starting rates for fit in each region. 
 (the well mixed whole France-model corresponds to a summation over all regions) 
 
+2020-03-27 meeting:
+
+- 30k euros of ANR money
+- find a way to adda chat or forum to gitlab
+Objectives: 
+- get global dynamic of France
+- simulate on a graph where every node is connected to every other
+ --> each node should have the same dynamic [VALIDATION]
+- first, probably the same kinetic parameters for all regions
+- fit procedure, probably do not start from day 1 because it is not 
+stable enough
+
+

@@ -4,6 +4,8 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import networkx as nx
+from itertools import count
 import seaborn as sns
 sns.set_context("talk")
 
@@ -33,12 +35,152 @@ def plot_SIRWellMixed(params,outputs):
 
     # plt.show()
 
-def plot_SIRonRegions(params,outputs):
+def plot_SIROnGraph(params,outputs, G):
+    """
+    plot SIRWellMixed model results
+    S,I, R populations over time
+    FOR NOW: we plot wellmixed limit 
+    """
+    print('plot_SIROnGraph')
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    x = np.zeros([nbTimeSteps, 3])
+    dic_graphs = {}
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        dic_x = outputs[i][1]        
+        for n in dic_x.keys():
+            x[i,0] += dic_x[n][0]
+            x[i,1] += dic_x[n][1]
+            x[i,2] += dic_x[n][2]            
+    
+    if 'WellMixed' in params['plot_options']:
+        ### --- plot wellmixed model ( = sum over all compartments i.e. nodes of the graph)
+        fig10 = plt.figure(figsize=(16, 10)) # in inches!
+        plt.plot(time,x[:,0], 'red', label='Susceptible')
+        plt.plot(time,x[:,1], 'green', label='Infected')
+        plt.plot(time,x[:,2], 'blue', label='Recovered')
+        plt.legend()
+        plt.xlabel('Arbitrary time unit')
+        plt.ylabel('Population numbers')
+        string_for_title='SIROnGraph, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+        plt.title(string_for_title)
+        string_for_savefig = 'SIROnGraph_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()        
+    
+    if 'FinalAllNodes' in params['plot_options']:
+        print("'FinalAllNodes' is not a plot option yet implemtened")    
+    
+    if 'AllGraphs' in params['plot_options']:
+        ### --- loop over all saved graph and plot at each saved time step    
+        for j in range(0,nbTimeSteps):
+            print("saving ",j," th time step = " ,time[j])        
+            dic_x = outputs[j][1]        
+            dic_positions = nx.get_node_attributes(G,'positions')        
+            dic_S = {}
+            dic_I = {}
+            dic_R = {}
+            for i in dic_x.keys():
+                dic_S[i] = dic_x[i][0]
+                dic_I[i] = dic_x[i][1]
+                dic_R[i] = dic_x[i][2]
+            
+            list_S_values = [v for v in dic_S.values()]
+            list_I_values = [v for v in dic_I.values()]
+            list_R_values = [v for v in dic_R.values()]            
+            fig20 = plt.figure(figsize=(16, 10)) # in inches!  
+            string_for_title='Susceptible population on Graph at time = '+str(round(time[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')    
+            string_for_savefig = 'Susceptible_population_on_Graph_'+str('%08d'%j)        
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+            plt.close()
+            
+            fig30 = plt.figure(figsize=(16, 10)) # in inches!
+            string_for_title='Infected population on Graph at time = '+str(round(time[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')    
+            string_for_savefig = 'Infected_population_on_Graph_'+str('%08d'%j)        
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            
+            fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+            string_for_title='Recovered population on Graph at time = '+str(round(time[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')
+            string_for_savefig = 'Recovered_population_on_Graph_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+    if 'FinalGraph' in params['plot_options']:
+        # ### --- plot graph with final species update == state in Graph
+        dic_positions = nx.get_node_attributes(G,'positions')        
+        dic_x = nx.get_node_attributes(G,'x')
+        dic_S = {}
+        dic_I = {}
+        dic_R = {}
+        for i in dic_x.keys():
+            dic_S[i] = dic_x[i][0]
+            dic_I[i] = dic_x[i][1]
+            dic_R[i] = dic_x[i][2]
+        
+        list_S_values = [v for v in dic_S.values()]
+        list_I_values = [v for v in dic_I.values()]
+        list_R_values = [v for v in dic_R.values()]
+        fig20 = plt.figure(figsize=(16, 10)) # in inches!  
+        string_for_title='Susceptible population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')    
+        string_for_savefig = 'Susceptible_population_on_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        fig30 = plt.figure(figsize=(16, 10)) # in inches!
+        string_for_title='Infected population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')    
+        string_for_savefig = 'Infected_population_on_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+        string_for_title='Recovered population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')
+        string_for_savefig = 'Recovered_population_on_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+        plt.close()
+        
+def plot_SIROnRegions(params,outputs):
 	"""
 	TODO
 	"""
 
-def plot_SIRonDepartments(params,outputs):
+def plot_SIROnDepartments(params,outputs):
 	"""
 	TODO
 	"""

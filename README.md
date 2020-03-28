@@ -2,6 +2,8 @@
 
 CERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation
 
+Notes can be found here: https://onedrive.live.com/edit.aspx?cid=cd3df43e61c65f01&page=view&resid=CD3DF43E61C65F01!514&parId=CD3DF43E61C65F01!513&app=Word
+
 Contains:
 - README.md
 - Meetings.txt with past meetings notes
