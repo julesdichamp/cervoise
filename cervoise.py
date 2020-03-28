@@ -26,7 +26,7 @@ import configparser
 import re
 import parser
 
-import momepy
+# import momepy
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -86,8 +86,8 @@ def InitParams(config_name):
     if (params["location"] != "metropole") :
         print('[ERROR]: location can only be metropole for now. Exit here.')
         exit(0)
-    
-    params["type"] = config.get("graph", "type")
+
+    params["type"] = config.get("graph", "type") # what type of graph is is
     
     # load model infos
     params["model_name"] = config.get("model", "model_name")
@@ -132,7 +132,7 @@ def InitGraph(params):
     initialize a graph of regions with positions, and ids per regions
     in: params, dictionnary with all needed parameters
     out: a graph of type networkx.Graph()
-    """
+    """            
     LIST_METROPOLE = [
         "Auvergne-Rhône-Alpes",
         "Bourgogne-Franche-Comté",
@@ -218,15 +218,6 @@ def InitGraph(params):
         for x in dic_regions_outremer.keys():
             dic_regions[x] = dic_regions_outremer[x]
             dic_regions_positions[x] = dic_regions_outremer_positions[x]
-
-    # add nodes of graph
-    G = nx.Graph()
-    for x in dic_regions.keys():
-        G.add_node(x)
-    
-    # add attributes with positions to graph
-    nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
-    nx.set_node_attributes(G, name='names', values=dic_regions)
     
     #  All neighborings connections ONLY FOR METROPOLE NOW
     #  Corse to be better dealt with?
@@ -291,22 +282,53 @@ def InitGraph(params):
     dic_all_connections["Corse"] = ["Provence-Alpes-Côte d’Azur"]
     dic_all_connections["Ile-de-France"] = LIST_METROPOLE
 
-    # add edges of graph
-    for key in dic_all_connections.keys():
-        # get id of region
-        id1 = list(dic_regions.keys())[list(dic_regions.values()).index(key)]
-        for value in dic_all_connections[key]:  # loop over all connections regions
-            #  get id of conected region
-            id2 = list(dic_regions.keys())[list(dic_regions.values()).index(value)]
-            edge = (id1, id2)
-            G.add_edge(*edge)  # unpack edge tuple*
 
-    # fig, ax = plt.subplots()
-    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions, labels=dic_regions)
-    # plt.show()
-    
+    ### --- Construct graph 
+    if (params['type'] == 'regions'):
+        # add nodes of graph
+        G = nx.Graph()
+        for x in dic_regions.keys():
+            G.add_node(x)
+        
+        # add attributes with positions to graph
+        nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
+        nx.set_node_attributes(G, name='names', values=dic_regions)
+
+        # add edges of graph
+        for key in dic_all_connections.keys():
+            # get id of region
+            id1 = list(dic_regions.keys())[list(dic_regions.values()).index(key)]
+            for value in dic_all_connections[key]:  # loop over all connections regions
+                #  get id of conected region
+                id2 = list(dic_regions.keys())[list(dic_regions.values()).index(value)]
+                edge = (id1, id2)
+                G.add_edge(*edge)  # unpack edge tuple*
+
+        # fig, ax = plt.subplots()
+        # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions, labels=dic_regions)
+        # plt.show()
+    elif (params['type'] == 'departments'):
+        print("department type for graph not handled yet. Exit here.")
+        exit(0)
+    elif (params['type'] == 'fullConnectedRegions'):
+        # add nodes of graph
+        G = nx.Graph()
+        for x in dic_regions.keys():
+            G.add_node(x)
+        
+        # add attributes with positions to graph
+        nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
+        nx.set_node_attributes(G, name='names', values=dic_regions)
+
+        # add edges of graph: all regions are connected to every other region
+        for n1 in G.nodes():
+            for n2 in G.nodes():
+                if (n1 != n2):
+                    edge = (n1, n2)
+                    G.add_edge(*edge)  # unpack edge tuple*
+
     print("num_edges = ", G.number_of_edges())
-    print("num_nodes = ", G.number_of_nodes())
+    print("num_nodes = ", G.number_of_nodes())    
     return G
 
 

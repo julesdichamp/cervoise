@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 import collections
+import copy
 
 def checkConservation(x_ini, x):
     
@@ -137,6 +138,7 @@ def SIROnGraph(params, G):
     """
     print("SIROnGraph")
     print("WARNING: this only works if number of population per state is an integer")
+    print("TODO: ")
     ### --- 1/ initializations
     # load initial state, and reactions values
     k_SI = params["k_SI"]  # A = 1
@@ -146,7 +148,6 @@ def SIROnGraph(params, G):
     R_ini = params["R_ini"]
 
     x_ini = np.array([S_ini, I_ini, R_ini])
-    print("x_ini = ", x_ini)
     k_plus = np.array([k_SI, k_IR])
     # indices S = 0, I = 1, R = 2
     # N_ij = stoechiomatrix coefficients on left hand side of reactions
@@ -187,22 +188,21 @@ def SIROnGraph(params, G):
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0 # loop counter
     ### --- 2/ loop in time
-    while t < params["time_end"]:
-        # compute W_inside: loop on every node 
-        W_inside = 0.0
+    while t < params["time_end"]:            
         dic_x = nx.get_node_attributes(G,'x')
         dic_k_plus = nx.get_node_attributes(G,'k_plus')
         
         # save time as an attribute in graph at each time step
         G.graph['time'] = t
                 
-        # save every 50 time steps
+        # save every n time steps
         if ((count_loops % params['save_frequency']) == 0):
             print("t, count_loops = " , t, count_loops)
-            # #update attributes in G
-            # dic_x = nx.get_node_attributes(G,'x')
-            outputs.append([t, dic_x])
+            dic_x_for_save = copy.deepcopy(dic_x)
+            outputs.append([t, dic_x_for_save])
         
+        # compute W_inside: loop on every node 
+        W_inside = 0.0
         dic_t_forward_plus = {}        
         ### --- 2-1/ compute total inside rate = sum of all forward kinetic rates)
         for n in G.nodes(): # loop over all compartments
@@ -339,9 +339,9 @@ def SIROnGraph(params, G):
                             kk+=1      
         ### check there is conservation
         ### -- comment it for now?
-        dic_x_ini = nx.get_node_attributes(G,'x_ini')
-        dic_x = nx.get_node_attributes(G,'x')
-        checkConservation(dic_x_ini, dic_x)
+        # dic_x_ini = nx.get_node_attributes(G,'x_ini')
+        # dic_x = nx.get_node_attributes(G,'x')
+        # checkConservation(dic_x_ini, dic_x)
         count_loops+=1        
             
     return outputs , G
