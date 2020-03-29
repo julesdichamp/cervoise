@@ -27,10 +27,7 @@ def checkConservation(x_ini, x):
         print("x_ini, total_mass_ini = " , x_ini, total_mass_ini)
         print("x, total_mass = " , x, total_mass)
         print("Exit here.")
-        exit(-1)    
-        
-    
-    
+        exit(-1)
 
 def SIRWellMixed(params):
     """
@@ -62,7 +59,10 @@ def SIRWellMixed(params):
     N[1][1] = 1
     M[1][0] = 1
     M[2][1] = 1
-    R = N - M
+    # R = N - M
+    # below is the version in notes, we use this one for consistency
+    # also kinetic reaction has to be changed to x = x + R[:, react]
+    R = M - N
 
 
     # JD: this loop is quite general and can be used whatever the model
@@ -128,7 +128,10 @@ def SIRWellMixed(params):
                     id_reaction = j
 
         # set new state according to reaction
-        x = x - R[:, id_reaction]
+        # x = x - R[:, id_reaction]
+        # below is the version in notes, we use this for consistency
+        # also R has to be changed as R = M - N
+        x = x + R[:, id_reaction] 
 
     return outputs
 
@@ -161,7 +164,10 @@ def SIROnGraph(params, G):
     N[1][1] = 1
     M[1][0] = 1
     M[2][1] = 1
-    R = N - M
+    # R = N - M
+    # below is the version in notes, we use this  onefor consistency
+    # also kinetic reaction has to be changed to x = x + R[:, react]
+    R = M - N
     
     # JD: test here to set attributes to graph nodes
     dic_x_ini = {}
@@ -311,7 +317,10 @@ def SIROnGraph(params, G):
             # IMPORTANT: this assumes that nodes range from 0 to nb_nodes - 1
             node = np.floor(id_reaction / nbReactions)
             react = id_reaction%nbReactions
-            dic_x[node] = dic_x[node] - R[:, react]
+            # dic_x[node] = dic_x[node] - R[:, react]
+            # below is the version in notes, we use this for consistency
+            # also R has to be changed as R = M - N
+            dic_x[node] = dic_x[node] + R[:, react]
             # #update attributes of nodes right away
             nx.set_node_attributes(G, name='x', values=dic_x)    
             if ((dic_x[node][0] < 0) or (dic_x[node][1] < 0) or (dic_x[node][2] < 0) ):

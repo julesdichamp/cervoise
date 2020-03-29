@@ -7,6 +7,7 @@ Created on Wen Mar 25 12:35:45
 # pyximport.install(pyimport=True)
 import sys
 import os
+import glob
 import bisect
 import fastrand
 import multiprocessing
@@ -75,19 +76,31 @@ def InitParams(config_name):
     params = {}
     #  load input data infos
     params["graph_name"] = config.get("inputs", "graph_name")
-    params["data_fname"] = config.get("inputs", "data_name")
+    params["data_dir"] = config.get("inputs", "data_dir")
     params["roads_name"] = config.get("inputs", "roads_name")
     params["shapefile_name"] = config.get("inputs", "shapefile_name")
     params["gareFile_name"] = config.get("inputs", "gareFile_name")
     params["ageFile_name"] = config.get("inputs", "ageFile_name")
-
+    params['airplaneFile_name'] = config.get("inputs", "airplaneFile_name")
+    
+    params['covid19DepartmentsDir_name'] = config.get("inputs", "covid19DepartmentsDir_name")
+    params['covid19RegionsDir_name'] = config.get("inputs", "covid19RegionsDir_name")
+    # get all file names we are interested in in this directory (do not keep polygons files)s
+    params['allCovid19DepartmentsFileNames'] = glob.glob(params['covid19DepartmentsDir_name'] +'/*departements-france-*.json')
+    params['allCovid19RegionsFileNames'] = glob.glob(params['covid19RegionsDir_name'] +'/*regions-france-2020*.json')
+    params['departments_name'] = config.get("inputs", "departments_name")
+    
+    # contains all data of getFranceGeomDpts(params) or getFranceGeomRegs(params)
+    # we can directly read it if it was saved so we do not compute it again
+    params['franceGeom_name'] = config.get("inputs", "franceGeom_name")
+    
     # load options infos
     params["location"] = config.get("graph", "location")
     if (params["location"] != "metropole") :
         print('[ERROR]: location can only be metropole for now. Exit here.')
         exit(0)
 
-    params["type"] = config.get("graph", "type") # what type of graph is is
+    params["graph_type"] = config.get("graph", "graph_type") # what type of graph is is
     
     # load model infos
     params["model_name"] = config.get("model", "model_name")
@@ -284,7 +297,7 @@ def InitGraph(params):
 
 
     ### --- Construct graph 
-    if (params['type'] == 'regions'):
+    if (params['graph_type'] == 'regions'):
         # add nodes of graph
         G = nx.Graph()
         for x in dic_regions.keys():
@@ -307,10 +320,10 @@ def InitGraph(params):
         # fig, ax = plt.subplots()
         # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions, labels=dic_regions)
         # plt.show()
-    elif (params['type'] == 'departments'):
+    elif (params['graph_type'] == 'departments'):
         print("department type for graph not handled yet. Exit here.")
         exit(0)
-    elif (params['type'] == 'fullConnectedRegions'):
+    elif (params['graph_type'] == 'fullConnectedRegions'):
         # add nodes of graph
         G = nx.Graph()
         for x in dic_regions.keys():
@@ -358,7 +371,10 @@ def LaunchModel(params, graph):
 # LAUNCH WORKFLOW
 # =============================================================================
 params = InitParams(inputFile)
-# franceGeom = getFranceGeomDpts(params)
+franceGeom = readFranceGeom(params)
 G = InitGraph(params)
 # LoadRoads(params['roads_name'])
-LaunchModel(params, G)
+# LaunchModel(params, G)
+
+t1 = time.time()
+print("Code ran for: " , t1 - t0 ," seconds")
