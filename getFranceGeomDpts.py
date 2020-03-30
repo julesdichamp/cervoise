@@ -9,6 +9,9 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import glob
+# path to Vicopo.py must be added in PYTHONPATH
+from Vicopo import Vicopo
+
 
 def getFranceGeomDpts(params):
     # %% data spatiales                
@@ -26,9 +29,77 @@ def getFranceGeomDpts(params):
     ages = pd.read_excel(ageFile)
 
     # %% data airplanes
-    airplaneFile = params['airplaneFile_name']
-    airplanes = pd.read_excel(airplaneFile)
-   
+    airplaneFile = params['airplaneFile_name']    
+    df = pd.read_excel(airplaneFile, sheet_name=[2,3,4,5,6])
+    
+    citiesFile = params['citiesFile_name']
+    cities = pd.read_csv(citiesFile, delimiter=";")
+        
+    df2 = df[2] # internal lines Paris -> others
+    df3 = df[3] # transversal lines [1]
+    df4 = df[4] # transversal lines [2]
+    df5 = df[5] # lines metropole - outre-mer 
+    df6 = df[6] # outre-mer internal lines
+    
+    # declare lists that will contain all datas
+    full_City1_list   = []
+    full_City2_list   = []
+    full_pax          = []
+    full_pax_regulier = []
+    full_dessertes    = []
+    
+    # internal lines
+    full_City1_list   += df2.iloc[2:-3,0].to_list()
+    full_City2_list   += df2.iloc[2:-3,1].to_list()
+    full_pax          += df2.iloc[2:-3,2].to_list()
+    full_pax_regulier += df2.iloc[2:-3,4].to_list()
+    full_dessertes    += df2.iloc[2:-3,6].to_list()
+    
+    # transversal lines [1]
+    full_City1_list   += df3.iloc[1:df3.shape[0], 0].to_list()
+    full_City2_list   += df3.iloc[1:df3.shape[0], 1].to_list()
+    full_pax          += df3.iloc[1:df3.shape[0], 2].to_list()
+    full_pax_regulier += df3.iloc[1:df3.shape[0], 4].to_list()
+    full_dessertes    += df3.iloc[1:df3.shape[0], 6].to_list()
+
+    # transversal lines [2]
+    full_City1_list   += df4.iloc[0:-4,0].to_list()
+    full_City2_list   += df4.iloc[0:-4,1].to_list()
+    full_pax          += df4.iloc[0:-4,2].to_list()
+    full_pax_regulier += df4.iloc[0:-4,4].to_list()
+    full_dessertes    += df4.iloc[0:-4,6].to_list()
+    
+    # lines metropole <--> outre-mer 
+    full_City1_list   += df5.iloc[:-3,0].to_list()
+    full_City2_list   += df5.iloc[:-3,1].to_list()
+    full_pax          += df5.iloc[:-3,2].to_list()
+    full_pax_regulier += df5.iloc[:-3,4].to_list()
+    full_dessertes    += df5.iloc[:-3,6].to_list()
+    
+    # outre-mer internal lines
+    full_City1_list   += df6.iloc[1:-3,0].to_list()
+    full_City2_list   += df6.iloc[1:-3,1].to_list()
+    full_pax          += df6.iloc[1:-3,2].to_list()
+    full_pax_regulier += df6.iloc[1:-3,4].to_list()
+    full_dessertes    += df6.iloc[1:-3,6].to_list()
+    
+    # convert to proper floats
+    full_pax = [float(str(x).replace(' ','')) for x in full_pax]
+    full_pax_regulier = [float(str(x).replace(' ','')) for x in full_pax_regulier]
+    full_dessertes = [float(str(x).replace(' ','')) for x in full_dessertes]
+    # for i in range(0,len(full_pax)):
+        # print(i, full_City1_list[i], full_City2_list[i], full_pax[i], full_pax_regulier[i], full_dessertes[i])
+    
+    for city in full_City2_list:
+        city.replace(' ','-')
+        city_search = city.replace(' ','-')
+        # if (city_search in 
+        # vicopo_city = Vicopo.http(city_search)        
+        # print(vicopo_city)
+        
+    # exit(0)
+    
+    
     # %% covid19 data
     covidDptsFileNames = params['allCovid19DepartmentsFileNames']
     covidRegionsFileNames = params['allCovid19RegionsFileNames']
@@ -369,7 +440,12 @@ if __name__ == "__main__":
     params['allCovid19DepartmentsFileNames'] = glob.glob(params['covid19DepartmentsDir_name'] +'/*departements-france-*.json')
     params['allCovid19RegionsFileNames'] = glob.glob(params['covid19RegionsDir_name'] +'/*regions-france-2020*.json')
     params['departments_name'] = departments_name
+    
+    # cities file names
+    citiesFile_name = 'data/laposte_hexasmal.csv'
+    params['citiesFile_name'] = citiesFile_name
+    
     params['data_dir'] = 'data/'
-    # franceGeomRegions = getFranceGeomDpts(params)
-    franceGeomRegions = getFranceGeomRegions(params)
+    franceGeomRegions = getFranceGeomDpts(params)
+    # franceGeomRegions = getFranceGeomRegions(params)
 
