@@ -6,6 +6,7 @@ import numpy as np
 import networkx as nx
 import collections
 import copy
+from decimal import *
 
 def checkConservation(x_ini, x):
     
@@ -31,13 +32,12 @@ def checkConservation(x_ini, x):
 
 def SIRWellMixed(params):
     """
-    simple SIR model on well mixed hypothesis:
-    Susceptible -> Infectious
-    Infectious -> Recovered
-    k_SI is rate from Susceptible to Infectious
-    k_IR is rate from Infectious to Recovered
-    """
+    simple SIR model on well mixed hypothesis:        
+    S + I -> 2I (with rate k_SI)
+    I -> R     (with rate k_IR)
+    """    
     print("SIRWellMixed")
+    getcontext().prec = 28
     # load initial state, and reactions values
     k_SI = params["k_SI"]  # A = 1
     k_IR = params["k_IR"]  # A = 2
@@ -56,14 +56,14 @@ def SIRWellMixed(params):
     N = np.zeros([nbStates, nbReactions])
     M = np.zeros([nbStates, nbReactions])
     N[0][0] = 1
+    N[1][0] = 1
     N[1][1] = 1
-    M[1][0] = 1
+    M[1][0] = 2
     M[2][1] = 1
     # R = N - M
     # below is the version in notes, we use this one for consistency
     # also kinetic reaction has to be changed to x = x + R[:, react]
-    R = M - N
-
+    R = M - N    
 
     # JD: this loop is quite general and can be used whatever the model
     # only minor modifiactions have to be made to use on another model
@@ -105,6 +105,7 @@ def SIRWellMixed(params):
         xi = np.random.uniform(0, 1)
         # if the total rate is 0, nothing more can happen anymore
         if (abs(W) <= 0.00000001):
+            print("W = " , W)
             break
         
         # Gillepsie time of next event
@@ -138,6 +139,8 @@ def SIRWellMixed(params):
 def SIROnGraph(params, G):
     """
     Compute SIR model on graph
+    S + I -> 2I (with rate k_SI)
+    I -> R     (with rate k_IR)
     """
     print("SIROnGraph")
     print("WARNING: this only works if number of population per state is an integer")
@@ -161,8 +164,9 @@ def SIROnGraph(params, G):
     N = np.zeros([nbStates, nbReactions])
     M = np.zeros([nbStates, nbReactions])
     N[0][0] = 1
+    N[1][0] = 1
     N[1][1] = 1
-    M[1][0] = 1
+    M[1][0] = 2
     M[2][1] = 1
     # R = N - M
     # below is the version in notes, we use this  onefor consistency
@@ -194,165 +198,171 @@ def SIROnGraph(params, G):
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0 # loop counter
     ### --- 2/ loop in time
-    while t < params["time_end"]:            
-        dic_x = nx.get_node_attributes(G,'x')
-        dic_k_plus = nx.get_node_attributes(G,'k_plus')
-        
-        # save time as an attribute in graph at each time step
-        G.graph['time'] = t
-                
-        # save every n time steps
-        if ((count_loops % params['save_frequency']) == 0):
-            print("t, count_loops = " , t, count_loops)
-            dic_x_for_save = copy.deepcopy(dic_x)
-            outputs.append([t, dic_x_for_save])
-        
-        # compute W_inside: loop on every node 
-        W_inside = 0.0
-        dic_t_forward_plus = {}        
-        ### --- 2-1/ compute total inside rate = sum of all forward kinetic rates)
-        for n in G.nodes(): # loop over all compartments
-            x = dic_x[n]
-            k_plus = dic_k_plus[n]
-            # forward reaction rates
-            t_forward_plus = np.zeros(nbReactions)
-            for j in range(0, nbReactions):
-                t_forward_plus[j] = 1.0
-                for i in range(0, nbStates):
-                    # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
-                    y = 1.0
-                    # only considers states that are present in current reaction
-                    # (see Example 1 from DD powerpoint)
-                    if (abs(N[i,j]) > 0.00000001):
-                        for k in range(0,int(N[i,j])):
-                            y = y * (x[i] -k)                                                
-                    t_forward_plus[j] = t_forward_plus[j] * y
-                
-                # finally multiply the forward reaction rate by the reaction rate k+
-                t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
-              
-            dic_t_forward_plus[n] = t_forward_plus # save forward reaction rates for all nodes
+    try: # so we can exit the loop at any time with ctrl + C
+        while (t < params["time_end"]):
+            dic_x = nx.get_node_attributes(G,'x')
+            dic_k_plus = nx.get_node_attributes(G,'k_plus')
             
-            # total rate which the state can be left with
-            W_node = np.sum(t_forward_plus)
-            xi = np.random.uniform(0, 1)
-            W_inside += W_node
-        
-        ### --- 2-2/ compute total between rate = total rate of leaving the state with a 
-        # hopping process = sum of all hopping rates d_ij * xi
-        dic_t_between = {}
-        W_between = 0.0
-        dic_hopping_rates = nx.get_edge_attributes(G,'hopping_rates')
-        for ni in G.nodes(): # loop over all nodes
-            for nj in G.neighbors(ni): # loop over all neighbors
-                # not sure if it can happen that a node sees itself as a neighbor but just in case...
-                if (ni != nj):
-                    eij=(ni,nj) # get edge between the two nodes                                        
-                    # complicated stuff to turn the edge the other way around
-                    # in case it is not found in edge list
-                    found_edge=False
-                    for e in G.edges():
-                        if (e == eij):
-                            found_edge=True
-                    if not(found_edge):
-                        eij = (nj,ni)
-                                        
-                    tmp = np.zeros(nbStates)
-                    for i in range(0, nbStates): # loop over all states                        
-                        W_between += dic_x[ni][i] * dic_hopping_rates[eij]
-                        tmp[i] = dic_x[ni][i] * dic_hopping_rates[eij]
-                    #VERY IMPORTANT CHECK
-                    dic_t_between[(ni,nj)] = tmp # save all between rates 
+            # save time as an attribute in graph at each time step
+            G.graph['time'] = t
+                    
+            # save every n time steps
+            if ((count_loops % params['save_frequency']) == 0):            
+                dic_x_for_save = copy.deepcopy(dic_x)
+                x_print = np.zeros(nbStates)
+                for key in dic_x_for_save.keys():
+                    for ii in range(0,nbStates):
+                        x_print[ii] += dic_x_for_save[key][ii]
+                print("t, count_loops, x = " , t, count_loops, x_print)
+                outputs.append([t, dic_x_for_save])
+            
+            # compute W_inside: loop on every node 
+            W_inside = 0.0
+            dic_t_forward_plus = {}        
+            ### --- 2-1/ compute total inside rate = sum of all forward kinetic rates)
+            for n in G.nodes(): # loop over all compartments
+                x = dic_x[n]
+                k_plus = dic_k_plus[n]
+                # forward reaction rates
+                t_forward_plus = np.zeros(nbReactions)
+                for j in range(0, nbReactions):
+                    t_forward_plus[j] = 1.0
+                    for i in range(0, nbStates):
+                        # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
+                        y = 1.0
+                        # only considers states that are present in current reaction
+                        # (see Example 1 from DD powerpoint)
+                        if (abs(N[i,j]) > 0.00000001):
+                            for k in range(0,int(N[i,j])):
+                                y = y * (x[i] -k)                                                
+                        t_forward_plus[j] = t_forward_plus[j] * y
+                    
+                    # finally multiply the forward reaction rate by the reaction rate k+
+                    t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
+                  
+                dic_t_forward_plus[n] = t_forward_plus # save forward reaction rates for all nodes
                 
-        ### --- 2-3/ compute total rate and Gillepsie time step
-        W_total = W_inside + W_between
-        
-        # Gillepsie time of next event using total rate 
-        dt = -1 / W_total * np.log(1 - xi)
-        t = t + dt        
-        
-        
-        ### --- 2-4/ fill a vector that contains all sum of states: kinetics and hopping
-        ###          there is probably a simpler way to do it but for now we play "by the book"
-        ###          It allows to choose randomly but according to the weight of each reaction, 
-        ###          the next event to trigger (hopping process of ONE state or ONE reaction)
-        next_states_sum = np.zeros(nbReactions*len(G.nodes()) + nbStates*len(G.nodes()) * (len(G.nodes()) - 1))
-        # fill states nbReactions*len(G.nodes())
-        kk=0        
-        for n in G.nodes(): # loop over all compartments            
-            for j in range(0,nbReactions):
-                # initialization. We do it here because it is annoying to work
-                # with graph nodes indices
-                # it is only done for the first compartment and the first reaction
-                if (kk==0):
-                    next_states_sum[kk] = dic_t_forward_plus[n][j]
-                else:
-                    next_states_sum[kk] = next_states_sum[kk-1] + dic_t_forward_plus[n][j]
-                kk+=1
-        # now fill states: nbStates*len(G.nodes()) * (len(G.nodes()) - 1)
-        for ni in G.nodes(): # loop over all nodes
-            for nj in G.neighbors(ni): # loop over all neighbors
-                if (ni != nj):                        
-                    for i in range(0, nbStates): # loop over all states
-                        next_states_sum[kk] = next_states_sum[kk-1] + dic_t_between[(ni,nj)][i]
-                        kk+=1
-                        
-        # normalize so that all values are bteween 0 and 1
-        next_states_sum = next_states_sum / W_total
-        
-        ### --- 2-5/ choose reaction according to a random uniform variable drop        
-        xi = np.random.uniform(0, 1)
-        if xi <= next_states_sum[0]:
-            id_reaction = 0
-        else:
-            for j in range(1, len(next_states_sum)):
-                if (next_states_sum[j - 1] < xi) and (xi < next_states_sum[j]):
-                    id_reaction = j
-    
-        ### --- 2-6/ Set new state
-        ###          look for the id of the reaction and trigger the corresponding event
-        ###          there is probably a simpler way to do it.
-        if (id_reaction < nbReactions*len(G.nodes())): # we set a kinetic process
-            # print("kinetic")
-            # IMPORTANT: this assumes that nodes range from 0 to nb_nodes - 1
-            node = np.floor(id_reaction / nbReactions)
-            react = id_reaction%nbReactions
-            # dic_x[node] = dic_x[node] - R[:, react]
-            # below is the version in notes, we use this for consistency
-            # also R has to be changed as R = M - N
-            dic_x[node] = dic_x[node] + R[:, react]
-            # #update attributes of nodes right away
-            nx.set_node_attributes(G, name='x', values=dic_x)    
-            if ((dic_x[node][0] < 0) or (dic_x[node][1] < 0) or (dic_x[node][2] < 0) ):
-                print('negative kinetic: id_reaction, node, react, dic_x[node] = ' , id_reaction, node, react, dic_x[node])
-                exit(-1)
-        else: # we set a hopping process 
-            # print("hopping")            
-            kk = nbReactions*len(G.nodes())
-            kk_init = kk
+                # total rate which the state can be left with
+                W_node = np.sum(t_forward_plus)
+                xi = np.random.uniform(0, 1)
+                W_inside += W_node
+            
+            ### --- 2-2/ compute total between rate = total rate of leaving the state with a 
+            # hopping process = sum of all hopping rates d_ij * xi
+            dic_t_between = {}
+            W_between = 0.0
+            dic_hopping_rates = nx.get_edge_attributes(G,'hopping_rates')
             for ni in G.nodes(): # loop over all nodes
                 for nj in G.neighbors(ni): # loop over all neighbors
+                    # not sure if it can happen that a node sees itself as a neighbor but just in case...
                     if (ni != nj):
-                        for i in range(0, nbStates): # loop over all states
-                            if (kk==id_reaction):
-                                dic_x[ni][i] -= 1 # add one                            
-                                dic_x[nj][i] += 1 # remove one
-                                # update attributes right away
-                                nx.set_node_attributes(G, name='x', values=dic_x)
-                                if ((dic_x[ni][i] < 0) or (dic_x[nj][i] < 0)):
-                                    print('negative hopping: id_reaction, ni, nj, i, kk, dic_x[ni][i], dic_x[nj][i]  = ' , id_reaction,  ni, nj, i, kk, dic_x[ni][i], dic_x[nj][i])
-                                    print('dic_t_between[(',ni,',',nj,')][',i,' = ' , dic_t_between[(ni,nj)][i])
-                                    print('dic_t_between[(',nj,',',ni,')][',i,' = ' , dic_t_between[(nj,ni)][i])
-                                    print('dic_t_between = ' , dic_t_between)
-                                    exit(-1)
-                            kk+=1      
-        ### check there is conservation
-        ### -- comment it for now?
-        # dic_x_ini = nx.get_node_attributes(G,'x_ini')
-        # dic_x = nx.get_node_attributes(G,'x')
-        # checkConservation(dic_x_ini, dic_x)
-        count_loops+=1        
+                        eij=(ni,nj) # get edge between the two nodes                                        
+                        # complicated stuff to turn the edge the other way around
+                        # in case it is not found in edge list
+                        found_edge=False
+                        for e in G.edges():
+                            if (e == eij):
+                                found_edge=True
+                        if not(found_edge):
+                            eij = (nj,ni)
+                                            
+                        tmp = np.zeros(nbStates)
+                        for i in range(0, nbStates): # loop over all states                        
+                            W_between += dic_x[ni][i] * dic_hopping_rates[eij]
+                            tmp[i] = dic_x[ni][i] * dic_hopping_rates[eij]
+                        #VERY IMPORTANT CHECK
+                        dic_t_between[(ni,nj)] = tmp # save all between rates 
+                    
+            ### --- 2-3/ compute total rate and Gillepsie time step
+            W_total = W_inside + W_between
             
+            # Gillepsie time of next event using total rate 
+            dt = -1 / W_total * np.log(1 - xi)
+            t = t + dt        
+            
+            
+            ### --- 2-4/ fill a vector that contains all sum of states: kinetics and hopping
+            ###          there is probably a simpler way to do it but for now we play "by the book"
+            ###          It allows to choose randomly but according to the weight of each reaction, 
+            ###          the next event to trigger (hopping process of ONE state or ONE reaction)
+            next_states_sum = np.zeros(nbReactions*len(G.nodes()) + nbStates*len(G.nodes()) * (len(G.nodes()) - 1))
+            # fill states nbReactions*len(G.nodes())
+            kk=0        
+            for n in G.nodes(): # loop over all compartments            
+                for j in range(0,nbReactions):
+                    # initialization. We do it here because it is annoying to work
+                    # with graph nodes indices
+                    # it is only done for the first compartment and the first reaction
+                    if (kk==0):
+                        next_states_sum[kk] = dic_t_forward_plus[n][j]
+                    else:
+                        next_states_sum[kk] = next_states_sum[kk-1] + dic_t_forward_plus[n][j]
+                    kk+=1
+            # now fill states: nbStates*len(G.nodes()) * (len(G.nodes()) - 1)
+            for ni in G.nodes(): # loop over all nodes
+                for nj in G.neighbors(ni): # loop over all neighbors
+                    if (ni != nj):                        
+                        for i in range(0, nbStates): # loop over all states
+                            next_states_sum[kk] = next_states_sum[kk-1] + dic_t_between[(ni,nj)][i]
+                            kk+=1
+                            
+            # normalize so that all values are bteween 0 and 1
+            next_states_sum = next_states_sum / W_total
+            
+            ### --- 2-5/ choose reaction according to a random uniform variable drop        
+            xi = np.random.uniform(0, 1)
+            if xi <= next_states_sum[0]:
+                id_reaction = 0
+            else:
+                for j in range(1, len(next_states_sum)):
+                    if (next_states_sum[j - 1] < xi) and (xi < next_states_sum[j]):
+                        id_reaction = j
+        
+            ### --- 2-6/ Set new state
+            ###          look for the id of the reaction and trigger the corresponding event
+            ###          there is probably a simpler way to do it.
+            if (id_reaction < nbReactions*len(G.nodes())): # we set a kinetic process
+                # print("kinetic")
+                # IMPORTANT: this assumes that nodes range from 0 to nb_nodes - 1
+                node = np.floor(id_reaction / nbReactions)
+                react = id_reaction%nbReactions
+                # dic_x[node] = dic_x[node] - R[:, react]
+                # below is the version in notes, we use this for consistency
+                # also R has to be changed as R = M - N
+                dic_x[node] = dic_x[node] + R[:, react]
+                # #update attributes of nodes right away
+                nx.set_node_attributes(G, name='x', values=dic_x)    
+                if ((dic_x[node][0] < 0) or (dic_x[node][1] < 0) or (dic_x[node][2] < 0) ):
+                    print('negative kinetic: id_reaction, node, react, dic_x[node] = ' , id_reaction, node, react, dic_x[node])
+                    exit(-1)
+            else: # we set a hopping process 
+                # print("hopping")            
+                kk = nbReactions*len(G.nodes())
+                kk_init = kk
+                for ni in G.nodes(): # loop over all nodes
+                    for nj in G.neighbors(ni): # loop over all neighbors
+                        if (ni != nj):
+                            for i in range(0, nbStates): # loop over all states
+                                if (kk==id_reaction):
+                                    dic_x[ni][i] -= 1 # add one                            
+                                    dic_x[nj][i] += 1 # remove one
+                                    # update attributes right away
+                                    nx.set_node_attributes(G, name='x', values=dic_x)
+                                    if ((dic_x[ni][i] < 0) or (dic_x[nj][i] < 0)):
+                                        print('negative hopping: id_reaction, ni, nj, i, kk, dic_x[ni][i], dic_x[nj][i]  = ' , id_reaction,  ni, nj, i, kk, dic_x[ni][i], dic_x[nj][i])
+                                        print('dic_t_between[(',ni,',',nj,')][',i,' = ' , dic_t_between[(ni,nj)][i])
+                                        print('dic_t_between[(',nj,',',ni,')][',i,' = ' , dic_t_between[(nj,ni)][i])
+                                        print('dic_t_between = ' , dic_t_between)
+                                        exit(-1)
+                                kk+=1      
+            ### check there is conservation
+            ### -- comment it for now?
+            # dic_x_ini = nx.get_node_attributes(G,'x_ini')
+            # dic_x = nx.get_node_attributes(G,'x')
+            # checkConservation(dic_x_ini, dic_x)
+            count_loops+=1        
+    except KeyboardInterrupt:
+        pass
     return outputs , G
     
 def SIROnRegions(params, graph):

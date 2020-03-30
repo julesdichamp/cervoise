@@ -8,7 +8,7 @@ Created on Wed Mar 25 22:04:48 2020
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-
+import glob
 
 def getFranceGeomDpts(params):
     # %% data spatiales                
@@ -60,7 +60,7 @@ def getFranceGeomDpts(params):
             dic_data_covid[dpt_name][_date]['Confirmed'] = num_confirmed
             dic_data_covid[dpt_name][_date]['Deaths'] = num_deaths
             # print(_date, dpt_name, num_confirmed, num_deaths)
-            
+    
     # the data set in departments does not include La Reunion for some reason
     # data for La Reunion is however available is directory regions-france
     # La Reunion is both a region and a department so we include it to
@@ -81,7 +81,8 @@ def getFranceGeomDpts(params):
                 else:
                     num_deaths = 0
                 if (not(dpt_name in dic_data_covid)):
-                    dic_data_covid[dpt_name] = {}
+                    dic_data_covid[dpt_name] = {}                    
+                    
                 dic_data_covid[dpt_name][_date] = {}
                 dic_data_covid[dpt_name][_date]['Confirmed'] = num_confirmed
                 dic_data_covid[dpt_name][_date]['Deaths'] = num_deaths
@@ -110,7 +111,7 @@ def getFranceGeomDpts(params):
             dptname = dptname
         
         franceGeom[dptname] = {}
-        franceGeom[dptname]["agesSex"] = ages.loc[dpt]
+        franceGeom[dptname]["agesSex"] = ages.loc[dpt].to_dict() # added to_dict() so it can be read easily from files        
         franceGeom[dptname]["freqGare"] = freqGares[dpt]
         franceGeom[dptname]["neighbours"] = {}
         franceGeom[dptname]["length"] = {}
@@ -154,6 +155,14 @@ def getFranceGeomDpts(params):
 
         franceGeom[dptname]["neighbours"] = neighList
         franceGeom[dptname]["length"] = lenList
+        
+    # add an ID that will be used in node 
+    # IT IS NOT RELATED TO THE DEPARTMENT NUMBER 
+    # BECAUSE IT STARTS FROM 0
+    id_dpt = 0
+    for dptname in franceGeom.keys():
+        franceGeom[dptname]["id"] = id_dpt
+        id_dpt+=1
     
     outname = params['data_dir'] + '/franceGeomDepartments.txt'    
     f = open(outname,"w")
@@ -202,6 +211,15 @@ def getFranceGeomRegions(params):
         "Mayotte",
         "La Réunion"        
     ]
+    # LIST_OUTREMER = [
+        # "Guadeloupe",
+        # "Guyane",
+        # "Martinique",
+        # "Mayotte",
+        # "La Réunion",
+        # "Saint-Barthélémy",
+        # "Saint-Martin",
+    # ]
     LIST_REGIONS = LIST_METROPOLE + LIST_DPTS_REGS_OUTREMER
     
     dpts_regions_from_list = df['REGION']
@@ -223,14 +241,18 @@ def getFranceGeomRegions(params):
         
     # for each  region get list of departments in that region
     franceGeomRegions = {}
-    for regName in LIST_REGIONS:         
+    for regName in LIST_REGIONS:
+        print(regName)
         # indices = [df['REGION'].index(regName)]    
         franceGeomRegions[regName] = {}
         indices = [i for i, r in enumerate(df['REGION']) if r == regName]
         franceGeomRegions[regName]['departments'] = df['NOM'][indices].to_list()
         x = 0.
         y = 0.
-        franceGeomRegions[regName]["data_covid"] = {}                
+        franceGeomRegions[regName]["data_covid"] = {}
+        franceGeomRegions[regName]["freqGare"] = 0.
+        franceGeomRegions[regName]["agesSex"] = {}
+                
         # loop over all departments that are part of the region
         for dptName in franceGeomRegions[regName]['departments']:
             # sum all confirmed and deaths from departments in region and 
@@ -243,15 +265,34 @@ def getFranceGeomRegions(params):
                     franceGeomRegions[regName]["data_covid"][_date]['Deaths'] = 0
                 franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] += franceGeomDpts[dptName]["data_covid"][_date]['Confirmed']
                 franceGeomRegions[regName]["data_covid"][_date]['Deaths'] += franceGeomDpts[dptName]["data_covid"][_date]['Deaths']
+                
+            # add train stations frequentations = sum over all train frequentations
+            # in departments
+            franceGeomRegions[regName]["freqGare"] += franceGeomDpts[dptName]["freqGare"]
             
+            # add ages per sex data = sum over all data in each department
+            for key in franceGeomDpts[dptName]["agesSex"].keys():
+                # do not add those keys because they are useless now
+                if ( (key != "dptname") and (key != "dpt") ):
+                    # if the key is not in the franceGeomRegions dictionnary
+                    # we initialize as 0 the number of people in respective age class
+                    if not(key in franceGeomRegions[regName]["agesSex"].keys()):
+                        franceGeomRegions[regName]["agesSex"][key] = 0.
+                    # we sum the number of people in respective age class for all departments
+                    else:
+                        franceGeomRegions[regName]["agesSex"][key] += franceGeomDpts[dptName]["agesSex"][key]
             # get centroid from region as barycenter from all centroids departments
             x += franceGeomDpts[dptName]["centroid"][0] / len(franceGeomRegions[regName]['departments'])
             y += franceGeomDpts[dptName]["centroid"][1] / len(franceGeomRegions[regName]['departments'])                    
         
+            
         # set centroid for region
         franceGeomRegions[regName]["centroid"] = (x,y)
+        
         # prepare empty lists
         franceGeomRegions[regName]["neighbours"] = []
+        
+    # set neighbours of regions
     # loop over all departments that are part of the region
     for regName1 in franceGeomRegions.keys():        
         for regName2 in franceGeomRegions.keys():
@@ -265,8 +306,17 @@ def getFranceGeomRegions(params):
                                     franceGeomRegions[regName2]['neighbours'].append(regName1)
                                 if not(regName2 in franceGeomRegions[regName1]['neighbours']):
                                     franceGeomRegions[regName1]['neighbours'].append(regName2)                            
-                
-    print(franceGeomRegions)
+
+    
+    # add an ID that will be used in node 
+    # IT IS NOT RELATED TO THE DEPARTMENT NUMBER 
+    # BECAUSE IT STARTS FROM 0
+    id_reg = 0
+    for regName in franceGeomRegions.keys():
+        franceGeomRegions[regName]["id"] = id_reg
+        id_reg+=1
+    
+    # print(franceGeomRegions)
     outname = params['data_dir'] + '/franceGeomRegions.txt'    
     f = open(outname,"w")
     f.write( str(franceGeomRegions))
@@ -278,14 +328,14 @@ def readFranceGeom(params):
         # of data
         if (params["graph_type"] == "departments"):
             franceGeom = getFranceGeomDepartments(params)
-        elif (params["graph_type"] == "regions"):
+        elif (params["graph_type"] == "regions") or (params["graph_type"] == "fullConnectedRegions"):
             franceGeom = getFranceGeomRegions(params)
         else:
             print("Not sure what to do with that graph_type = " , params["graph_type"] , ", exit here.")
     else:
         s = open(params['franceGeom_name'], 'r').read()
         franceGeom = eval(s)
-        print(franceGeom)
+        # print(franceGeom)
     return franceGeom    
 
 if __name__ == "__main__":
@@ -299,5 +349,27 @@ if __name__ == "__main__":
     params['shapefile_name'] = name_shapefile
     params['gareFile_name']  = gareFile
     params['ageFile_name']   = ageFile
-    getFranceGeomDpts(params)
+    
+    airplaneFile_name = 'data/bulletin_stat_trafic_aerien_2018-converti.xlsx'
+    # %% https://github.com/kalisio/covid-19/
+    # %% full data is located in data/covid19_france_departments/
+    # covid19DepartmentsDir_name = data/covid19_france_departments/departements-france/
+    covid19DepartmentsDir_name = 'data/covid19_france_departments/departements-france/'
+    covid19RegionsDir_name = 'data/covid19_france_departments/regions-france/'
+    # list of regions and french departments
+    #https://www.regions-et-departements.fr/departements-francais#departements_fichiers
+    # some departments names were modified to fit other names
+    departments_name= 'data/departments/departements-francais.csv'
+    # contains a dictionnary with all franceGeom data
+    params['airplaneFile_name'] = airplaneFile_name
+    
+    params['covid19DepartmentsDir_name'] = covid19DepartmentsDir_name
+    params['covid19RegionsDir_name'] = covid19RegionsDir_name
+    # get all file names we are interested in in this directory (do not keep polygons files)s
+    params['allCovid19DepartmentsFileNames'] = glob.glob(params['covid19DepartmentsDir_name'] +'/*departements-france-*.json')
+    params['allCovid19RegionsFileNames'] = glob.glob(params['covid19RegionsDir_name'] +'/*regions-france-2020*.json')
+    params['departments_name'] = departments_name
+    params['data_dir'] = 'data/'
+    # franceGeomRegions = getFranceGeomDpts(params)
+    franceGeomRegions = getFranceGeomRegions(params)
 

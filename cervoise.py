@@ -139,6 +139,212 @@ def InitParams(config_name):
     return params
     
 
+# def InitGraph(params):
+    # print("InitGraph")
+    # """
+    # initialize a graph of regions with positions, and ids per regions
+    # in: params, dictionnary with all needed parameters
+    # out: a graph of type networkx.Graph()
+    # """            
+    # LIST_METROPOLE = [
+        # "Auvergne-Rhône-Alpes",
+        # "Bourgogne-Franche-Comté",
+        # "Bretagne",
+        # "Centre-Val de Loire",
+        # "Corse",
+        # "Grand Est",
+        # "Hauts-de-France",
+        # "Ile-de-France",
+        # "Normandie",
+        # "Nouvelle-Aquitaine",
+        # "Occitanie",
+        # "Pays de la Loire",
+        # "Provence-Alpes-Côte d’Azur",
+    # ]
+
+    # LIST_OUTREMER = [
+        # "Guadeloupe",
+        # "Guyane",
+        # "Martinique",
+        # "Mayotte",
+        # "La Réunion",
+        # "Saint-Barthélémy",
+        # "Saint-Martin",
+    # ]
+
+    #from Florian
+    #TODO: add source
+    # DIC_POSITIONS_METROPOLE = {
+        # "Auvergne-Rhône-Alpes": [772022.9490728247, 2059666.8371020914],
+        # "Bourgogne-Franche-Comté": [787177.8408282029, 2251335.950928572],
+        # "Bretagne": [215039.24516678863, 2365217.5071779615],
+        # "Centre-Val de Loire": [550917.5994336334, 2275882.307395058],
+        # "Corse": [1160476.2800258105, 1706885.7403624766],
+        # "Grand Est": [841720.2901229224, 2415159.5340459584],
+        # "Hauts-de-France": [631486.0019718618, 2552427.4478215473],
+        # "Ile-de-France": [612377.0469593473, 2412305.1064892523],
+        # "Normandie": [437037.0999347288, 2460471.8503777585],
+        # "Nouvelle-Aquitaine": [431896.2266105056, 2023453.7858529706],
+        # "Occitanie": [583863.6352416947, 1855575.2526474672],
+        # "Pays de la Loire": [361717.2237577763, 2279805.18747009],
+        # "Provence-Alpes-Côte d’Azur": [899251.0580184147, 1890939.1725853563],
+    # }
+    #from Kaggle
+    # DIC_POSITIONS_OUTREMER = {
+        # "Guadeloupe": [16.2490067, -61.5650444],
+        # "Guyane": [4.8417097, -58.6416891],
+        # "Martinique": [14.6113732, -60.9620777],
+        # "Mayotte": [-12.823048, 45.1520755],
+        # "La Réunion": [-21.1309332, 55.5265771],
+        # "Saint-Barthélémy": [17.9036287, -62.811568843006896],
+        # "Saint-Martin": [18.06481835, -63.049171129033],
+    # }
+
+    #dictionnary that associates an id to a region
+    # dic_regions_metropole = {}
+    # dic_regions_metropole_positions = {}
+    # for i in range(0, len(LIST_METROPOLE)):
+        # dic_regions_metropole[i] = LIST_METROPOLE[i]
+        # dic_regions_metropole_positions[i] = DIC_POSITIONS_METROPOLE[LIST_METROPOLE[i]]
+
+    # dic_regions_outremer = {}
+    # dic_regions_outremer_positions = {}
+    # for i in range(0, len(LIST_OUTREMER)):
+        # dic_regions_outremer[len(dic_regions_metropole) + i] = LIST_OUTREMER[i]
+        # dic_regions_outremer_positions[
+            # len(dic_regions_metropole) + i
+        # ] = DIC_POSITIONS_OUTREMER[LIST_OUTREMER[i]]
+
+     #set full dictionnary depending on option
+    # dic_regions = {}
+    # dic_regions_positions = {}
+    # if params["location"] == "metropole":
+        # dic_regions = dic_regions_metropole
+        # dic_regions_positions = dic_regions_metropole_positions
+    # elif params["location"] == "outremer":
+        # dic_regions = dic_regions_outremer
+        # dic_regions_positions = dic_regions_outremer_positions
+    # else:
+        # for x in dic_regions_metropole.keys():
+            # dic_regions[x] = dic_regions_metropole[x]
+            # dic_regions_positions[x] = dic_regions_metropole_positions[x]
+        # for x in dic_regions_outremer.keys():
+            # dic_regions[x] = dic_regions_outremer[x]
+            # dic_regions_positions[x] = dic_regions_outremer_positions[x]
+    
+     #All neighborings connections ONLY FOR METROPOLE NOW
+     #Corse to be better dealt with?
+    # dic_all_connections = {}
+    # dic_all_connections["Bretagne"] = ["Normandie", "Pays de la Loire"]
+    # dic_all_connections["Normandie"] = [
+        # "Bretagne",
+        # "Pays de la Loire",
+        # "Centre-Val de Loire",
+        # "Ile-de-France",
+        # "Hauts-de-France",
+    # ]
+    # dic_all_connections["Pays de la Loire"] = [
+        # "Bretagne",
+        # "Normandie",
+        # "Centre-Val de Loire",
+        # "Nouvelle-Aquitaine",
+    # ]
+    # dic_all_connections["Centre-Val de Loire"] = [
+        # "Pays de la Loire",
+        # "Normandie",
+        # "Ile-de-France",
+        # "Bourgogne-Franche-Comté",
+        # "Auvergne-Rhône-Alpes",
+        # "Nouvelle-Aquitaine",
+    # ]
+    # dic_all_connections["Hauts-de-France"] = ["Grand Est", "Ile-de-France", "Normandie"]
+    # dic_all_connections["Nouvelle-Aquitaine"] = [
+        # "Pays de la Loire",
+        # "Centre-Val de Loire",
+        # "Auvergne-Rhône-Alpes",
+        # "Occitanie",
+    # ]
+    # dic_all_connections["Grand Est"] = [
+        # "Hauts-de-France",
+        # "Ile-de-France",
+        # "Bourgogne-Franche-Comté",
+    # ]
+    # dic_all_connections["Bourgogne-Franche-Comté"] = [
+        # "Ile-de-France",
+        # "Grand Est",
+        # "Centre-Val de Loire",
+        # "Auvergne-Rhône-Alpes",
+    # ]
+    # dic_all_connections["Auvergne-Rhône-Alpes"] = [
+        # "Occitanie",
+        # "Nouvelle-Aquitaine",
+        # "Centre-Val de Loire",
+        # "Bourgogne-Franche-Comté",
+        # "Provence-Alpes-Côte d’Azur",
+    # ]
+    # dic_all_connections["Provence-Alpes-Côte d’Azur"] = [
+        # "Auvergne-Rhône-Alpes",
+        # "Occitanie",
+        # "Corse",
+    # ]
+    # dic_all_connections["Occitanie"] = [
+        # "Nouvelle-Aquitaine",
+        # "Auvergne-Rhône-Alpes",
+        # "Provence-Alpes-Côte d’Azur",
+    # ]
+    # dic_all_connections["Corse"] = ["Provence-Alpes-Côte d’Azur"]
+    # dic_all_connections["Ile-de-France"] = LIST_METROPOLE
+
+
+    # ### --- Construct graph 
+    # if (params['graph_type'] == 'regions'):
+        #add nodes of graph
+        # G = nx.Graph()
+        # for x in dic_regions.keys():
+            # G.add_node(x)
+        
+        # # add attributes with positions to graph
+        # nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
+        # nx.set_node_attributes(G, name='names', values=dic_regions)
+
+        # # add edges of graph
+        # for key in dic_all_connections.keys():
+            #get id of region
+            # id1 = list(dic_regions.keys())[list(dic_regions.values()).index(key)]
+            # for value in dic_all_connections[key]:  # loop over all connections regions
+                 #get id of conected region
+                # id2 = list(dic_regions.keys())[list(dic_regions.values()).index(value)]
+                # edge = (id1, id2)
+                # G.add_edge(*edge)  # unpack edge tuple*
+
+        #fig, ax = plt.subplots()
+        #nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions, labels=dic_regions)
+        #plt.show()
+    # elif (params['graph_type'] == 'departments'):
+        # print("department type for graph not handled yet. Exit here.")
+        # exit(0)
+    # elif (params['graph_type'] == 'fullConnectedRegions'):
+        #add nodes of graph
+        # G = nx.Graph()
+        # for x in dic_regions.keys():
+            # G.add_node(x)
+        
+        # # add attributes with positions to graph
+        # nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
+        # nx.set_node_attributes(G, name='names', values=dic_regions)
+
+        # # add edges of graph: all regions are connected to every other region
+        # for n1 in G.nodes():
+            # for n2 in G.nodes():
+                # if (n1 != n2):
+                    # edge = (n1, n2)
+                    # G.add_edge(*edge)  # unpack edge tuple*
+
+    # print("num_edges = ", G.number_of_edges())
+    # print("num_nodes = ", G.number_of_nodes())    
+    # return G
+
+
 def InitGraph(params):
     print("InitGraph")
     """
@@ -146,202 +352,99 @@ def InitGraph(params):
     in: params, dictionnary with all needed parameters
     out: a graph of type networkx.Graph()
     """            
-    LIST_METROPOLE = [
-        "Auvergne-Rhône-Alpes",
-        "Bourgogne-Franche-Comté",
-        "Bretagne",
-        "Centre-Val de Loire",
-        "Corse",
-        "Grand Est",
-        "Hauts-de-France",
-        "Ile-de-France",
-        "Normandie",
-        "Nouvelle-Aquitaine",
-        "Occitanie",
-        "Pays de la Loire",
-        "Provence-Alpes-Côte d’Azur",
-    ]
-
-    LIST_OUTREMER = [
-        "Guadeloupe",
-        "Guyane",
-        "Martinique",
-        "Mayotte",
-        "La Réunion",
-        "Saint-Barthélémy",
-        "Saint-Martin",
-    ]
-
-    # from Florian
-    # TODO: add source
-    DIC_POSITIONS_METROPOLE = {
-        "Auvergne-Rhône-Alpes": [772022.9490728247, 2059666.8371020914],
-        "Bourgogne-Franche-Comté": [787177.8408282029, 2251335.950928572],
-        "Bretagne": [215039.24516678863, 2365217.5071779615],
-        "Centre-Val de Loire": [550917.5994336334, 2275882.307395058],
-        "Corse": [1160476.2800258105, 1706885.7403624766],
-        "Grand Est": [841720.2901229224, 2415159.5340459584],
-        "Hauts-de-France": [631486.0019718618, 2552427.4478215473],
-        "Ile-de-France": [612377.0469593473, 2412305.1064892523],
-        "Normandie": [437037.0999347288, 2460471.8503777585],
-        "Nouvelle-Aquitaine": [431896.2266105056, 2023453.7858529706],
-        "Occitanie": [583863.6352416947, 1855575.2526474672],
-        "Pays de la Loire": [361717.2237577763, 2279805.18747009],
-        "Provence-Alpes-Côte d’Azur": [899251.0580184147, 1890939.1725853563],
-    }
-    # from Kaggle
-    DIC_POSITIONS_OUTREMER = {
-        "Guadeloupe": [16.2490067, -61.5650444],
-        "Guyane": [4.8417097, -58.6416891],
-        "Martinique": [14.6113732, -60.9620777],
-        "Mayotte": [-12.823048, 45.1520755],
-        "La Réunion": [-21.1309332, 55.5265771],
-        "Saint-Barthélémy": [17.9036287, -62.811568843006896],
-        "Saint-Martin": [18.06481835, -63.049171129033],
-    }
-
-    # dictionnary that associates an id to a region
-    dic_regions_metropole = {}
-    dic_regions_metropole_positions = {}
-    for i in range(0, len(LIST_METROPOLE)):
-        dic_regions_metropole[i] = LIST_METROPOLE[i]
-        dic_regions_metropole_positions[i] = DIC_POSITIONS_METROPOLE[LIST_METROPOLE[i]]
-
-    dic_regions_outremer = {}
-    dic_regions_outremer_positions = {}
-    for i in range(0, len(LIST_OUTREMER)):
-        dic_regions_outremer[len(dic_regions_metropole) + i] = LIST_OUTREMER[i]
-        dic_regions_outremer_positions[
-            len(dic_regions_metropole) + i
-        ] = DIC_POSITIONS_OUTREMER[LIST_OUTREMER[i]]
-
-    #  set full dictionnary depending on option
-    dic_regions = {}
-    dic_regions_positions = {}
-    if params["location"] == "metropole":
-        dic_regions = dic_regions_metropole
-        dic_regions_positions = dic_regions_metropole_positions
-    elif params["location"] == "outremer":
-        dic_regions = dic_regions_outremer
-        dic_regions_positions = dic_regions_outremer_positions
-    else:
-        for x in dic_regions_metropole.keys():
-            dic_regions[x] = dic_regions_metropole[x]
-            dic_regions_positions[x] = dic_regions_metropole_positions[x]
-        for x in dic_regions_outremer.keys():
-            dic_regions[x] = dic_regions_outremer[x]
-            dic_regions_positions[x] = dic_regions_outremer_positions[x]
+    ### --- 1/ read data we need depending of what is written on params["graph_type"] 
+    franceGeom = readFranceGeom(params)
+    G = nx.Graph()
     
-    #  All neighborings connections ONLY FOR METROPOLE NOW
-    #  Corse to be better dealt with?
-    dic_all_connections = {}
-    dic_all_connections["Bretagne"] = ["Normandie", "Pays de la Loire"]
-    dic_all_connections["Normandie"] = [
-        "Bretagne",
-        "Pays de la Loire",
-        "Centre-Val de Loire",
-        "Ile-de-France",
-        "Hauts-de-France",
-    ]
-    dic_all_connections["Pays de la Loire"] = [
-        "Bretagne",
-        "Normandie",
-        "Centre-Val de Loire",
-        "Nouvelle-Aquitaine",
-    ]
-    dic_all_connections["Centre-Val de Loire"] = [
-        "Pays de la Loire",
-        "Normandie",
-        "Ile-de-France",
-        "Bourgogne-Franche-Comté",
-        "Auvergne-Rhône-Alpes",
-        "Nouvelle-Aquitaine",
-    ]
-    dic_all_connections["Hauts-de-France"] = ["Grand Est", "Ile-de-France", "Normandie"]
-    dic_all_connections["Nouvelle-Aquitaine"] = [
-        "Pays de la Loire",
-        "Centre-Val de Loire",
-        "Auvergne-Rhône-Alpes",
-        "Occitanie",
-    ]
-    dic_all_connections["Grand Est"] = [
-        "Hauts-de-France",
-        "Ile-de-France",
-        "Bourgogne-Franche-Comté",
-    ]
-    dic_all_connections["Bourgogne-Franche-Comté"] = [
-        "Ile-de-France",
-        "Grand Est",
-        "Centre-Val de Loire",
-        "Auvergne-Rhône-Alpes",
-    ]
-    dic_all_connections["Auvergne-Rhône-Alpes"] = [
-        "Occitanie",
-        "Nouvelle-Aquitaine",
-        "Centre-Val de Loire",
-        "Bourgogne-Franche-Comté",
-        "Provence-Alpes-Côte d’Azur",
-    ]
-    dic_all_connections["Provence-Alpes-Côte d’Azur"] = [
-        "Auvergne-Rhône-Alpes",
-        "Occitanie",
-        "Corse",
-    ]
-    dic_all_connections["Occitanie"] = [
-        "Nouvelle-Aquitaine",
-        "Auvergne-Rhône-Alpes",
-        "Provence-Alpes-Côte d’Azur",
-    ]
-    dic_all_connections["Corse"] = ["Provence-Alpes-Côte d’Azur"]
-    dic_all_connections["Ile-de-France"] = LIST_METROPOLE
-
-
     ### --- Construct graph 
-    if (params['graph_type'] == 'regions'):
-        # add nodes of graph
-        G = nx.Graph()
-        for x in dic_regions.keys():
-            G.add_node(x)
-        
+    # same routine for regions and departments as it is handled by readFranceGeom(params)
+    if (params['graph_type'] == 'regions') or (params['graph_type'] == 'departments'):
+        dic_total_population = {}
+        dic_data_covid = {}        
+        dic_positions = {}
+        dic_names = {}
+        # add nodes to the graph        
+        for key in franceGeom.keys():
+            id_node = franceGeom[key]["id"] # get ID attributed from readFranceGeom(params)
+            G.add_node(id_node)
+            
+            # add data on node_attributes, for now:
+            # - Total population
+            # - Confirmed cases
+            # - Deaths
+            # - Position
+            dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
+            dic_data_covid[id_node] = franceGeom[key]['data_covid']            
+            centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
+            dic_positions[id_node] = centroid
+            dic_names[id_node] = key
+            id_node+=1                         
+                                    
         # add attributes with positions to graph
-        nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
-        nx.set_node_attributes(G, name='names', values=dic_regions)
+        nx.set_node_attributes(G, name='positions', values=dic_positions)
+        nx.set_node_attributes(G, name='names', values=dic_names)
+        nx.set_node_attributes(G, name='total_pop', values=dic_total_population)
+        nx.set_node_attributes(G, name='data_covid', values=dic_data_covid)
+        
+        
+        # add edges to the graph                
+        for key in franceGeom.keys():
+            id_node1 = franceGeom[key]["id"] # get ID attributed from readFranceGeom(params)
+            for keyneigh in franceGeom[key]['neighbours']:
+                id_node2 = franceGeom[keyneigh]["id"] # get ID attributed from readFranceGeom(params)
+                edge12 = (id_node1, id_node2)
+                edge21 = (id_node2, id_node1)
+                if ( (not(edge12 in G.edges())) or (not(edge21 in G.edges())) ) :
+                    G.add_edge(*edge12)  # unpack edge tuple*
 
-        # add edges of graph
-        for key in dic_all_connections.keys():
-            # get id of region
-            id1 = list(dic_regions.keys())[list(dic_regions.values()).index(key)]
-            for value in dic_all_connections[key]:  # loop over all connections regions
-                #  get id of conected region
-                id2 = list(dic_regions.keys())[list(dic_regions.values()).index(value)]
-                edge = (id1, id2)
-                G.add_edge(*edge)  # unpack edge tuple*
-
-        # fig, ax = plt.subplots()
-        # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions, labels=dic_regions)
-        # plt.show()
-    elif (params['graph_type'] == 'departments'):
-        print("department type for graph not handled yet. Exit here.")
-        exit(0)
     elif (params['graph_type'] == 'fullConnectedRegions'):
-        # add nodes of graph
-        G = nx.Graph()
-        for x in dic_regions.keys():
-            G.add_node(x)
         
+        dic_total_population = {}
+        dic_data_covid = {}        
+        dic_positions = {}
+        dic_names = {}
+        # add nodes to the graph
+        id_node = 0
+        for key in franceGeom.keys():
+            id_node = franceGeom[key]["id"] # get ID attributed from readFranceGeom(params)
+            G.add_node(id_node)
+            
+            # add data on node_attributes, for now:
+            # - Total population
+            # - Confirmed cases
+            # - Deaths
+            # - Position
+            dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
+            dic_data_covid[id_node] = franceGeom[key]['data_covid']            
+            centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
+            dic_positions[id_node] = centroid
+            dic_names[id_node] = key            
+            id_node+=1  
         # add attributes with positions to graph
-        nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
-        nx.set_node_attributes(G, name='names', values=dic_regions)
-
+        nx.set_node_attributes(G, name='positions', values=dic_positions)
+        nx.set_node_attributes(G, name='names', values=dic_names)
+        nx.set_node_attributes(G, name='total_pop', values=dic_total_population)
+        nx.set_node_attributes(G, name='data_covid', values=dic_data_covid)
+        
         # add edges of graph: all regions are connected to every other region
         for n1 in G.nodes():
             for n2 in G.nodes():
                 if (n1 != n2):
                     edge = (n1, n2)
                     G.add_edge(*edge)  # unpack edge tuple*
+    
+    
+    fig, ax = plt.subplots()
+    dic_pos = nx.get_node_attributes(G, 'positions')
+    dic_labels = nx.get_node_attributes(G, 'names')
 
+    
     print("num_edges = ", G.number_of_edges())
     print("num_nodes = ", G.number_of_nodes())    
+            
+    nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
+    plt.show()
+    
     return G
 
 
@@ -371,9 +474,7 @@ def LaunchModel(params, graph):
 # LAUNCH WORKFLOW
 # =============================================================================
 params = InitParams(inputFile)
-franceGeom = readFranceGeom(params)
 G = InitGraph(params)
-# LoadRoads(params['roads_name'])
 # LaunchModel(params, G)
 
 t1 = time.time()
