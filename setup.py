@@ -12,11 +12,11 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'mypackage'
-DESCRIPTION = 'My short description for my project.'
-URL = 'https://github.com/me/myproject'
+NAME = 'CERVOISE'
+DESCRIPTION = 'CERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation'
+URL = 'https://gitlab.inria.fr/jdichamp/cervoise'
 EMAIL = 'me@example.com'
-AUTHOR = 'Awesome Soul'
+AUTHOR = 'DD TASK TEAM'
 REQUIRES_PYTHON = '>=3.6.0'
 VERSION = '0.1.0'
 
@@ -120,9 +120,9 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy'
+        'Programming Language :: Python :: 3.6'
+        #'Programming Language :: Python :: Implementation :: CPython',
+        #'Programming Language :: Python :: Implementation :: PyPy'
     ],
     # $ setup.py publish support.
     cmdclass={
