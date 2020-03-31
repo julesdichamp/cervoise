@@ -18,7 +18,7 @@ URL = 'https://gitlab.inria.fr/jdichamp/cervoise'
 EMAIL = 'me@example.com'
 AUTHOR = 'DD TASK TEAM'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.1.0'
+VERSION = '0.0.1'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
