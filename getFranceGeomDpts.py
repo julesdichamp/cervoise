@@ -9,6 +9,8 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import glob
+import collections
+
 # path to Vicopo.py must be added in PYTHONPATH
 # from Vicopo import Vicopo
 
@@ -30,11 +32,40 @@ def getFranceGeomDpts(params):
 
     # %% data airplanes
     airplaneFile = params['airplaneFile_name']
-    df = pd.read_excel(airplaneFile, sheet_name=[2,3,4,5,6])
+    airways = pd.read_excel(airplaneFile)
 
     citiesFile = params['citiesFile_name']
-    cities = pd.read_csv(citiesFile, delimiter=";")
+    cities = pd.read_csv(citiesFile)
+    airwaysDict = {}
+    for airway in airways.iterrows():
+        # print(airway[1]["in"], airway[1]["out"])
+        if not airway[1]["in"] in airwaysDict:
+            airwaysDict[airway[1]["in"]] = [[airway[1]["out"], airway[1]["Pax"]]]
+        else:
+            airwaysDict[airway[1]["in"]].append([airway[1]["out"], airway[1]["Pax"]])
+    #building the dict
+    airwaysDictdpt = {}
+    for flightSource in airwaysDict:
+        # print(flightSource, cities[cities.eq(flightSource).any(1)].dpt.values[0])
+        flightSourcedpt = cities[cities.eq(flightSource).any(1)].dpt.values[0]
+        if not flightSourcedpt in airwaysDictdpt:
+            if not flightSourcedpt in airwaysDictdpt:
+                airwaysDictdpt[flightSourcedpt] = {}
+            for flightDest in airwaysDict[flightSource]:
+                print(flightDest[0])
+                print(cities[cities.eq(flightDest[0]).any(1)].dpt.values[0])
+                flightDestdpt = cities[cities.eq(flightDest[0]).any(1)].dpt.values[0]
+                if not bool(airwaysDictdpt[flightSourcedpt]):
+                    airwaysDictdpt[flightSourcedpt] = [[flightDestdpt, int(flightDest[1])]]
+                elif not flightDestdpt in airwaysDictdpt[flightSourcedpt]:
+                    airwaysDictdpt[flightSourcedpt].append([flightDestdpt, int(flightDest[1])])
+                else:
+                    airwaysDictdpt[flightSourcedpt][airwaysDictdpt[flightSourcedpt][0]==flightDestdpt] += int(flightDest[1])
 
+
+    # cleaning dict as there are several flightSource dpt
+
+    """
     df2 = df[2] # internal lines Paris -> others
     df3 = df[3] # transversal lines [1]
     df4 = df[4] # transversal lines [2]
@@ -98,6 +129,7 @@ def getFranceGeomDpts(params):
         # print(vicopo_city)
 
     # exit(0)
+    """
 
 
     # %% covid19 data
@@ -422,6 +454,7 @@ if __name__ == "__main__":
     params['ageFile_name']   = ageFile
 
     airplaneFile_name = 'data/bulletin_stat_trafic_aerien_2018-france_passager.xlsx'
+
     # %% https://github.com/kalisio/covid-19/
     # %% full data is located in data/covid19_france_departments/
     # covid19DepartmentsDir_name = data/covid19_france_departments/departements-france/
@@ -442,7 +475,9 @@ if __name__ == "__main__":
     params['departments_name'] = departments_name
 
     # cities file names
-    citiesFile_name = 'data/laposte_hexasmal.csv'
+    # citiesFile_name = 'data/laposte_hexasmal.csv'  # old
+    citiesFile_name = 'data/villes_france_correct.csv'
+
     params['citiesFile_name'] = citiesFile_name
 
     params['data_dir'] = 'data/'
