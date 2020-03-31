@@ -64,7 +64,6 @@ def LoadRoads(road_names):
     ax.set_axis_off()
     plt.show()
 
-
 def InitParams(config_name):
     """
     in: config file name
@@ -108,16 +107,48 @@ def InitParams(config_name):
     if params["model_name"] == "SIRWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
-        params["S_ini"] = config.getfloat("model", "S_ini")
-        params["I_ini"] = config.getfloat("model", "I_ini")
-        params["R_ini"] = config.getfloat("model", "R_ini")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
     elif params["model_name"] == "SIROnGraph":  # load parameters needed for this model
         # For now all parameters are the same wherever the region
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
-        params["S_ini"] = config.getfloat("model", "S_ini")
-        params["I_ini"] = config.getfloat("model", "I_ini")
-        params["R_ini"] = config.getfloat("model", "R_ini")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+    elif params["model_name"] == "SIRDWellMixed":  # load parameters needed for this model
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["k_ID"] = config.getfloat("model", "k_ID")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["D_ini"] = config.getint("model", "D_ini")
+    elif params["model_name"] == "SIRDOnGraph":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["k_ID"] = config.getfloat("model", "k_ID")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["D_ini"] = config.getint("model", "D_ini")
+    elif params["model_name"] == "SIRerlangWellMixed":  # load parameters needed for this model
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
+    elif params["model_name"] == "SIRerlangOnGraph":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")        
+        params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
     else:
         print("[ERROR]: model name not found. Exit here.")
         exit(0)
@@ -137,213 +168,6 @@ def InitParams(config_name):
     params["save_frequency"] = config.getint("outputs", "save_frequency")
     
     return params
-    
-
-# def InitGraph(params):
-    # print("InitGraph")
-    # """
-    # initialize a graph of regions with positions, and ids per regions
-    # in: params, dictionnary with all needed parameters
-    # out: a graph of type networkx.Graph()
-    # """            
-    # LIST_METROPOLE = [
-        # "Auvergne-Rhône-Alpes",
-        # "Bourgogne-Franche-Comté",
-        # "Bretagne",
-        # "Centre-Val de Loire",
-        # "Corse",
-        # "Grand Est",
-        # "Hauts-de-France",
-        # "Ile-de-France",
-        # "Normandie",
-        # "Nouvelle-Aquitaine",
-        # "Occitanie",
-        # "Pays de la Loire",
-        # "Provence-Alpes-Côte d’Azur",
-    # ]
-
-    # LIST_OUTREMER = [
-        # "Guadeloupe",
-        # "Guyane",
-        # "Martinique",
-        # "Mayotte",
-        # "La Réunion",
-        # "Saint-Barthélémy",
-        # "Saint-Martin",
-    # ]
-
-    #from Florian
-    #TODO: add source
-    # DIC_POSITIONS_METROPOLE = {
-        # "Auvergne-Rhône-Alpes": [772022.9490728247, 2059666.8371020914],
-        # "Bourgogne-Franche-Comté": [787177.8408282029, 2251335.950928572],
-        # "Bretagne": [215039.24516678863, 2365217.5071779615],
-        # "Centre-Val de Loire": [550917.5994336334, 2275882.307395058],
-        # "Corse": [1160476.2800258105, 1706885.7403624766],
-        # "Grand Est": [841720.2901229224, 2415159.5340459584],
-        # "Hauts-de-France": [631486.0019718618, 2552427.4478215473],
-        # "Ile-de-France": [612377.0469593473, 2412305.1064892523],
-        # "Normandie": [437037.0999347288, 2460471.8503777585],
-        # "Nouvelle-Aquitaine": [431896.2266105056, 2023453.7858529706],
-        # "Occitanie": [583863.6352416947, 1855575.2526474672],
-        # "Pays de la Loire": [361717.2237577763, 2279805.18747009],
-        # "Provence-Alpes-Côte d’Azur": [899251.0580184147, 1890939.1725853563],
-    # }
-    #from Kaggle
-    # DIC_POSITIONS_OUTREMER = {
-        # "Guadeloupe": [16.2490067, -61.5650444],
-        # "Guyane": [4.8417097, -58.6416891],
-        # "Martinique": [14.6113732, -60.9620777],
-        # "Mayotte": [-12.823048, 45.1520755],
-        # "La Réunion": [-21.1309332, 55.5265771],
-        # "Saint-Barthélémy": [17.9036287, -62.811568843006896],
-        # "Saint-Martin": [18.06481835, -63.049171129033],
-    # }
-
-    #dictionnary that associates an id to a region
-    # dic_regions_metropole = {}
-    # dic_regions_metropole_positions = {}
-    # for i in range(0, len(LIST_METROPOLE)):
-        # dic_regions_metropole[i] = LIST_METROPOLE[i]
-        # dic_regions_metropole_positions[i] = DIC_POSITIONS_METROPOLE[LIST_METROPOLE[i]]
-
-    # dic_regions_outremer = {}
-    # dic_regions_outremer_positions = {}
-    # for i in range(0, len(LIST_OUTREMER)):
-        # dic_regions_outremer[len(dic_regions_metropole) + i] = LIST_OUTREMER[i]
-        # dic_regions_outremer_positions[
-            # len(dic_regions_metropole) + i
-        # ] = DIC_POSITIONS_OUTREMER[LIST_OUTREMER[i]]
-
-     #set full dictionnary depending on option
-    # dic_regions = {}
-    # dic_regions_positions = {}
-    # if params["location"] == "metropole":
-        # dic_regions = dic_regions_metropole
-        # dic_regions_positions = dic_regions_metropole_positions
-    # elif params["location"] == "outremer":
-        # dic_regions = dic_regions_outremer
-        # dic_regions_positions = dic_regions_outremer_positions
-    # else:
-        # for x in dic_regions_metropole.keys():
-            # dic_regions[x] = dic_regions_metropole[x]
-            # dic_regions_positions[x] = dic_regions_metropole_positions[x]
-        # for x in dic_regions_outremer.keys():
-            # dic_regions[x] = dic_regions_outremer[x]
-            # dic_regions_positions[x] = dic_regions_outremer_positions[x]
-    
-     #All neighborings connections ONLY FOR METROPOLE NOW
-     #Corse to be better dealt with?
-    # dic_all_connections = {}
-    # dic_all_connections["Bretagne"] = ["Normandie", "Pays de la Loire"]
-    # dic_all_connections["Normandie"] = [
-        # "Bretagne",
-        # "Pays de la Loire",
-        # "Centre-Val de Loire",
-        # "Ile-de-France",
-        # "Hauts-de-France",
-    # ]
-    # dic_all_connections["Pays de la Loire"] = [
-        # "Bretagne",
-        # "Normandie",
-        # "Centre-Val de Loire",
-        # "Nouvelle-Aquitaine",
-    # ]
-    # dic_all_connections["Centre-Val de Loire"] = [
-        # "Pays de la Loire",
-        # "Normandie",
-        # "Ile-de-France",
-        # "Bourgogne-Franche-Comté",
-        # "Auvergne-Rhône-Alpes",
-        # "Nouvelle-Aquitaine",
-    # ]
-    # dic_all_connections["Hauts-de-France"] = ["Grand Est", "Ile-de-France", "Normandie"]
-    # dic_all_connections["Nouvelle-Aquitaine"] = [
-        # "Pays de la Loire",
-        # "Centre-Val de Loire",
-        # "Auvergne-Rhône-Alpes",
-        # "Occitanie",
-    # ]
-    # dic_all_connections["Grand Est"] = [
-        # "Hauts-de-France",
-        # "Ile-de-France",
-        # "Bourgogne-Franche-Comté",
-    # ]
-    # dic_all_connections["Bourgogne-Franche-Comté"] = [
-        # "Ile-de-France",
-        # "Grand Est",
-        # "Centre-Val de Loire",
-        # "Auvergne-Rhône-Alpes",
-    # ]
-    # dic_all_connections["Auvergne-Rhône-Alpes"] = [
-        # "Occitanie",
-        # "Nouvelle-Aquitaine",
-        # "Centre-Val de Loire",
-        # "Bourgogne-Franche-Comté",
-        # "Provence-Alpes-Côte d’Azur",
-    # ]
-    # dic_all_connections["Provence-Alpes-Côte d’Azur"] = [
-        # "Auvergne-Rhône-Alpes",
-        # "Occitanie",
-        # "Corse",
-    # ]
-    # dic_all_connections["Occitanie"] = [
-        # "Nouvelle-Aquitaine",
-        # "Auvergne-Rhône-Alpes",
-        # "Provence-Alpes-Côte d’Azur",
-    # ]
-    # dic_all_connections["Corse"] = ["Provence-Alpes-Côte d’Azur"]
-    # dic_all_connections["Ile-de-France"] = LIST_METROPOLE
-
-
-    # ### --- Construct graph 
-    # if (params['graph_type'] == 'regions'):
-        #add nodes of graph
-        # G = nx.Graph()
-        # for x in dic_regions.keys():
-            # G.add_node(x)
-        
-        # # add attributes with positions to graph
-        # nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
-        # nx.set_node_attributes(G, name='names', values=dic_regions)
-
-        # # add edges of graph
-        # for key in dic_all_connections.keys():
-            #get id of region
-            # id1 = list(dic_regions.keys())[list(dic_regions.values()).index(key)]
-            # for value in dic_all_connections[key]:  # loop over all connections regions
-                 #get id of conected region
-                # id2 = list(dic_regions.keys())[list(dic_regions.values()).index(value)]
-                # edge = (id1, id2)
-                # G.add_edge(*edge)  # unpack edge tuple*
-
-        #fig, ax = plt.subplots()
-        #nx.draw(G, with_labels=True, font_weight='bold', pos=dic_regions_positions, labels=dic_regions)
-        #plt.show()
-    # elif (params['graph_type'] == 'departments'):
-        # print("department type for graph not handled yet. Exit here.")
-        # exit(0)
-    # elif (params['graph_type'] == 'fullConnectedRegions'):
-        #add nodes of graph
-        # G = nx.Graph()
-        # for x in dic_regions.keys():
-            # G.add_node(x)
-        
-        # # add attributes with positions to graph
-        # nx.set_node_attributes(G, name='positions', values=dic_regions_positions)
-        # nx.set_node_attributes(G, name='names', values=dic_regions)
-
-        # # add edges of graph: all regions are connected to every other region
-        # for n1 in G.nodes():
-            # for n2 in G.nodes():
-                # if (n1 != n2):
-                    # edge = (n1, n2)
-                    # G.add_edge(*edge)  # unpack edge tuple*
-
-    # print("num_edges = ", G.number_of_edges())
-    # print("num_nodes = ", G.number_of_nodes())    
-    # return G
-
 
 def InitGraph(params):
     print("InitGraph")
@@ -397,7 +221,7 @@ def InitGraph(params):
                 if ( (not(edge12 in G.edges())) or (not(edge21 in G.edges())) ) :
                     G.add_edge(*edge12)  # unpack edge tuple*
 
-    elif (params['graph_type'] == 'fullConnectedRegions'):
+    elif (params['graph_type'] == 'fullConnectedRegions') or (params['graph_type'] == 'fullConnectedDepartments'):
         
         dic_total_population = {}
         dic_data_covid = {}        
@@ -433,20 +257,16 @@ def InitGraph(params):
                     edge = (n1, n2)
                     G.add_edge(*edge)  # unpack edge tuple*
     
-    
-    fig, ax = plt.subplots()
-    dic_pos = nx.get_node_attributes(G, 'positions')
-    dic_labels = nx.get_node_attributes(G, 'names')
-
-    
     print("num_edges = ", G.number_of_edges())
     print("num_nodes = ", G.number_of_nodes())    
-            
-    nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
-    plt.show()
+    
+    # fig, ax = plt.subplots()
+    # dic_pos = nx.get_node_attributes(G, 'positions')
+    # dic_labels = nx.get_node_attributes(G, 'names')            
+    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
+    # plt.show()
     
     return G
-
 
 def LaunchModel(params, graph):
     """
@@ -461,10 +281,18 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIROnGraph":
         outputs , graph = SIROnGraph(params, graph)
         plot_SIROnGraph(params,outputs, graph)
-    elif params["model_name"] == "SIROnRegions":
-        SIROnRegions(params, graph)
-    elif params["model_name"] == "SIROnDepartments":
-        SIROnDepartments(params, graph)
+    if params["model_name"] == "SIRDWellMixed":
+        outputs = SIRDWellMixed(params)
+        plot_SIRDWellMixed(params, outputs)
+    elif params["model_name"] == "SIRDOnGraph":
+        outputs , graph = SIRDOnGraph(params, graph)
+        plot_SIRDOnGraph(params,outputs, graph)
+    if params["model_name"] == "SIRerlangWellMixed":
+        outputs = SIRerlangWellMixed(params)
+        plot_SIRerlangWellMixed(params, outputs)
+    elif params["model_name"] == "SIRerlangOnGraph":
+        outputs , graph = SIRerlangOnGraph(params, graph)
+        plot_SIRerlangOnGraph(params,outputs, graph)
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)
@@ -475,7 +303,7 @@ def LaunchModel(params, graph):
 # =============================================================================
 params = InitParams(inputFile)
 G = InitGraph(params)
-# LaunchModel(params, G)
+LaunchModel(params, G)
 
 t1 = time.time()
 print("Code ran for: " , t1 - t0 ," seconds")

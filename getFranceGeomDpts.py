@@ -481,6 +481,6 @@ if __name__ == "__main__":
     params['citiesFile_name'] = citiesFile_name
 
     params['data_dir'] = 'data/'
-    franceGeomRegions = getFranceGeomDpts(params)
-    # franceGeomRegions = getFranceGeomRegions(params)
+    # franceGeomRegions = getFranceGeomDpts(params)
+    franceGeomRegions = getFranceGeomRegions(params)
 
