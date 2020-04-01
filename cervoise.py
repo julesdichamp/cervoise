@@ -33,7 +33,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from getFranceGeomDpts import *
+from getFranceGeom import *
 from models import *
 from plotModels import *
 

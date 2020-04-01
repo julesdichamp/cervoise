@@ -197,29 +197,29 @@ def getFranceGeomDpts(params):
         neighList = []
         lenList = []
 
-        # for nb in range(shapefile.shape[0] - 1):
-            # if nb != dpt:
-                # neighbour = shapefile["geometry"][nb]
-                # if dptGeom.touches(neighbour):
-                    # dptneighname = shapefile["nom"][nb]
-                    # if type(dptneighname) == bytes:
-                        # dptneighname = dptneighname.decode("latin-1", "replace")
-                    # else:
-                        # dptneighname = dptneighname
-                    # neighList.append(dptneighname)
-                    # l = dptGeom.boundary.intersection(neighbour.boundary)
-                    # l = l.length
-                    # lenList.append(l)
+        for nb in range(shapefile.shape[0] - 1):
+            if nb != dpt:
+                neighbour = shapefile["geometry"][nb]
+                if dptGeom.touches(neighbour):
+                    dptneighname = shapefile["nom"][nb]
+                    if type(dptneighname) == bytes:
+                        dptneighname = dptneighname.decode("latin-1", "replace")
+                    else:
+                        dptneighname = dptneighname
+                    neighList.append(dptneighname)
+                    l = dptGeom.boundary.intersection(neighbour.boundary)
+                    l = l.length
+                    lenList.append(l)
 
-                    # print(
-                        # "\t",
-                        # dptname,
-                        # " touches ",
-                        # dptneighname,
-                        # " on ",
-                        # l,
-                        # " m",
-                    # )
+                    print(
+                        "\t",
+                        dptname,
+                        " touches ",
+                        dptneighname,
+                        " on ",
+                        l,
+                        " m",
+                    )
 
         franceGeom[dptname]["neighbours"] = neighList
         franceGeom[dptname]["length"] = lenList
