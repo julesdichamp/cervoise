@@ -210,28 +210,28 @@ def InitGraph(params):
         nx.set_node_attributes(G, name='total_pop', values=dic_total_population)
         nx.set_node_attributes(G, name='data_covid', values=dic_data_covid)
         
-        
         # add edges to the graph                
         for key in franceGeom.keys():
             id_node1 = franceGeom[key]["id"] # get ID attributed from readFranceGeom(params)
             for keyneigh in franceGeom[key]['neighbours']:
                 id_node2 = franceGeom[keyneigh]["id"] # get ID attributed from readFranceGeom(params)
                 edge12 = (id_node1, id_node2)
-                edge21 = (id_node2, id_node1)
+                edge21 = (id_node2, id_node1)                
                 if ( (not(edge12 in G.edges())) or (not(edge21 in G.edges())) ) :
-                    G.add_edge(*edge12)  # unpack edge tuple*
-        
+                    G.add_edge(*edge12)  # unpack edge tuple*                            
         # add edges based on airways connections
         for key in franceGeom.keys():
             id_node1 = franceGeom[key]["id"] # get ID attributed from readFranceGeom(params)
             for connection in franceGeom[key]['airways']:
                 keyneigh = connection[0]
                 pax      = connection[1] # not used yet                
-                id_node2 = franceGeom[keyneigh]["id"] # get ID attributed from readFranceGeom(params)
-                edge12 = (id_node1, id_node2)
-                edge21 = (id_node2, id_node1)
-                if ( (not(edge12 in G.edges())) or (not(edge21 in G.edges())) ) :
-                    G.add_edge(*edge12)  # unpack edge tuple*
+                id_node2 = franceGeom[keyneigh]["id"] # get ID attributed from readFranceGeom(params)                
+                # make sure to not add loop on itself
+                if (id_node1 != id_node2):
+                    edge12 = (id_node1, id_node2)
+                    edge21 = (id_node2, id_node1)
+                    if ( (not(edge12 in G.edges())) or (not(edge21 in G.edges())) ) :
+                        G.add_edge(*edge12)  # unpack edge tuple*
         
         
     elif (params['graph_type'] == 'fullConnectedRegions') or (params['graph_type'] == 'fullConnectedDepartments'):
