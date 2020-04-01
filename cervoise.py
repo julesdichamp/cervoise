@@ -220,7 +220,20 @@ def InitGraph(params):
                 edge21 = (id_node2, id_node1)
                 if ( (not(edge12 in G.edges())) or (not(edge21 in G.edges())) ) :
                     G.add_edge(*edge12)  # unpack edge tuple*
-
+        
+        # add edges based on airways connections
+        for key in franceGeom.keys():
+            id_node1 = franceGeom[key]["id"] # get ID attributed from readFranceGeom(params)
+            for connection in franceGeom[key]['airways']:
+                keyneigh = connection[0]
+                pax      = connection[1] # not used yet                
+                id_node2 = franceGeom[keyneigh]["id"] # get ID attributed from readFranceGeom(params)
+                edge12 = (id_node1, id_node2)
+                edge21 = (id_node2, id_node1)
+                if ( (not(edge12 in G.edges())) or (not(edge21 in G.edges())) ) :
+                    G.add_edge(*edge12)  # unpack edge tuple*
+        
+        
     elif (params['graph_type'] == 'fullConnectedRegions') or (params['graph_type'] == 'fullConnectedDepartments'):
         
         dic_total_population = {}
@@ -260,11 +273,11 @@ def InitGraph(params):
     print("num_edges = ", G.number_of_edges())
     print("num_nodes = ", G.number_of_nodes())    
     
-    # fig, ax = plt.subplots()
-    # dic_pos = nx.get_node_attributes(G, 'positions')
-    # dic_labels = nx.get_node_attributes(G, 'names')            
-    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
-    # plt.show()
+    fig, ax = plt.subplots()
+    dic_pos = nx.get_node_attributes(G, 'positions')
+    dic_labels = nx.get_node_attributes(G, 'names')            
+    nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
+    plt.show()
     
     return G
 
@@ -303,7 +316,7 @@ def LaunchModel(params, graph):
 # =============================================================================
 params = InitParams(inputFile)
 G = InitGraph(params)
-LaunchModel(params, G)
+# LaunchModel(params, G)
 
 t1 = time.time()
 print("Code ran for: " , t1 - t0 ," seconds")

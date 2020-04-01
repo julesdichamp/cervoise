@@ -15,6 +15,10 @@ import collections
 # from Vicopo import Vicopo
 
 
+#WARNING: there exists in destination of airways between departments
+# and outremer which are not departments:
+# Polynésie-française
+# there are also internal lines between outre-mer territories that are not covered yet
 def getFranceGeomDpts(params):
     # %% data spatiales
     name_shapefile = params['shapefile_name']
@@ -44,6 +48,8 @@ def getFranceGeomDpts(params):
         else:
             airwaysDict[airway[1]["in"]].append([airway[1]["out"], airway[1]["Pax"]])
     #building the dict
+    # keys = dpts numbers
+    # values = list of [dpt number arrival, total pax]
     airwaysDictdpt = {}
     for flightSource in airwaysDict:
         # print(flightSource, cities[cities.eq(flightSource).any(1)].dpt.values[0])
@@ -52,8 +58,9 @@ def getFranceGeomDpts(params):
             if not flightSourcedpt in airwaysDictdpt:
                 airwaysDictdpt[flightSourcedpt] = {}
             for flightDest in airwaysDict[flightSource]:
-                print(flightDest[0])
-                print(cities[cities.eq(flightDest[0]).any(1)].dpt.values[0])
+                
+                # print(flightDest[0])
+                # print(cities[cities.eq(flightDest[0]).any(1)].dpt.values[0])
                 flightDestdpt = cities[cities.eq(flightDest[0]).any(1)].dpt.values[0]
                 if not bool(airwaysDictdpt[flightSourcedpt]):
                     airwaysDictdpt[flightSourcedpt] = [[flightDestdpt, int(flightDest[1])]]
@@ -61,76 +68,8 @@ def getFranceGeomDpts(params):
                     airwaysDictdpt[flightSourcedpt].append([flightDestdpt, int(flightDest[1])])
                 else:
                     airwaysDictdpt[flightSourcedpt][airwaysDictdpt[flightSourcedpt][0]==flightDestdpt] += int(flightDest[1])
-
-
+    # print (airwaysDictdpt)    
     # cleaning dict as there are several flightSource dpt
-
-    """
-    df2 = df[2] # internal lines Paris -> others
-    df3 = df[3] # transversal lines [1]
-    df4 = df[4] # transversal lines [2]
-    df5 = df[5] # lines metropole - outre-mer
-    df6 = df[6] # outre-mer internal lines
-
-    # declare lists that will contain all datas
-    full_City1_list   = []
-    full_City2_list   = []
-    full_pax          = []
-    full_pax_regulier = []
-    full_dessertes    = []
-
-    # internal lines
-    full_City1_list   += df2.iloc[2:-3,0].to_list()
-    full_City2_list   += df2.iloc[2:-3,1].to_list()
-    full_pax          += df2.iloc[2:-3,2].to_list()
-    full_pax_regulier += df2.iloc[2:-3,4].to_list()
-    full_dessertes    += df2.iloc[2:-3,6].to_list()
-
-    # transversal lines [1]
-    full_City1_list   += df3.iloc[1:df3.shape[0], 0].to_list()
-    full_City2_list   += df3.iloc[1:df3.shape[0], 1].to_list()
-    full_pax          += df3.iloc[1:df3.shape[0], 2].to_list()
-    full_pax_regulier += df3.iloc[1:df3.shape[0], 4].to_list()
-    full_dessertes    += df3.iloc[1:df3.shape[0], 6].to_list()
-
-    # transversal lines [2]
-    full_City1_list   += df4.iloc[0:-4,0].to_list()
-    full_City2_list   += df4.iloc[0:-4,1].to_list()
-    full_pax          += df4.iloc[0:-4,2].to_list()
-    full_pax_regulier += df4.iloc[0:-4,4].to_list()
-    full_dessertes    += df4.iloc[0:-4,6].to_list()
-
-    # lines metropole <--> outre-mer
-    full_City1_list   += df5.iloc[:-3,0].to_list()
-    full_City2_list   += df5.iloc[:-3,1].to_list()
-    full_pax          += df5.iloc[:-3,2].to_list()
-    full_pax_regulier += df5.iloc[:-3,4].to_list()
-    full_dessertes    += df5.iloc[:-3,6].to_list()
-
-    # outre-mer internal lines
-    full_City1_list   += df6.iloc[1:-3,0].to_list()
-    full_City2_list   += df6.iloc[1:-3,1].to_list()
-    full_pax          += df6.iloc[1:-3,2].to_list()
-    full_pax_regulier += df6.iloc[1:-3,4].to_list()
-    full_dessertes    += df6.iloc[1:-3,6].to_list()
-
-    # convert to proper floats
-    full_pax = [float(str(x).replace(' ','')) for x in full_pax]
-    full_pax_regulier = [float(str(x).replace(' ','')) for x in full_pax_regulier]
-    full_dessertes = [float(str(x).replace(' ','')) for x in full_dessertes]
-    # for i in range(0,len(full_pax)):
-        # print(i, full_City1_list[i], full_City2_list[i], full_pax[i], full_pax_regulier[i], full_dessertes[i])
-
-    for city in full_City2_list:
-        city.replace(' ','-')
-        city_search = city.replace(' ','-')
-        # if (city_search in
-        # vicopo_city = Vicopo.http(city_search)
-        # print(vicopo_city)
-
-    # exit(0)
-    """
-
 
     # %% covid19 data
     covidDptsFileNames = params['allCovid19DepartmentsFileNames']
@@ -190,7 +129,9 @@ def getFranceGeomDpts(params):
                 dic_data_covid[dpt_name][_date]['Confirmed'] = num_confirmed
                 dic_data_covid[dpt_name][_date]['Deaths'] = num_deaths
                 # print(_date, dpt_name, num_confirmed, num_deaths)
-
+    
+    _list = [x for x in dic_data_covid.keys()]
+    
     # %% sort and sum by dpt data train
     for i in range(gares.shape[0]):
         gare = gares.loc[i]
@@ -201,18 +142,34 @@ def getFranceGeomDpts(params):
         freq = gare["Total Voyageurs 2018"]
         freqGares[dpt] += freq
 
+    # read departments name
+    df = pd.read_csv(params['departments_name'], delimiter=',')
+    nums  = df['NUMÉRO'].to_list()
+    names = df['NOM'].to_list()
+    dic_dptname_to_num = {}
+    dic_dptnum_to_name = {}
+    for i in range(0,len(nums)):
+        dic_dptname_to_num[names[i]] = nums[i]
+        dic_dptnum_to_name[nums[i]] = names[i]    
+    
     # %% create dict
     franceGeom = {}
     dptID = 0
-    for dpt in range(shapefile.shape[0]):
-        dptID += 1
+    for dpt in range(shapefile.shape[0]):        
+        # dptID+=1 
         dptGeom = shapefile["geometry"][dpt]
         dptname = shapefile["nom"][dpt]
         if type(dptname) == bytes:
             dptname = dptname.decode("latin-1", "replace")
         else:
             dptname = dptname
-
+        if not (dptname in dic_dptname_to_num):
+            print("[ERROR]: we didn't find ",dptname, "in dic_dptname_to_num. Exit here.")
+            exit(0)
+        else:
+            dptID = dic_dptname_to_num[dptname]
+        # print(dpt, dptID, dptname)
+        
         franceGeom[dptname] = {}
         franceGeom[dptname]["agesSex"] = ages.loc[dpt].to_dict() # added to_dict() so it can be read easily from files
         franceGeom[dptname]["freqGare"] = freqGares[dpt]
@@ -222,39 +179,47 @@ def getFranceGeomDpts(params):
         if (not(dptname in dic_data_covid)):
             print("[ERROR]: ", dptname , "not find in dic_data_covid. Exit here")
             exit(0)
-
+        
+        # add airways data to dic (rename dptID into dpt names to match the keys
+        franceGeom[dptname]["airways"] = {}
+        if (str(dptID) in airwaysDictdpt):            
+            franceGeom[dptname]["airways"] = [ [ dic_dptnum_to_name[x[0]] , x[1] ] for x in airwaysDictdpt[str(dptID)]]            
+            # for x in franceGeom[dptname]["airways"]:
+                # if (not(x[0] in _list)):
+                    # print( x , " is not in franceGeom keys")
+                    
+        # add data_covid to dic
         franceGeom[dptname]["data_covid"] = dic_data_covid[dptname]
-        # print("\n\n", dptname, " centroid is ", dptGeom.centroid.coords[0])
-        # print("\n\n", dptname, " ages/sex : ", franceGeom[dptname]["agesSex"])
 
+        # add centroid to dic
         franceGeom[dptname]["centroid"] = dptGeom.centroid.coords[0]
         # look for neighbours
         neighList = []
         lenList = []
 
-        for nb in range(shapefile.shape[0] - 1):
-            if nb != dpt:
-                neighbour = shapefile["geometry"][nb]
-                if dptGeom.touches(neighbour):
-                    dptneighname = shapefile["nom"][nb]
-                    if type(dptneighname) == bytes:
-                        dptneighname = dptneighname.decode("latin-1", "replace")
-                    else:
-                        dptneighname = dptneighname
-                    neighList.append(dptneighname)
-                    l = dptGeom.boundary.intersection(neighbour.boundary)
-                    l = l.length
-                    lenList.append(l)
+        # for nb in range(shapefile.shape[0] - 1):
+            # if nb != dpt:
+                # neighbour = shapefile["geometry"][nb]
+                # if dptGeom.touches(neighbour):
+                    # dptneighname = shapefile["nom"][nb]
+                    # if type(dptneighname) == bytes:
+                        # dptneighname = dptneighname.decode("latin-1", "replace")
+                    # else:
+                        # dptneighname = dptneighname
+                    # neighList.append(dptneighname)
+                    # l = dptGeom.boundary.intersection(neighbour.boundary)
+                    # l = l.length
+                    # lenList.append(l)
 
-                    print(
-                        "\t",
-                        dptname,
-                        " touches ",
-                        dptneighname,
-                        " on ",
-                        l,
-                        " m",
-                    )
+                    # print(
+                        # "\t",
+                        # dptname,
+                        # " touches ",
+                        # dptneighname,
+                        # " on ",
+                        # l,
+                        # " m",
+                    # )
 
         franceGeom[dptname]["neighbours"] = neighList
         franceGeom[dptname]["length"] = lenList
@@ -266,7 +231,7 @@ def getFranceGeomDpts(params):
     for dptname in franceGeom.keys():
         franceGeom[dptname]["id"] = id_dpt
         id_dpt+=1
-
+    
     outname = params['data_dir'] + '/franceGeomDepartments.txt'
     f = open(outname,"w")
     f.write( str(franceGeom) )
@@ -345,7 +310,6 @@ def getFranceGeomRegions(params):
     # for each  region get list of departments in that region
     franceGeomRegions = {}
     for regName in LIST_REGIONS:
-        print(regName)
         # indices = [df['REGION'].index(regName)]
         franceGeomRegions[regName] = {}
         indices = [i for i, r in enumerate(df['REGION']) if r == regName]
@@ -355,7 +319,7 @@ def getFranceGeomRegions(params):
         franceGeomRegions[regName]["data_covid"] = {}
         franceGeomRegions[regName]["freqGare"] = 0.
         franceGeomRegions[regName]["agesSex"] = {}
-
+        franceGeomRegions[regName]["airways"] = [] 
         # loop over all departments that are part of the region
         for dptName in franceGeomRegions[regName]['departments']:
             # sum all confirmed and deaths from departments in region and
@@ -372,7 +336,7 @@ def getFranceGeomRegions(params):
             # add train stations frequentations = sum over all train frequentations
             # in departments
             franceGeomRegions[regName]["freqGare"] += franceGeomDpts[dptName]["freqGare"]
-
+            
             # add ages per sex data = sum over all data in each department
             for key in franceGeomDpts[dptName]["agesSex"].keys():
                 # do not add those keys because they are useless now
@@ -387,14 +351,13 @@ def getFranceGeomRegions(params):
             # get centroid from region as barycenter from all centroids departments
             x += franceGeomDpts[dptName]["centroid"][0] / len(franceGeomRegions[regName]['departments'])
             y += franceGeomDpts[dptName]["centroid"][1] / len(franceGeomRegions[regName]['departments'])
-
-
+            
         # set centroid for region
         franceGeomRegions[regName]["centroid"] = (x,y)
 
         # prepare empty lists
         franceGeomRegions[regName]["neighbours"] = []
-
+        
     # set neighbours of regions
     # loop over all departments that are part of the region
     for regName1 in franceGeomRegions.keys():
@@ -408,9 +371,40 @@ def getFranceGeomRegions(params):
                                 if not(regName1 in franceGeomRegions[regName2]['neighbours']):
                                     franceGeomRegions[regName2]['neighbours'].append(regName1)
                                 if not(regName2 in franceGeomRegions[regName1]['neighbours']):
-                                    franceGeomRegions[regName1]['neighbours'].append(regName2)
-
-
+                                    franceGeomRegions[regName1]['neighbours'].append(regName2)    
+    
+    # add neighbours based on airways connections 
+    # also iterate on pax to get it at region scale
+    for regName1 in franceGeomRegions.keys():
+        for dptName1 in franceGeomRegions[regName1]['departments']:
+            list_airplanes_connections = franceGeomDpts[dptName1]['airways']
+            for connection in list_airplanes_connections:
+                dptname_connected = connection[0]
+                pax = connection[1]
+                # look at which region dpt_connected corresponds
+                for regName2 in franceGeomRegions.keys():
+                    # we found the corresponding region
+                    if (dptname_connected in franceGeomRegions[regName2]['departments']):
+                        regName_connected = regName2
+                
+                # check that this connection between region does not already exist
+                _count = 0
+                connection_exists = False
+                for check_connection in franceGeomRegions[regName1]["airways"]:
+                    # this already region already had a connection
+                    if (regName_connected == check_connection[0]):                        
+                        indice = _count
+                        connection_exists = True
+                    _count += 1
+                # if a connection already exists we add pax value to already 
+                # existing pax value
+                if (connection_exists):
+                    franceGeomRegions[regName1]["airways"][indice][1] += pax
+                # we the pax and the new connection to the list ['airways']
+                else:
+                    franceGeomRegions[regName1]["airways"].append([regName_connected,pax])
+    
+    print (franceGeomRegions['Guadeloupe'])
     # add an ID that will be used in node
     # IT IS NOT RELATED TO THE DEPARTMENT NUMBER
     # BECAUSE IT STARTS FROM 0
