@@ -38,6 +38,7 @@ import getFranceGeom
 from models import *
 from plotModels import *
 import distutils
+from distutils.util import strtobool
 
 print(
     "\nCERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation: Starting"
@@ -104,7 +105,9 @@ def InitParams(config_name):
     #     params['graphFile'] = 'franceGeomRegions.txt'
 
     # load options infos
-    params["genAndQuit"] = distutils.util.strtobool(config.get("graph", "genAndQuit"))  # quit after graph is generated and saved
+    # params["genAndQuit"] = distutils.util.strtobool(config.get("graph", "genAndQuit"))  # quit after graph is generated and saved
+    # JD: it fails for me otherwise...
+    params["genAndQuit"] = strtobool(config.get("graph", "genAndQuit"))  # quit after graph is generated and saved
     params["location"] = config.get("graph", "location")
     if params["location"] != "metropole":
         print('[ERROR]: location can only be metropole for now. Exit here.')
@@ -164,15 +167,23 @@ def InitParams(config_name):
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")        
         params["k_ID"] = config.getfloat("model", "k_ID")
-        params["input_day"] = config.get("model", "input_day")        
+        params["input_day"] = config.get("model", "input_day")
     else:
         print("[ERROR]: model name not found. Exit here.")
-        exit(0)
-
+        exit(0)        
+    
     # load settigns infos
     params["time_start"] = config.getfloat("settings", "time_start")
     params["time_end"] = config.getfloat("settings", "time_end")
-
+    
+    # load fit infos
+    # to know if we fit or not
+    params["fit_model"] = strtobool(config.get("fit", "fit_model"))  
+    dates_for_fit = config.get("fit", "dates_for_fit")        
+    params["dates_for_fit"] = [p.replace(" ", "").replace('\n','') for p in
+                              dates_for_fit.split(",")]
+    method = config.get("fit", "method")
+    
     #  load outputs infos
     params["outputs_dir"] = config.get("outputs", "outputs_dir")
     if not (
@@ -180,8 +191,10 @@ def InitParams(config_name):
     ):  # if directory does not exist, create it
         os.mkdir(params["outputs_dir"])
     plot_options = config.get("outputs", "plot_options")
-    params["plot_options"] = [p.replace(" ", "") for p in
-                              plot_options.split(",")]  # remove spaces in different plot options
+    # remove spaces and return to line if there are different plot options
+    params["plot_options"] = [p.replace(" ", "").replace('\n','') for p in
+                              plot_options.split(",")]
+    
     params["save_frequency"] = config.getint("outputs", "save_frequency")
 
     return params
@@ -312,8 +325,7 @@ def LaunchModel(params, graph):
     """
     print('LaunchModel')
     # initialize models
-    params, graph = InitModels(params, graph)
-
+    params, graph = InitModels(params, graph)    
     if params["model_name"] == "SIRWellMixed":
         outputs = SolveOneCompartment(params)
         plot_SIRWellMixed(params, outputs)
@@ -363,7 +375,10 @@ else:
         params["franceFileExist"] = True
         G = InitGraph(params)
 
-
+if (params['fit_model']):
+    print('TODO')
+    # InitFit()
+    # LaunchFit()
 
 LaunchModel(params, G)
 
