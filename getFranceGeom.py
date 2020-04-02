@@ -81,7 +81,7 @@ def getFranceGeomDpts(params):
         _date = fname[-15:-5]
         df = pd.read_json(fname, orient='columns')
         for i in range(0,df.shape[0]):
-            properties = df.iloc[i,0]['properties']
+            properties = df.iloc[i,1]['properties']
             dpt_name = properties['Province/State']
             if ('Confirmed'  in properties):
                 num_confirmed = properties['Confirmed']
@@ -112,7 +112,7 @@ def getFranceGeomDpts(params):
         _date = fname[-15:-5]
         df = pd.read_json(fname, orient='columns')
         for i in range(0,df.shape[0]):
-            properties = df.iloc[i,0]['properties']
+            properties = df.iloc[i,1]['properties']
             dpt_name = properties['Province/State']
             if (dpt_name == "La Réunion" ):
                 if ('Confirmed'  in properties):
@@ -212,15 +212,6 @@ def getFranceGeomDpts(params):
                     l = l.length
                     lenList.append(l)
 
-                    print(
-                        "\t",
-                        dptname,
-                        " touches ",
-                        dptneighname,
-                        " on ",
-                        l,
-                        " m",
-                    )
 
         franceGeom[dptname]["neighbours"] = neighList
         franceGeom[dptname]["length"] = lenList
