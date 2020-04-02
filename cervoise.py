@@ -38,7 +38,7 @@ from models import *
 from plotModels import *
 
 print(
-    "\nCERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation = Starting"
+    "\nCERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation: Starting"
 )
 t0 = time.time()
 
@@ -80,7 +80,8 @@ def InitParams(config_name):
     params["shapefile_name"] = config.get("inputs", "shapefile_name")
     params["gareFile_name"] = config.get("inputs", "gareFile_name")
     params["ageFile_name"] = config.get("inputs", "ageFile_name")
-    params['airplaneFile_name'] = config.get("inputs", "airplaneFile_name")
+    params['airplaneFile_name'] = config.get("inputs", "airplaneFile_name")    
+    params['citiesFile_name'] = config.get("inputs",'citiesFile_name')
     
     params['covid19DepartmentsDir_name'] = config.get("inputs", "covid19DepartmentsDir_name")
     params['covid19RegionsDir_name'] = config.get("inputs", "covid19RegionsDir_name")
@@ -93,6 +94,9 @@ def InitParams(config_name):
     # we can directly read it if it was saved so we do not compute it again
     params['franceGeom_name'] = config.get("inputs", "franceGeom_name")
     
+    
+    
+        
     # load options infos
     params["location"] = config.get("graph", "location")
     if (params["location"] != "metropole") :
@@ -146,7 +150,8 @@ def InitParams(config_name):
         params["k_IR"] = config.getfloat("model", "k_IR")
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
-        params["R_ini"] = config.getint("model", "R_ini")        
+        params["R_ini"] = config.getint("model", "R_ini")
+    elif params["model_name"] == "TEST":  # load parameters needed for this model
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
     else:
         print("[ERROR]: model name not found. Exit here.")
@@ -273,44 +278,16 @@ def InitGraph(params):
     print("num_nodes = ", G.number_of_nodes())    
     
     
-    print(set([k for n in G.nodes for k in G.nodes[n].keys()]))
-    ### --- plot graph
-    # fig, ax = plt.subplots()    
-    # dic_pos = nx.get_node_attributes(G, 'positions')
-    # dic_labels = nx.get_node_attributes(G, 'names')            
-    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
-    # plt.show()
+    print("nodes attributes = " , set([k for n in G.nodes for k in G.nodes[n].keys()]))
+    print("edges attributes = " , set([k for n in G.edges for k in G.edges[n].keys()]))
+    # ### --- plot graph
+    fig, ax = plt.subplots()    
+    dic_pos = nx.get_node_attributes(G, 'positions')
+    dic_labels = nx.get_node_attributes(G, 'names')            
+    nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
+    plt.show()
     
     return G
-
-# def LaunchModel(params, graph):
-    # """
-    # Launch given model depending on name
-    # In: - params, dictionnary that contains all needed parameters
-        # - graph
-    # """
-    # print('LaunchModel')
-    # if params["model_name"] == "SIRWellMixed":
-        # outputs = SIRWellMixed(params)
-        # plot_SIRWellMixed(params, outputs)
-    # elif params["model_name"] == "SIROnGraph":
-        # outputs , graph = SIROnGraph(params, graph)
-        # plot_SIROnGraph(params,outputs, graph)
-    # if params["model_name"] == "SIRDWellMixed":
-        # outputs = SIRDWellMixed(params)
-        # plot_SIRDWellMixed(params, outputs)
-    # elif params["model_name"] == "SIRDOnGraph":
-        # outputs , graph = SIRDOnGraph(params, graph)
-        # plot_SIRDOnGraph(params,outputs, graph)
-    # if params["model_name"] == "SIRerlangWellMixed":
-        # outputs = SIRerlangWellMixed(params)
-        # plot_SIRerlangWellMixed(params, outputs)
-    # elif params["model_name"] == "SIRerlangOnGraph":
-        # outputs , graph = SIRerlangOnGraph(params, graph)
-        # plot_SIRerlangOnGraph(params,outputs, graph)
-    # else:
-        # print("[ERROR]: invalid name in parser for model name. Exit here.\n")
-        # exit(0)
 
 def LaunchModel(params, graph):
     """
@@ -340,6 +317,11 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIRerlangOnGraph":
         outputs , graph = SolveOnGraph(params, graph)
         plot_SIRerlangOnGraph(params,outputs, graph)
+    elif params["model_name"] == "TEST":
+        print("TEST..")
+        
+        # outputs , graph = SolveOnGraph(params, graph)
+        # plot_SIRerlangOnGraph(params,outputs, graph)
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)

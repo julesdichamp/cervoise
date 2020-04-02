@@ -20,6 +20,7 @@ import collections
 # Polynésie-française
 # there are also internal lines between outre-mer territories that are not covered yet
 def getFranceGeomDpts(params):
+    print('getFranceGeomDpts')
     # %% data spatiales
     name_shapefile = params['shapefile_name']
     shapefile = gpd.read_file(name_shapefile)
@@ -240,6 +241,7 @@ def getFranceGeomDpts(params):
 
 
 def getFranceGeomRegions(params):
+    print('getFranceGeomRegions')
     # we start from data at department scale
     franceGeomDpts = getFranceGeomDpts(params)
     df = pd.read_csv(params['departments_name'])
@@ -404,7 +406,6 @@ def getFranceGeomRegions(params):
                 else:
                     franceGeomRegions[regName1]["airways"].append([regName_connected,pax])
     
-    print (franceGeomRegions['Guadeloupe'])
     # add an ID that will be used in node
     # IT IS NOT RELATED TO THE DEPARTMENT NUMBER
     # BECAUSE IT STARTS FROM 0
@@ -420,7 +421,7 @@ def getFranceGeomRegions(params):
     return franceGeomRegions
 
 def readFranceGeom(params):
-    if not(params['franceGeom_name']): # test if string is empty
+    if not(params['franceGeom_name'].strip()): # test if string is empty (or filled with blanks)
         # in that case we need to process data files to get dictionnary
         # of data
         if (params["graph_type"] == "departments"):
@@ -430,9 +431,9 @@ def readFranceGeom(params):
         else:
             print("Not sure what to do with that graph_type = " , params["graph_type"] , ", exit here.")
     else:
+        print('read franceGeom file: ' , params['franceGeom_name'])
         s = open(params['franceGeom_name'], 'r').read()
         franceGeom = eval(s)
-        # print(franceGeom)
     return franceGeom
 
 if __name__ == "__main__":
@@ -468,8 +469,6 @@ if __name__ == "__main__":
     params['allCovid19RegionsFileNames'] = glob.glob(params['covid19RegionsDir_name'] +'/*regions-france-2020*.json')
     params['departments_name'] = departments_name
 
-    # cities file names
-    # citiesFile_name = 'data/laposte_hexasmal.csv'  # old
     citiesFile_name = 'data/villes_france_correct.csv'
 
     params['citiesFile_name'] = citiesFile_name

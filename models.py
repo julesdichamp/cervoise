@@ -435,7 +435,10 @@ def InitModels(params, G):
         for e in G.edges():
             dic_hopping_rates[e] = 0.01 # constant for now because TEST
         nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)
-
+    
+    if (params["model_name"] == "TEST"):
+        print("TESTING...")
+    
     return params, G
         
 def SolveOneCompartment(params):
