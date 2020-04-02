@@ -15,6 +15,16 @@ def plot_SIRWellMixed(params,outputs):
     plot SIRWellMixed model results
     S,I, R populations over time
     """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
     nbTimeSteps = len(outputs)
     time=np.zeros(nbTimeSteps)
     x = np.zeros([nbTimeSteps, 3])
@@ -34,7 +44,86 @@ def plot_SIRWellMixed(params,outputs):
     string_for_savefig = 'SIRWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
 
-    plt.show()
+def plot_SIRDWellMixed(params,outputs):
+    """
+    plot SIRWellMixed model results
+    S,I, R, D populations over time
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    x = np.zeros([nbTimeSteps, 4])
+    
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]
+        
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    plt.plot(time,x[:,0], 'red', label='Susceptible')
+    plt.plot(time,x[:,1], 'green', label='Infected')
+    plt.plot(time,x[:,2], 'blue', label='Recovered')
+    plt.plot(time,x[:,3], 'black', label='Dead')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRDWellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR'])+', k_ID = '+ str(params['k_ID']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])+ ', D_ini = '+ str(params['D_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRDWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_k_ID='+ str(params['k_ID']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])+ '_D_ini='+ str(params['D_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    
+
+def plot_SIRerlangWellMixed(params,outputs):
+    """
+    plot SIRerlangWellMixed model results
+    S,I, R populations over time
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    m = params["nb_intermediate_states"]
+    x = np.zeros([nbTimeSteps, nbStates])
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]        
+    
+    S = x[:,0]
+    I = x[:,m]
+    R = x[:,nbStates  - 1]
+    
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    plt.plot(time,S, 'red', label='Susceptible')
+    plt.plot(time,I, 'green', label='Infected')
+    plt.plot(time,R, 'blue', label='Recovered')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRerlangWellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+
+    # plt.show()
+
 
 def plot_SIROnGraph(params,outputs, G):
     """
@@ -47,6 +136,16 @@ def plot_SIROnGraph(params,outputs, G):
     FinalGraph: plot only the final graph at the final time step
     """
     print('plot_SIROnGraph')
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
     nbTimeSteps = len(outputs)
     time=np.zeros(nbTimeSteps)
     x = np.zeros([nbTimeSteps, 3])
@@ -212,41 +311,7 @@ def plot_SIROnGraph(params,outputs, G):
         plt.close()
 
 
-def plot_SIRDWellMixed(params,outputs):
-    """
-    plot SIRWellMixed model results
-    S,I, R, D populations over time
-    """
-    f = open(params['outputs_dir']+'/outputs.txt',"w")
-    f.write(str(outputs))
-    f.close()
-    
-    nbTimeSteps = len(outputs)
-    time=np.zeros(nbTimeSteps)
-    x = np.zeros([nbTimeSteps, 4])
-    
-    for i in range(0,nbTimeSteps):
-        time[i] = outputs[i][0]
-        x[i,:] = outputs[i][1]
-        
-    fig2 = plt.figure(figsize=(16, 10)) # in inches!
-    plt.plot(time,x[:,0], 'red', label='Susceptible')
-    plt.plot(time,x[:,1], 'green', label='Infected')
-    plt.plot(time,x[:,2], 'blue', label='Recovered')
-    plt.plot(time,x[:,3], 'black', label='Dead')
-    plt.legend()
-    plt.xlabel('Arbitrary time unit')
-    plt.ylabel('Population numbers')
-    string_for_title='SIRDWellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR'])+', k_ID = '+ str(params['k_ID'])# + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini']+ ', D_ini = '+ str(params['D_ini'])
-    plt.title(string_for_title)
-    string_for_savefig = 'SIRDWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_k_ID='+ str(params['k_ID']) #+ '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini']+ '_D_ini='+ str(params['D_ini'])
-    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-    
-    
-    
-    plt.show()
 
-#TODO
 def plot_SIRDOnGraph(params,outputs, G):
     """
     plot plot_SIRDOnGraph model results
@@ -258,18 +323,27 @@ def plot_SIRDOnGraph(params,outputs, G):
     FinalGraph: plot only the final graph at the final time step
     """
     print('plot_SIRDOnGraph')
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
     nbTimeSteps = len(outputs)
     time=np.zeros(nbTimeSteps)
-    x = np.zeros([nbTimeSteps, 3])
+    x = np.zeros([nbTimeSteps, params['nbStates']])
     dic_graphs = {}
     for i in range(0,nbTimeSteps):
         time[i] = outputs[i][0]
         dic_x = outputs[i][1]        
         for n in dic_x.keys():
-            x[i,0] += dic_x[n][0]
-            x[i,1] += dic_x[n][1]
-            x[i,2] += dic_x[n][2]            
-    
+            for j in range(0, params['nbStates']):
+                x[i,j] += dic_x[n][j]
+                                
     if ('WellMixed' in params['plot_options']):
         print("Running: plot option: 'WellMixed'")
         ### --- plot wellmixed model ( = sum over all compartments i.e. nodes of the graph)
@@ -277,12 +351,13 @@ def plot_SIRDOnGraph(params,outputs, G):
         plt.plot(time,x[:,0], 'red', label='Susceptible')
         plt.plot(time,x[:,1], 'green', label='Infected')
         plt.plot(time,x[:,2], 'blue', label='Recovered')
+        plt.plot(time,x[:,3], 'blue', label='Deaths')
         plt.legend()
         plt.xlabel('Arbitrary time unit')
         plt.ylabel('Population numbers')
-        string_for_title='SIRDOnGraph, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+        string_for_title='SIRDOnGraph, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR'])+', k_ID = '+ str(params['k_ID']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])+ ', D_ini = '+ str(params['D_ini'])
         plt.title(string_for_title)
-        string_for_savefig = 'SIRDOnGraph_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+        string_for_savefig = 'SIRDOnGraph_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_k_ID='+ str(params['k_ID']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])+ '_D_ini='+ str(params['D_ini'])
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         plt.close()
     
@@ -292,27 +367,28 @@ def plot_SIRDOnGraph(params,outputs, G):
         # use dic_x available in node attributes from graph to get 
         # number of nodes and number of reactions
         dic_x = nx.get_node_attributes(G,'x')        
-        nbNodes = len(dic_x)
-        nbReactions = len(dic_x[0])
+        nbNodes = len(dic_x)        
         nodes = G.nodes()
         all_nodes_all_x_over_time = {}
         for n in nodes:
-            x = np.zeros([nbTimeSteps, nbReactions])
+            x = np.zeros([nbTimeSteps, params['nbStates']])
             for i in range(0,nbTimeSteps):
                 dic_x = outputs[i][1]            
-                for j in range(0,nbReactions):
-                    x[i,j] = dic_x[n][j]                    
+                for j in range(0,params['nbStates']):
+                    x[i,j] = dic_x[n][j]  
+                                      
             all_nodes_all_x_over_time[n] = x
             fig10 = plt.figure(figsize=(16, 10)) # in inches!
             plt.plot(time,x[:,0], 'red', label='Susceptible')
             plt.plot(time,x[:,1], 'green', label='Infected')
             plt.plot(time,x[:,2], 'blue', label='Recovered')
+            plt.plot(time,x[:,3], 'blue', label='Deaths')
             plt.legend()
             plt.xlabel('Arbitrary time unit')
             plt.ylabel('Population numbers')
             string_for_title='SIRDOnGraph, region num = '+str(n)+', k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
             plt.title(string_for_title)
-            string_for_savefig = 'SIRDOnGraph_graph_type_'+str(params['graph_type'])+'_region_num='+str(n)+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+            string_for_savefig = 'SIRDOnGraph_graph_type_'+str(params['graph_type'])+'_region_num='+str(n)+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_k_ID='+ str(params['k_ID']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])+ '_D_ini='+ str(params['D_ini'])
             plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
             plt.close()
                             
@@ -327,14 +403,17 @@ def plot_SIRDOnGraph(params,outputs, G):
             dic_S = {}
             dic_I = {}
             dic_R = {}
+            dic_D = {}
             for i in dic_x.keys():
                 dic_S[i] = dic_x[i][0]
                 dic_I[i] = dic_x[i][1]
                 dic_R[i] = dic_x[i][2]
+                dic_D[i] = dic_x[i][3]
             
             list_S_values = [v for v in dic_S.values()]
             list_I_values = [v for v in dic_I.values()]
             list_R_values = [v for v in dic_R.values()]                        
+            list_D_values = [v for v in dic_D.values()]                        
             fig20 = plt.figure(figsize=(16, 10)) # in inches!  
             string_for_title='Susceptible population on Graph at time = '+str(round(time[j],6))
             plt.title(string_for_title)
@@ -370,6 +449,19 @@ def plot_SIRDOnGraph(params,outputs, G):
             string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
             plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
             plt.close()
+            
+            fig50 = plt.figure(figsize=(16, 10)) # in inches!            
+            string_for_title='Deaths population on Graph at time = '+str(round(time[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')
+            string_for_savefig = 'Deaths_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            
     if 'FinalGraph' in params['plot_options']:
         print("Running: plot option: 'FinalGraph'")
         # ### --- plot graph with final species update == state in Graph
@@ -378,14 +470,17 @@ def plot_SIRDOnGraph(params,outputs, G):
         dic_S = {}
         dic_I = {}
         dic_R = {}
+        dic_D = {}
         for i in dic_x.keys():
             dic_S[i] = dic_x[i][0]
             dic_I[i] = dic_x[i][1]
             dic_R[i] = dic_x[i][2]
+            dic_D[i] = dic_x[i][3]
         
         list_S_values = [v for v in dic_S.values()]
         list_I_values = [v for v in dic_I.values()]
         list_R_values = [v for v in dic_R.values()]
+        list_D_values = [v for v in dic_D.values()]
         fig20 = plt.figure(figsize=(16, 10)) # in inches!  
         string_for_title='Susceptible population on Graph at time = '+str(round(G.graph['time'],6))
         plt.title(string_for_title)
@@ -421,38 +516,15 @@ def plot_SIRDOnGraph(params,outputs, G):
         string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
         plt.close()
-
-
-
-def plot_SIRerlangWellMixed(params,outputs):
-    """
-    plot SIRerlangWellMixed model results
-    S,I, R populations over time
-    respective indices for plot are 0, m, nbStates
-    """
-    nbTimeSteps = len(outputs)
-    time=np.zeros(nbTimeSteps)
-    nbStates = outputs[0][1].shape[0]
-    m = params["nb_intermediate_states"]
-    x = np.zeros([nbTimeSteps, nbStates])
-    for i in range(0,nbTimeSteps):
-        time[i] = outputs[i][0]
-        x[i,:] = outputs[i][1]        
-    
-    S = x[:,0]
-    I = x[:,m]
-    R = x[:,nbStates  - 1]
-    
-    fig2 = plt.figure(figsize=(16, 10)) # in inches!
-    plt.plot(time,S, 'red', label='Susceptible')
-    plt.plot(time,I, 'green', label='Infected')
-    plt.plot(time,R, 'blue', label='Recovered')
-    plt.legend()
-    plt.xlabel('Arbitrary time unit')
-    plt.ylabel('Population numbers')
-    string_for_title='SIRerlangWellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
-    plt.title(string_for_title)
-    string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
-    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-
-    plt.show()
+        
+        fig50 = plt.figure(figsize=(16, 10)) # in inches!            
+        string_for_title='Deaths population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')
+        string_for_savefig = 'Deaths_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+        plt.close()

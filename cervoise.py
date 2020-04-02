@@ -103,7 +103,6 @@ def InitParams(config_name):
     
     # load model infos
     params["model_name"] = config.get("model", "model_name")
-    print(params["model_name"])
     if params["model_name"] == "SIRWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
@@ -273,13 +272,45 @@ def InitGraph(params):
     print("num_edges = ", G.number_of_edges())
     print("num_nodes = ", G.number_of_nodes())    
     
-    fig, ax = plt.subplots()
-    dic_pos = nx.get_node_attributes(G, 'positions')
-    dic_labels = nx.get_node_attributes(G, 'names')            
-    nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
-    plt.show()
+    
+    print(set([k for n in G.nodes for k in G.nodes[n].keys()]))
+    ### --- plot graph
+    # fig, ax = plt.subplots()    
+    # dic_pos = nx.get_node_attributes(G, 'positions')
+    # dic_labels = nx.get_node_attributes(G, 'names')            
+    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
+    # plt.show()
     
     return G
+
+# def LaunchModel(params, graph):
+    # """
+    # Launch given model depending on name
+    # In: - params, dictionnary that contains all needed parameters
+        # - graph
+    # """
+    # print('LaunchModel')
+    # if params["model_name"] == "SIRWellMixed":
+        # outputs = SIRWellMixed(params)
+        # plot_SIRWellMixed(params, outputs)
+    # elif params["model_name"] == "SIROnGraph":
+        # outputs , graph = SIROnGraph(params, graph)
+        # plot_SIROnGraph(params,outputs, graph)
+    # if params["model_name"] == "SIRDWellMixed":
+        # outputs = SIRDWellMixed(params)
+        # plot_SIRDWellMixed(params, outputs)
+    # elif params["model_name"] == "SIRDOnGraph":
+        # outputs , graph = SIRDOnGraph(params, graph)
+        # plot_SIRDOnGraph(params,outputs, graph)
+    # if params["model_name"] == "SIRerlangWellMixed":
+        # outputs = SIRerlangWellMixed(params)
+        # plot_SIRerlangWellMixed(params, outputs)
+    # elif params["model_name"] == "SIRerlangOnGraph":
+        # outputs , graph = SIRerlangOnGraph(params, graph)
+        # plot_SIRerlangOnGraph(params,outputs, graph)
+    # else:
+        # print("[ERROR]: invalid name in parser for model name. Exit here.\n")
+        # exit(0)
 
 def LaunchModel(params, graph):
     """
@@ -288,23 +319,26 @@ def LaunchModel(params, graph):
         - graph
     """
     print('LaunchModel')
+    # initialize models
+    params , graph = InitModels(params, graph)
+    
     if params["model_name"] == "SIRWellMixed":
-        outputs = SIRWellMixed(params)
+        outputs = SolveOneCompartment(params)
         plot_SIRWellMixed(params, outputs)
-    elif params["model_name"] == "SIROnGraph":
-        outputs , graph = SIROnGraph(params, graph)
-        plot_SIROnGraph(params,outputs, graph)
-    if params["model_name"] == "SIRDWellMixed":
-        outputs = SIRDWellMixed(params)
+    elif params["model_name"] == "SIRDWellMixed":
+        outputs = SolveOneCompartment(params)
         plot_SIRDWellMixed(params, outputs)
-    elif params["model_name"] == "SIRDOnGraph":
-        outputs , graph = SIRDOnGraph(params, graph)
-        plot_SIRDOnGraph(params,outputs, graph)
-    if params["model_name"] == "SIRerlangWellMixed":
-        outputs = SIRerlangWellMixed(params)
+    elif params["model_name"] == "SIRerlangWellMixed":
+        outputs = SolveOneCompartment(params)
         plot_SIRerlangWellMixed(params, outputs)
+    elif params["model_name"] == "SIROnGraph":
+        outputs , graph = SolveOnGraph(params, graph)
+        plot_SIROnGraph(params,outputs, graph)
+    elif params["model_name"] == "SIRDOnGraph":
+        outputs , graph = SolveOnGraph(params, graph)
+        plot_SIRDOnGraph(params,outputs, graph)    
     elif params["model_name"] == "SIRerlangOnGraph":
-        outputs , graph = SIRerlangOnGraph(params, graph)
+        outputs , graph = SolveOnGraph(params, graph)
         plot_SIRerlangOnGraph(params,outputs, graph)
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
@@ -316,7 +350,7 @@ def LaunchModel(params, graph):
 # =============================================================================
 params = InitParams(inputFile)
 G = InitGraph(params)
-# LaunchModel(params, G)
+LaunchModel(params, G)
 
 t1 = time.time()
 print("Code ran for: " , t1 - t0 ," seconds")
