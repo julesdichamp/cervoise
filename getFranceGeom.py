@@ -91,7 +91,10 @@ def getFranceGeomDpts(params):
                 num_deaths = properties['Deaths']
             else:
                 num_deaths = 0
-
+            if ('Recovered'  in properties):
+                num_recovered = properties['Recovered']
+            else:
+                num_recovered = 0
             # rename it because it has a different name in other data set...
             if (dpt_name == "Territoire de Belfort"):
                 dpt_name = "Territoire-de-Belfort"
@@ -102,6 +105,7 @@ def getFranceGeomDpts(params):
             dic_data_covid[dpt_name][_date] = {}
             dic_data_covid[dpt_name][_date]['Confirmed'] = num_confirmed
             dic_data_covid[dpt_name][_date]['Deaths'] = num_deaths
+            dic_data_covid[dpt_name][_date]['Recovered'] = num_recovered
             # print(_date, dpt_name, num_confirmed, num_deaths)
 
     # the data set in departments does not include La Reunion for some reason
@@ -123,12 +127,17 @@ def getFranceGeomDpts(params):
                     num_deaths = properties['Deaths']
                 else:
                     num_deaths = 0
+                if ('Recovered'  in properties):
+                    num_recovered = properties['Recovered']
+                else:
+                    num_recovered = 0
                 if (not(dpt_name in dic_data_covid)):
                     dic_data_covid[dpt_name] = {}
 
                 dic_data_covid[dpt_name][_date] = {}
                 dic_data_covid[dpt_name][_date]['Confirmed'] = num_confirmed
                 dic_data_covid[dpt_name][_date]['Deaths'] = num_deaths
+                dic_data_covid[dpt_name][_date]['Recovered'] = num_recovered
                 # print(_date, dpt_name, num_confirmed, num_deaths)
     
     _list = [x for x in dic_data_covid.keys()]
@@ -175,8 +184,8 @@ def getFranceGeomDpts(params):
         franceGeom[dptname]["agesSex"] = ages.loc[dpt].to_dict() # added to_dict() so it can be read easily from files
         franceGeom[dptname]["freqGare"] = freqGares[dpt]
         franceGeom[dptname]["neighbours"] = {}
-        franceGeom[dptname]["length"] = {}
-
+        franceGeom[dptname]["length"] = {}                
+        
         if (not(dptname in dic_data_covid)):
             print("[ERROR]: ", dptname , "not find in dic_data_covid. Exit here")
             exit(0)
@@ -323,8 +332,10 @@ def getFranceGeomRegions(params):
                     franceGeomRegions[regName]["data_covid"][_date] = {}
                     franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] = 0
                     franceGeomRegions[regName]["data_covid"][_date]['Deaths'] = 0
+                    franceGeomRegions[regName]["data_covid"][_date]['Recovered'] = 0
                 franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] += franceGeomDpts[dptName]["data_covid"][_date]['Confirmed']
                 franceGeomRegions[regName]["data_covid"][_date]['Deaths'] += franceGeomDpts[dptName]["data_covid"][_date]['Deaths']
+                franceGeomRegions[regName]["data_covid"][_date]['Recovered'] += franceGeomDpts[dptName]["data_covid"][_date]['Recovered']
 
             # add train stations frequentations = sum over all train frequentations
             # in departments
