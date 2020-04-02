@@ -17,7 +17,7 @@ import collections
 
 
 # WARNING: there exists in destination of airways between departments
-#  and outremer which are not departments:
+#  and outremer which are not departments:
 # Polynésie-française
 # there are also internal lines between outre-mer territories that are not covered yet
 def getFranceGeomDpts(params):
@@ -50,8 +50,8 @@ def getFranceGeomDpts(params):
         else:
             airwaysDict[airway[1]["in"]].append([airway[1]["out"], airway[1]["Pax"]])
     # building the dict
-    #  keys = dpts numbers
-    #  values = list of [dpt number arrival, total pax]
+    #  keys = dpts numbers
+    #  values = list of [dpt number arrival, total pax]
     airwaysDictdpt = {}
     for flightSource in airwaysDict:
         # print(flightSource, cities[cities.eq(flightSource).any(1)].dpt.values[0])
@@ -71,7 +71,7 @@ def getFranceGeomDpts(params):
                 else:
                     airwaysDictdpt[flightSourcedpt][airwaysDictdpt[flightSourcedpt][0] == flightDestdpt] += int(
                         flightDest[1])
-    # print (airwaysDictdpt)    
+    # print (airwaysDictdpt)
     # cleaning dict as there are several flightSource dpt
 
     # %% covid19 data
@@ -145,7 +145,7 @@ def getFranceGeomDpts(params):
         freq = gare["Total Voyageurs 2018"]
         freqGares[dpt] += freq
 
-    #  read departments name
+    #  read departments name
     df = pd.read_csv(params['departments_name'], delimiter=',')
     nums = df['NUMÉRO'].to_list()
     names = df['NOM'].to_list()
@@ -159,7 +159,7 @@ def getFranceGeomDpts(params):
     franceGeom = {}
     dptID = 0
     for dpt in range(shapefile.shape[0]):
-        # dptID+=1 
+        # dptID+=1
         dptGeom = shapefile["geometry"][dpt]
         dptname = shapefile["nom"][dpt]
         if type(dptname) == bytes:
@@ -191,7 +191,7 @@ def getFranceGeomDpts(params):
             # if (not(x[0] in _list)):
             # print( x , " is not in franceGeom keys")
 
-        #  add data_covid to dic
+        #  add data_covid to dic
         franceGeom[dptname]["data_covid"] = dic_data_covid[dptname]
 
         # add centroid to dic
@@ -225,7 +225,7 @@ def getFranceGeomDpts(params):
         franceGeom[dptname]["id"] = id_dpt
         id_dpt += 1
 
-    outname = params['data_dir'] + params['graphFile']
+    outname = params['franceGeom_name']
     with open(outname, "w") as file:
         file.write(str(franceGeom))
 
@@ -369,8 +369,8 @@ def getFranceGeomRegions(params):
                             if not (regName2 in franceGeomRegions[regName1]['neighbours']):
                                 franceGeomRegions[regName1]['neighbours'].append(regName2)
 
-                                #  add neighbours based on airways connections
-    #  also iterate on pax to get it at region scale
+                                #  add neighbours based on airways connections
+    #  also iterate on pax to get it at region scale
     for regName1 in franceGeomRegions.keys():
         for dptName1 in franceGeomRegions[regName1]['departments']:
             list_airplanes_connections = franceGeomDpts[dptName1]['airways']
@@ -379,7 +379,7 @@ def getFranceGeomRegions(params):
                 pax = connection[1]
                 # look at which region dpt_connected corresponds
                 for regName2 in franceGeomRegions.keys():
-                    #  we found the corresponding region
+                    #  we found the corresponding region
                     if dptname_connected in franceGeomRegions[regName2]['departments']:
                         regName_connected = regName2
 
@@ -387,13 +387,13 @@ def getFranceGeomRegions(params):
                 _count = 0
                 connection_exists = False
                 for check_connection in franceGeomRegions[regName1]["airways"]:
-                    #  this already region already had a connection
+                    #  this already region already had a connection
                     if regName_connected == check_connection[0]:
                         indice = _count
                         connection_exists = True
                     _count += 1
-                #  if a connection already exists we add pax value to already
-                #  existing pax value
+                #  if a connection already exists we add pax value to already
+                #  existing pax value
                 if connection_exists:
                     franceGeomRegions[regName1]["airways"][indice][1] += pax
                 # we the pax and the new connection to the list ['airways']
@@ -409,7 +409,7 @@ def getFranceGeomRegions(params):
         id_reg += 1
 
     # print(franceGeomRegions)
-    outname = params['data_dir'] + params['graphFile']
+    outname = params['franceGeom_name']
     # print('\n\n', outname)
     with open(outname, "w") as file:
         file.write(str(franceGeomRegions))
@@ -417,7 +417,7 @@ def getFranceGeomRegions(params):
 
 
 def readFranceGeom(params):
-    if not (params['franceGeom_name'].strip()):  # test if string is empty (or filled with blanks)
+    if not params["franceFileExist"]:  # test if string is empty (or filled with blanks)
         # in that case we need to process data files to get dictionnary
         # of data
 

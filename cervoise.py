@@ -37,6 +37,7 @@ import getFranceGeom
 # from getFranceGeom import *
 from models import *
 from plotModels import *
+import distutils
 
 print(
     "\nCERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation: Starting"
@@ -98,12 +99,12 @@ def InitParams(config_name):
     # we can directly read it if it was saved so we do not compute it again
     params['franceGeom_name'] = config.get("inputs", "franceGeom_name")
     # location of saved file
-    params['graphFile'] = config.get("inputs", 'graphFile')
-    if not params['graphFile'].strip():
-        params['graphFile'] = 'franceGeomRegions.txt'
+    # params['graphFile'] = config.get("inputs", 'graphFile')
+    # if not params['graphFile'].strip():
+    #     params['graphFile'] = 'franceGeomRegions.txt'
 
     # load options infos
-    params["genAndQuit"] = config.get("graph", "genAndQuit")  # quit after graph is generated and saved
+    params["genAndQuit"] = distutils.util.strtobool(config.get("graph", "genAndQuit"))  # quit after graph is generated and saved
     params["location"] = config.get("graph", "location")
     if params["location"] != "metropole":
         print('[ERROR]: location can only be metropole for now. Exit here.')
@@ -340,16 +341,26 @@ def LaunchModel(params, graph):
 # LAUNCH WORKFLOW
 # =============================================================================
 params = InitParams(inputFile)
-G = InitGraph(params)
-if params['genAndQuit']:
-    if not params['franceGeom_name'].strip():
+#  generate graph if file does not already exist
+if not os.path.isfile(params['franceGeom_name']):
+    print('geom files does not exist')
+    params["franceFileExist"] = False
+    G = InitGraph(params)
+    if params['genAndQuit']:
         print("\ngraph has been generated - quitting now")
-        print('file saved here :', params["graphFile"])
+        print('file saved here :', params['franceGeom_name'])
         sys.exit(0)
-    else:
+else:
+    if params['genAndQuit']:
         print("\ngraph already exist - nothing was done.")
         print('dumbass')
         sys.exit(0)
+    else:
+        params["franceFileExist"] = True
+        G = InitGraph(params)
+
+
+
 LaunchModel(params, G)
 
 t1 = time.time()
