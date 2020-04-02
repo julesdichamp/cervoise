@@ -436,8 +436,88 @@ def InitModels(params, G):
             dic_hopping_rates[e] = 0.01 # constant for now because TEST
         nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)
     
+    """
+    temporary name for testing stuff 
+    """
     if (params["model_name"] == "TEST"):
-        print("TESTING...")
+        # load initial state, and reactions values
+        k_SI = params["k_SI"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        k_ID = params["k_ID"]  # A = 2
+                
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 3
+        nbStates = 4
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+        
+        # first reaction: S + I -> 2I
+        N[0][0] = 1 ; M[0][0] = 0 
+        N[1][0] = 1 ; M[1][0] = 2
+        N[2][0] = 0 ; M[2][0] = 0
+        N[3][0] = 0 ; M[3][0] = 0
+        #second reaction: I -> R
+        N[0][1] = 0 ; M[0][1] = 0
+        N[1][1] = 1 ; M[1][1] = 0
+        N[2][1] = 0 ; M[2][1] = 1
+        N[3][1] = 0 ; M[3][1] = 0
+        #third reaction: I -> D
+        N[0][2] = 0 ; M[0][2] = 0
+        N[1][2] = 1 ; M[1][2] = 0
+        N[2][2] = 0 ; M[2][2] = 0
+        N[3][2] = 0 ; M[3][2] = 1
+        
+        R = M - N
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R    
+        
+        dic_data_covid = nx.get_node_attributes(G, name='data_covid')
+        dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+        dic_simu_total_pop = copy.deepcopy(dic_total_pop)
+        dic_simu_data_covid = copy.deepcopy(dic_data_covid)
+        pop_fraction = 1
+        R_0 = 3.
+        k_plus = np.array([k_SI, k_IR, k_ID])
+        dic_kinetic = {}
+        dic_x_ini = {}
+        dic_x = {}
+        for n in G.nodes():
+            # take 1% of total population and round to floor to make sure 
+            # we work with integer population numbers
+            print(dic_simu_total_pop[n])
+            dic_simu_total_pop[n] = np.floor(pop_fraction * dic_simu_total_pop[n])             
+            # get fraction of confirmed cases 
+            I = np.floor(pop_fraction * dic_simu_data_covid[n][params["input_day"]]['Confirmed'])
+            # get fraction of deaths
+            D = np.floor(pop_fraction * dic_simu_data_covid[n][params["input_day"]]['Deaths'])
+            R = np.floor(pop_fraction * dic_simu_data_covid[n][params["input_day"]]['Recovered'])
+            S = dic_simu_total_pop[n] - I - D - R
+            
+            # adjust k_SI to each node population
+            k_SI = (k_IR + k_ID) * R_0 / dic_simu_total_pop[n]            
+            k_plus = np.array([k_SI, k_IR, k_ID])
+            # add all kinetic to dictionnary
+            dic_kinetic[n] = k_plus
+            dic_x_ini[n] = np.array([S,I,R,D])
+            dic_x[n] = np.array([S,I,R,D])
+            print("n, x_ini = " , n , dic_x_ini[n])
+        nx.set_node_attributes(G, name='x_ini', values=dic_x_ini)
+        nx.set_node_attributes(G, name='x', values=dic_x)
+        nx.set_node_attributes(G, name='k_plus', values=dic_kinetic)
+        nx.set_node_attributes(G, name='simu_total_pop', values=dic_simu_total_pop)
+        
+        # set edges attributes here
+        dic_hopping_rates = {}
+        for e in G.edges():
+            dic_hopping_rates[e] = 0.  # do not consider hopping after lockdown
+        nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates) 
     
     return params, G
         
@@ -643,7 +723,7 @@ def SolveOnGraph(params, G):
                 for j in range(1, len(next_states_sum)):
                     if (next_states_sum[j - 1] < xi) and (xi < next_states_sum[j]):
                         id_reaction = j
-        
+
             ### --- 2-6/ Set new state
             ###          look for the id of the reaction and trigger the corresponding event
             ###          there is probably a simpler way to do it.

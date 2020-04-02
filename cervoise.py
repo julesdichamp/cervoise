@@ -151,8 +151,13 @@ def InitParams(config_name):
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
-    elif params["model_name"] == "TEST":  # load parameters needed for this model
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
+    elif params["model_name"] == "TEST":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")        
+        params["k_ID"] = config.getfloat("model", "k_ID")
+        params["input_day"] = config.get("model", "input_day")        
     else:
         print("[ERROR]: model name not found. Exit here.")
         exit(0)
@@ -202,6 +207,7 @@ def InitGraph(params):
             # - Deaths
             # - Position
             dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
+            print(id_node, key, franceGeom[key]['agesSex']['ftot'])
             dic_data_covid[id_node] = franceGeom[key]['data_covid']            
             centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
             dic_positions[id_node] = centroid
@@ -281,11 +287,11 @@ def InitGraph(params):
     print("nodes attributes = " , set([k for n in G.nodes for k in G.nodes[n].keys()]))
     print("edges attributes = " , set([k for n in G.edges for k in G.edges[n].keys()]))
     # ### --- plot graph
-    fig, ax = plt.subplots()    
-    dic_pos = nx.get_node_attributes(G, 'positions')
-    dic_labels = nx.get_node_attributes(G, 'names')            
-    nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
-    plt.show()
+    # fig, ax = plt.subplots()    
+    # dic_pos = nx.get_node_attributes(G, 'positions')
+    # dic_labels = nx.get_node_attributes(G, 'names')            
+    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
+    # plt.show()
     
     return G
 
@@ -318,10 +324,8 @@ def LaunchModel(params, graph):
         outputs , graph = SolveOnGraph(params, graph)
         plot_SIRerlangOnGraph(params,outputs, graph)
     elif params["model_name"] == "TEST":
-        print("TEST..")
-        
-        # outputs , graph = SolveOnGraph(params, graph)
-        # plot_SIRerlangOnGraph(params,outputs, graph)
+        outputs , graph = SolveOnGraph(params, graph)
+        plot_SIRDOnGraph(params,outputs, graph)        
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)
