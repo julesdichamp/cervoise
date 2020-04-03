@@ -122,8 +122,6 @@ def plot_SIRerlangWellMixed(params,outputs):
     string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
 
-    # plt.show()
-
 
 def plot_SIROnGraph(params,outputs, G):
     """
@@ -581,7 +579,7 @@ def plot_TEST(params,outputs, G):
         plt.ylabel('Population numbers')
         string_for_title='TEST'
         plt.title(string_for_title)
-        string_for_savefig = 'SIRDOnGraph_TEST'
+        string_for_savefig = 'SIRDOnGraph_TEST_WellMixed'
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         plt.close()
     
@@ -612,7 +610,7 @@ def plot_TEST(params,outputs, G):
             plt.ylabel('Population numbers')
             string_for_title='SIRDOnGraph_TEST'
             plt.title(string_for_title)
-            string_for_savefig = 'SIRDOnGraph_TEST'
+            string_for_savefig = 'SIRDOnGraph_TEST_node='+str(n)
             plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
             plt.close()
                             

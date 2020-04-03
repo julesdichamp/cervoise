@@ -40,6 +40,11 @@ from plotModels import *
 import distutils
 from distutils.util import strtobool
 
+# contains functions to perform fit of the model
+import lmfit
+from fit import InitFit, LaunchFit
+
+
 print(
     "\nCERVOISE = Covid19 : Estimation of Regional Virus Organization Infered using Stochastic Equation: Starting"
 )
@@ -162,12 +167,13 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    elif params["model_name"] == "TEST":  # load parameters needed for this model
-        # For now all parameters are the same wherever the region
-        params["k_SI"] = config.getfloat("model", "k_SI")
+    elif params["model_name"] == "RealSIRDOnGraph":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region: 
+        # fix R_0 per region and addapt k_IS accordingly to population
+        params["R_0"] = config.getfloat("model", "R_0")
         params["k_IR"] = config.getfloat("model", "k_IR")        
         params["k_ID"] = config.getfloat("model", "k_ID")
-        params["input_day"] = config.get("model", "input_day")
+        params["time_start_day"] = config.get("model", "time_start_day")
     else:
         print("[ERROR]: model name not found. Exit here.")
         exit(0)        
@@ -344,10 +350,9 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIRerlangOnGraph":
         outputs, graph = SolveOnGraph(params, graph)
         plot_SIRerlangOnGraph(params, outputs, graph)
-    elif params["model_name"] == "TEST":
+    elif params["model_name"] == "RealSIRDOnGraph":
         outputs , graph = SolveOnGraph(params, graph)
         plot_TEST(params,outputs, graph)        
-        print("TEST..")
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)
@@ -376,9 +381,9 @@ else:
         G = InitGraph(params)
 
 if (params['fit_model']):
-    print('TODO')
-    # InitFit()
-    # LaunchFit()
+    print("Start fitting procedure, Inch'Allah...")
+    paramsToFit = InitFit()
+    df = LaunchFit(paramsToFit, params, G)
 
 LaunchModel(params, G)
 
