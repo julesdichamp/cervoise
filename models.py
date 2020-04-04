@@ -618,7 +618,7 @@ def SolveOnGraph(params, G):
                 for key in dic_x_for_save.keys():
                     for ii in range(0,nbStates):
                         x_print[ii] += dic_x_for_save[key][ii]
-                print("t, count_loops, x = " , t, count_loops, x_print)
+                # print("t, count_loops, x = " , t, count_loops, x_print)
                 outputs.append([t, dic_x_for_save])
             
             # compute W_inside: loop on every node 

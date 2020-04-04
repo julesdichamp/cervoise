@@ -14,11 +14,9 @@ def FitFunc(paramsToFit, params, G):
     params["R_0"]  = paramsToFit["R_0"]
     params["k_IR"] = paramsToFit["k_IR"]
     params["k_ID"] = paramsToFit["k_ID"]    
-    print (params["R_0"], params["k_IR"], params["k_ID"])
+
     # transform to datetime format
     dates = [datetime.datetime.strptime(ts, "%Y-%m-%d") for ts in params["dates_for_fit"]] 
-    
-    
     time_start_date = datetime.datetime.strptime(params['time_start_day'], "%Y-%m-%d")    
     
     # init model and solve
@@ -28,7 +26,7 @@ def FitFunc(paramsToFit, params, G):
     
     nbDates=len(params["dates_for_fit"])
     nbTimes = len(outputs)
-    fitness = np.zeros(3 * nbDates)
+    fitness = np.zeros(3 * nbDates * G.number_of_nodes())
     
     # fill vector with relative increase from one date to the other
     
@@ -41,11 +39,9 @@ def FitFunc(paramsToFit, params, G):
         delta_days.append((dates[i] - dates[i-1]).days) # transform to number of days
     
     # time_end must verify time_end = time_start + delta_days[nbDates -1]
-    if params['time_end'] != params['time_end'] + delta_days[nbDates-1]:
-        print('[ERROR]: time_end does not very verify time_start + delta_days[nbDates -1]')
-        print("time_start, time_end, delta_days[nbDates-1] = " , params['time_start'], params['time_end'], delta_days[nbDates-1])
-        print('setting new time_end')
+    if params['time_end'] != params['time_start'] + delta_days[nbDates-1]:
         params['time_end'] = params['time_end'] + delta_days[nbDates-1]
+        print(params['time_end'])
     
     time_date_target = params['time_start'] + delta_days[0]
     _count = 0
@@ -56,17 +52,18 @@ def FitFunc(paramsToFit, params, G):
     for i in range(0,nbTimes):
         mytime = outputs[i][0]
         # not sure of what precision to take
-        if (abs(mytime - time_date_target) <= 0.001) :
-            print('mytime, date_target = ' , mytime, time_date_target)
+        if (abs(mytime - time_date_target) <= 0.01) :
+            print('[TARGET FOUND]: mytime, date_target = ' , mytime, time_date_target)
             dic_x = outputs[i][1]
             for n in G.nodes():
                 # Infected
-                fitness[n + _count + 0] = (dic_data_covid[n][dates[_count]]['Confirmed']\
+                fitness[n + _count + 0] = (dic_data_covid[n][params["dates_for_fit"][_count]]['Confirmed']\
                                         - dic_x[n][1])
-                fitness[n + _count + 1] = (dic_data_covid[n][dates[_count]]['Recovered']\
+                fitness[n + _count + 1] = (dic_data_covid[n][params["dates_for_fit"][_count]]['Recovered']\
                                         - dic_x[n][2])
-                fitness[n + _count + 2] = (dic_data_covid[n][dates[_count]]['Deaths']\
+                fitness[n + _count + 2] = (dic_data_covid[n][params["dates_for_fit"][_count]]['Deaths']\
                                         - dic_x[n][3])
+                print(n, dic_data_covid[n][params["dates_for_fit"][_count]]['Confirmed'], dic_data_covid[n][params["dates_for_fit"][_count]]['Recovered'], dic_data_covid[n][params["dates_for_fit"][_count]]['Deaths'], dic_x[n][1], dic_x[n][2], dic_x[n][3])
             # get new date to target
             time_date_target = time_date_target + delta_days[_count]
             _count += 1
@@ -74,6 +71,7 @@ def FitFunc(paramsToFit, params, G):
             if (_count == nbDates):
                 break;
 
+    print("fitness value = ", norm(fitness, ord=2) ** 2)
     return norm(fitness, ord=2) ** 2
 
 # parameters to fit AT THE MOMENT
@@ -88,6 +86,7 @@ def InitFit():
     paramsToFit.add("k_IR", 0.0666, min=0.1, max=0.05, vary=True)
     paramsToFit.add("k_ID", 0.01, min=0.005, max=0.05, vary=True)
     return paramsToFit
+
 
 def LaunchFit(paramsToFit, params, G):
     print('LaunchFit')
