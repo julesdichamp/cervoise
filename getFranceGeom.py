@@ -239,6 +239,7 @@ def getFranceGeomDpts(params):
     return franceGeom
 
 
+
 def getFranceGeomRegions(params):
     print('getFranceGeomRegions')
     # we start from data at department scale

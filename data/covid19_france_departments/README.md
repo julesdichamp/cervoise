@@ -1,9 +1,14 @@
 # Données cartographiques concernant l'épidémie de COVID-19
 
-L'information officielle sur la progression de l'épidémie en France est assez fragmentée. Différentes initiatives tentent de structurer celle-ci sous forme de données libres. Malgré ce travail les données sont néanmoins souvent difficilement
-exploitables à l'état brut au sein d'outils cartographiques.
+L'information officielle sur la progression de l'épidémie en France a été au départ assez fragmentée. Différentes initiatives ont tenté de structurer celle-ci sous forme de données libres. Malgré ce travail les données ont été néanmoins souvent difficilement exploitables à l'état brut au sein d'outils cartographiques.
 
-L'objectif de ce dépôt est de consolider l'information et de la rendre disponible dans des formats ouverts et aisément réutilisables pour produire des cartes. Le format pivot privilégié est le [GeoJson](https://fr.wikipedia.org/wiki/GeoJSON).
+L'objectif de ce dépôt est de consolider l'information et de la rendre disponible dans des formats ouverts et aisément réutilisables pour produire des cartes. Le format pivot privilégié est le [GeoJson](https://fr.wikipedia.org/wiki/GeoJSON). Retrouvez également nos données sur [le portail national des données libres](https://www.data.gouv.fr/fr/datasets/donnees-cartographiques-concernant-lepidemie-de-covid-19/).
+
+L'information officielle sur la progression de l’épidémie en France est consolidée par <a href='https://www.santepubliquefrance.fr'>Santé publique France</a>. L’agence propose un <a href='https://www.santepubliquefrance.fr/maladies-et-traumatismes/maladies-et-infections-respiratoires/infection-a-coronavirus/articles/infection-au-nouveau-coronavirus-sars-cov-2-covid-19-france-et-monde'>point épidémiologique quotidien</a>, qui comprend les chiffres-clés nationaux. Par ailleurs, les <a href="https://www.ars.sante.fr">Agences Régionales de Santé</a>, les <a href="http://www.prefectures-regions.gouv.fr">préfectures de régions</a> et les <a href="https://www.interieur.gouv.fr/Le-ministere/Prefectures">préfectures</a> publient des bulletins d’informations centrés sur leur territoire de compétence.
+
+Sous l'impulsion des initiatives libres telles que <a href='https://github.com/opencovid19-fr'>OpenCovid19</a>, Santé publique France propose également des <a href='https://www.data.gouv.fr/fr/organizations/sante-publique-france/'>données relatives à l’épidémie plus précises</a> sur la plateforme <a href='https://www.data.gouv.fr'>www.data.gouv.fr</a>. Un outil <a href='https://github.com/etalab/covid19-dashboard'>dont le code source est libre</a>, développé sous l’impulsion d’<a target='_top' href='https://www.etalab.gouv.fr'>Etalab</a>, au sein de la <a href='https://www.numerique.gouv.fr/dinum/'>direction interministérielle du numérique</a>, propose une vision consolidée des données officielles disponibles.
+
+**A partir du 25/03 devant l'ampleur de la contamination l'indicateur des cas confirmés n'étant plus pertinent il n'est généralement plus communiqué par les pouvoirs publics, sauf au niveau national.**
 
 ## Comment contribuer ?
 
@@ -14,8 +19,9 @@ Pour vous signaler rejoignez la communauté sur [Slack](https://join.slack.com/t
 Quelques idées:
 * ~~production de jeux de données avec le contour des départements et non les barycentres~~
 * ~~croisement avec des données de population~~
-* croisement avec des données hospitalières (nombre de lits, etc.) => en cours via SAE 2018
-* intégrer les [nouvelles données](https://github.com/opencovid19-fr/data/tree/master/data-sources/sante-publique-france) de Santé Publique France remontées au niveau départemental 
+* ~~croisement avec des données hospitalières (nombre de lits, etc.)~~ => fait via SAE 2018
+* ~~intégrer les [données hospitalières](https://www.data.gouv.fr/fr/datasets/donnees-hospitalieres-relatives-a-lepidemie-de-covid-19/) de Santé Publique France remontées au niveau départemental~~
+* ~~intégrer les [données des urgences et SOS médecins](https://www.data.gouv.fr/fr/datasets/donnees-des-urgences-hospitalieres-et-de-sos-medecins-relatives-a-lepidemie-de-covid-19/) de Santé Publique France remontées au niveau départemental~~
 * géolocalisation des données des patients au niveau communal (pour l'instant très peu de données)
 * consitution de collections MongoDB pour visualisation spatio-temporelle dans Kano (eg séries temporelles)
 
@@ -26,6 +32,7 @@ Nos principales sources de données sont les suivantes:
   * https://github.com/CSSEGISandData/COVID-19
 * niveau national
   * données régionales/départementales https://github.com/opencovid19-fr/data
+  * données départementales https://www.data.gouv.fr/fr/organizations/sante-publique-france
   * données individualisée https://github.com/lperez31/coronavirus-france-dataset
 * croisements géographiques
   * contours administratifs nationaux https://github.com/gregoiredavid/france-geojson
@@ -48,11 +55,18 @@ SELECT departement, libdepartement, sum(LIT) AS lits
 Chaque élément cartographique peut contenir les propriétés suivantes:
 * `Country/Region` Pays/Région de provenance
 * `Province/State` Etat/Département de provenance
-* `Confirmed` nombre de cas confirmés
-* `Deaths` nombre de décès confirmés
-* `Recovered` nombre de guérisons confirmées
-* `Severe` nombre de cas hospitalisés
-* `Critical` nombre de cas en réanimation
+* `Confirmed` nombre cumulé de cas confirmés
+* `Deaths` nombre cumulé de décès
+* `Recovered` nombre cumulé de guérisons
+* `Severe` nombre de cas hospitalisés à date
+* `Critical` nombre de cas en réanimation à date
+* `Emergencies`
+  * `Total` - nombre de passages aux urgences total à date
+  * `Suspected` - nombre de passages aux urgences pour suspicion COVID-19 à date
+  * `Severe` - nombre d'hospitalisations parmi les passages aux urgences pour suspicion COVID-19 à date
+* `MedicalActs`
+  * `Total` - nombres d'actes médicaux SOS Médecins total à date
+  * `Suspected` - nombres d'actes médicaux SOS Médecins pour suspicion de COVID-19 à date
 * `Population`
   * `Total` - Ensemble
   * `Under19` - 0 à 19 ans
@@ -63,12 +77,12 @@ Chaque élément cartographique peut contenir les propriétés suivantes:
 * `Beds` Lits hospitaliers
   * `Total` - Ensemble
   * `Resuscitation` - Réanimation
-  * `IntensiveCare` - Soins intensifs
+  * `IntensiveCare` - Soins intensifs et continus
 
 Les principales données produites sont les suivantes:
 
 * données journalières par région consolidées au niveau national :open_file_folder: [regions-france](./regions-france)
-  * issues des données des [Agences Régionales de Santé](https://github.com/opencovid19-fr/data/tree/master/agences-regionales-sante) et de [Santé Publique France](https://github.com/opencovid19-fr/data/tree/master/sante-publique-france)
+  * issues des données des [Agences Régionales de Santé](https://github.com/opencovid19-fr/data/tree/master/agences-regionales-sante) et de [Santé Publique France](https://www.data.gouv.fr/fr/organizations/sante-publique-france/)
   * croisement géographique par région réalisé sur la base du code de région
   * polygones (fichiers préfixés par `polygons`) ou géolocalisation des données au barycentre de la région pour la constitution d'[heatmaps](https://fr.wikipedia.org/wiki/Heat_map)
 
@@ -88,7 +102,7 @@ Carte évolutive des cas en régions, taille des bulles liée au nombre de cas p
 Voir la [vidéo originale](https://drive.google.com/file/d/1tcD_34txCr8I-5L_EVor-sQPO4xm_YQh/view).
 
 * données journalières par département consolidées au niveau national :open_file_folder: [departements-france](./departements-france)
-  * issues des données des [Agences Régionales de Santé](https://github.com/opencovid19-fr/data/tree/master/agences-regionales-sante)
+  * issues des données des [Agences Régionales de Santé](https://github.com/opencovid19-fr/data/tree/master/agences-regionales-sante) et de [Santé Publique France](https://www.data.gouv.fr/fr/organizations/sante-publique-france/)
   * croisement géographique par département réalisé sur la base du code de département
   * polygones (fichiers préfixés par `polygons`) ou géolocalisation des données au barycentre du département pour la constitution d'[heatmaps](https://fr.wikipedia.org/wiki/Heat_map)
 
@@ -113,9 +127,15 @@ Carte de densité des cas par département:
 
 Si vous souhaitez référencer les jeux de données directement plutôt que de les copier utiliser plutôt notre bucket S3 sur AWS, le chemin vers les fichiers reste le même en préfixant par la racine `https://s3.eu-central-1.amazonaws.com/krawler/`. Par exemple l'URL vers le fichier des patients en france est `https://s3.eu-central-1.amazonaws.com/krawler/covid-19/patients-france/patients-france.json`.
 
-## Outils
+## Génération des jeux données
 
 Les données sont scrappées via [Krawler](https://kalisio.github.io/krawler/) et peuvent être visualisées via [Kano](https://kalisio.github.io/kano/) ou tout autre outil SIG standard comme [geojson.io](http://geojson.io/), [QGIS](https://www.qgis.org/fr/site/), etc.
+
+Les données disponibles ne sont réellement significative qu'à partir du 1er Mars 2020. Un job Krawler est responsable de la production de chaque jeu de données à une date fixée (i.e. statistiques par département, statistiques par région, patients). Certains jobs sont interdépendants, par exemple les jobs des statistiques par département/région dépendent de l'exécution préalable du job de génération des données hospitalières Santé Publique France. Le job `generate-data-jobfile` permet de lancer tous les jobs dans le bon ordre pour générer tous les jeux de données sur une période.
+
+**Lorsque certains indicateurs (e.g. les des cas confirmés) manquent à une date donnée nous avons fait le choix de combler le trou en réutilisant la valeur de la date précédente. Merci de tenir compte de cette hypothèse dans vos réutilisation.**
+
+**Certains indicateurs (e.g. les des cas confirmés) peuvent ne plus être pertinents à partir d'une certaine période et donc ne plus être communiqués par les pouvoirs publics, sauf par exemple au niveau national.**
 
 Nous faisons évoluer nos outils en fonction des besoins, aussi il faut utiliser la version en cours de développement (branche master) et non des version stables. Pour Kano il vous faudra par exemple faire un [yarn/npm link](https://docs.npmjs.com/cli/link) comme tout développeur travaillant sur ce projet.
 
@@ -131,14 +151,26 @@ yarn link
 git clone https://github.com/kalisio/covid-19.git
 cd covid-19
 export NODE_PATH="path_to_krawler/node_modules"
-krawler france-patients-jobfile.js
-krawler france-patients-jobfile.js --departements
+// Run job to generate all data for all dates in a period
+// By default will start on 2020-03-01 and finish on yesterday
+krawler generate-data-jobfile.js --start 2020-03-01 --end 2020-03-30
+```
+
+Vous pouvez aussi lancer chaque job de façon individuelle:
+```bash
+// Run job to generate SPF data (to be done first)
+krawler spf-donnees-hospitalieres-jobfile.js --date 2020-03-01
+// Run job to generate departements data
 krawler france-departements-jobfile.js --date 2020-03-01 --geometry 'Point' ou 'Polygon'
 ...
 krawler france-departements-jobfile.js --date 2020-03-16 --geometry 'Point' ou 'Polygon'
+// Run job to generate regions data
 krawler france-regions-jobfile.js --date 2020-03-01 --geometry 'Point' ou 'Polygon'
 ...
 krawler france-regions-jobfile.js --date 2020-03-16 --geometry 'Point' ou 'Polygon'
+// Run job to generate patients data
+krawler france-patients-jobfile.js
+krawler france-patients-jobfile.js --departements
 ```
 
 Pour Kano:

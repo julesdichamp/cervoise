@@ -42,13 +42,27 @@ regionsData.forEach(region => {
     }
   })
 })
-// Add SPF source
+// Add SPF sources
 tasks.push({
   id: `spf-${date.format('YYYY-MM-DD')}`,
   type: 'http',
   options: {
     url: 'https://raw.githubusercontent.com/opencovid19-fr/data/master/sante-publique-france/' +
          `${date.format('YYYY-MM-DD')}.yaml`
+  }
+})
+tasks.push({
+  id: `spf-donnees-hospitalieres/spf-donnees-hospitalieres-${date.format('MM-DD-YYYY')}.yaml`,
+  type: 'store',
+  options: {
+    store: 'fs'
+  }
+})
+tasks.push({
+  id: `spf-donnees-urgences-sos-medecins/spf-donnees-urgences-sos-medecins-${date.format('MM-DD-YYYY')}.yaml`,
+  type: 'store',
+  options: {
+    store: 'fs'
   }
 })
 
@@ -75,7 +89,7 @@ module.exports = {
           id: 'memory'
         }, {
           id: 'fs',
-          options: { path: path.join(__dirname, 'regions-france') }
+          options: { path: __dirname }
         },
         {
           id: 's3',
@@ -109,18 +123,19 @@ module.exports = {
               utils.processPreviousData(data.features, yesterday.features)
               console.log(`Data processed for ${data.features.length} regions on ${regions.features.length} regions`)
               _.forOwn(utils.properties, (value, key) => {
-                console.log(`Found a total of ${utils.N[value]} ${value}`)
+                const n = _.get(utils.N, value)
+                console.log(`Found a total of ${n} ${value}`)
               })
             }
           }
         },
         writeJsonFS: {
           hook: 'writeJson',
-          store: 'fs'
+          store: 'fs',
+          key: `regions-france/<%= id %>.json`
         },
         writeJsonS3: {
           hook: 'writeJson',
-          predicate: (item) => process.env.S3_BUCKET,
           store: 's3',
           key: `covid-19/regions-france/<%= id %>.json`,
           storageOptions: {

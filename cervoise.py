@@ -174,6 +174,13 @@ def InitParams(config_name):
         params["k_IR"] = config.getfloat("model", "k_IR")        
         params["k_ID"] = config.getfloat("model", "k_ID")
         params["time_start_day"] = config.get("model", "time_start_day")
+    elif params["model_name"] == "RealSIRDWellMixed":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region: 
+        # fix R_0 per region and addapt k_IS accordingly to population
+        params["R_0"] = config.getfloat("model", "R_0")
+        params["k_IR"] = config.getfloat("model", "k_IR")        
+        params["k_ID"] = config.getfloat("model", "k_ID")
+        params["time_start_day"] = config.get("model", "time_start_day")
     else:
         print("[ERROR]: model name not found. Exit here.")
         exit(0)        
@@ -352,7 +359,8 @@ def LaunchModel(params, graph):
         plot_SIRerlangOnGraph(params, outputs, graph)
     elif params["model_name"] == "RealSIRDOnGraph":
         outputs , graph = SolveOnGraph(params, graph)
-        plot_TEST(params,outputs, graph)        
+        plot_TEST(params,outputs, graph)
+    
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)

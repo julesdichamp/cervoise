@@ -482,7 +482,6 @@ def InitModels(params, G):
         dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
         dic_simu_total_pop = copy.deepcopy(dic_total_pop)
         dic_simu_data_covid = copy.deepcopy(dic_data_covid)        
-        R_0 = 3.        
         dic_kinetic = {}
         dic_x_ini = {}
         dic_x = {}
@@ -517,6 +516,75 @@ def InitModels(params, G):
             dic_hopping_rates[e] = 0.  # do not consider hopping after lockdown
         nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates) 
     
+    """
+    temporary name for testing stuff 
+    """
+    if (params["model_name"] == "RealSIRDWellMixed"):
+        # load initial state, and reactions values
+        R_0 = params["R_0"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        k_ID = params["k_ID"]  # A = 2
+                
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 3
+        nbStates = 4
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+        
+        # first reaction: S + I -> 2I
+        N[0][0] = 1 ; M[0][0] = 0 
+        N[1][0] = 1 ; M[1][0] = 2
+        N[2][0] = 0 ; M[2][0] = 0
+        N[3][0] = 0 ; M[3][0] = 0
+        #second reaction: I -> R
+        N[0][1] = 0 ; M[0][1] = 0
+        N[1][1] = 1 ; M[1][1] = 0
+        N[2][1] = 0 ; M[2][1] = 1
+        N[3][1] = 0 ; M[3][1] = 0
+        #third reaction: I -> D
+        N[0][2] = 0 ; M[0][2] = 0
+        N[1][2] = 1 ; M[1][2] = 0
+        N[2][2] = 0 ; M[2][2] = 0
+        N[3][2] = 0 ; M[3][2] = 1
+        
+        R = M - N
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R    
+        
+        dic_data_covid = nx.get_node_attributes(G, name='data_covid')
+        dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+        dic_simu_total_pop = copy.deepcopy(dic_total_pop)
+        dic_simu_data_covid = copy.deepcopy(dic_data_covid)  
+        S = 0 ; I = 0 ; R = 0 ; D = 0;
+        # get data for entire france
+        for n in G.nodes():
+            # take 1% of total population and round to floor to make sure 
+            # we work with integer population numbers            
+            dic_simu_total_pop[n] = dic_simu_total_pop[n]
+            # get fraction of confirmed cases             
+            I += dic_simu_data_covid[n][params["time_start_day"]]['Confirmed']
+            # get fraction of deaths
+            D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
+            R += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
+            S += dic_simu_total_pop[n] - I - D - R
+
+        # get N = total population
+        N = S + I + R + D
+
+        # adjust k_SI to each node population
+        k_SI = (k_IR + k_ID) * R_0 / N
+        k_plus = np.array([k_SI, k_IR, k_ID])
+        x_ini = np.array([S, I, R, D])
+        params['k_plus'] = k_plus
+        params['x_ini'] = x_ini
+    
     return params, G
         
 def SolveOneCompartment(params):
@@ -533,9 +601,11 @@ def SolveOneCompartment(params):
     x = x_ini
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
+    count_loops = 0
     while t < params["time_end"]:        
-        print(t, x)
         outputs.append((t, x))
+        if ((count_loops % 10000) == 0):
+            print("t, count_loops, x = " , t, count_loops, x)
         # forward reaction rates
         t_forward_plus = np.zeros(nbReactions)
         for j in range(0, nbReactions):
@@ -584,7 +654,9 @@ def SolveOneCompartment(params):
 
         # set new state according to reaction        
         x = x + R[:, id_reaction] 
-
+        
+        count_loops += 1
+        
     return outputs
 
 def SolveOnGraph(params, G):
@@ -619,6 +691,8 @@ def SolveOnGraph(params, G):
                     for ii in range(0,nbStates):
                         x_print[ii] += dic_x_for_save[key][ii]
                 # print("t, count_loops, x = " , t, count_loops, x_print)
+                if ((count_loops % 10000) == 0):
+                    print("t, count_loops, x = " , t, count_loops, x_print)
                 outputs.append([t, dic_x_for_save])
             
             # compute W_inside: loop on every node 
