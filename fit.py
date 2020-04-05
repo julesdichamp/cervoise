@@ -139,6 +139,76 @@ def FitFuncOneComp(paramsToFit, params, G):
     print("fitness value = ", norm(fitness, ord=2) ** 2)
     return norm(fitness, ord=2) ** 2
 
+
+def FitFuncSIRLDOneComp(paramsToFit, params, G): 
+    print('FitFuncSIRLDOneComp')  
+    # add parameters to fit into (that will be varied every call to the fitfunction)
+    # to the dictionnary that contains all parameters
+    params["k_SI"]  = float(paramsToFit["k_SI"])
+    params["k_IR"]  = float(paramsToFit["k_IR"])
+    params["k_IL"]  = float(paramsToFit["k_IL"])
+    params["k_LD"]  = float(paramsToFit["k_LD"])
+    params["L_ini"] = int(paramsToFit["L_ini"])
+    params["alpha"] = float(paramsToFit["alpha"])
+    # transform to datetime format
+    dates = [datetime.datetime.strptime(ts, "%Y-%m-%d") for ts in params["dates_for_fit"]] 
+    time_start_date = datetime.datetime.strptime(params['time_start_day'], "%Y-%m-%d")        
+    nbDates=len(params["dates_for_fit"])    
+        
+    # fill vector with relative increase from one date to the other    
+    # dates[0] should NOT be the same than time_start_date otherwise 
+    # delta_days[0] = 0 and the first fit data point is the intial values...
+    # dates bmust be sorted in params['dates_for_fit']
+    delta_days = []
+    delta_days.append((dates[0] - time_start_date).days) # transform to number of days
+    for i in range(1,nbDates):
+        delta_days.append((dates[i] - dates[i-1]).days) # transform to number of days
+    
+    # time_end must verify time_end = time_start + sum(delta_days)
+    if params['time_end'] != params['time_start'] + sum(delta_days):        
+        params['time_end'] = params['time_start'] + sum(delta_days)
+        print("new time_end = " , params['time_end'])
+    
+    # init model and solve
+    [params , G] = InitModels(params, G)
+    outputs = SolveOneCompartment(params)
+    nbTimes = len(outputs)
+    
+    fitness = np.zeros(3 * nbDates)
+    time_date_target = params['time_start'] + delta_days[0]
+    _count = 0
+    # get all data we need    
+    dic_data_covid = nx.get_node_attributes(G, name='data_covid')    
+    # loop over time steps to get simu results and compute fit function
+    for i in range(0,nbTimes):
+        mytime = outputs[i][0]
+        # not sure of what precision to take
+        if (abs(mytime - time_date_target) <= 0.01) :
+            print('[TARGET FOUND]: mytime, date_target = ' , mytime, time_date_target)
+            x = outputs[i][1]
+            total_confirmed = 0
+            total_recovered = 0
+            total_deaths    = 0
+            for n in G.nodes():
+                # Infected       
+                total_confirmed += dic_data_covid[n][params["dates_for_fit"][_count]]['Confirmed']
+                total_recovered += dic_data_covid[n][params["dates_for_fit"][_count]]['Recovered']
+                total_deaths    += dic_data_covid[n][params["dates_for_fit"][_count]]['Deaths']
+            
+            # compare confirmed to confirmed
+            fitness[_count + 0] = (total_confirmed - params['alpha'] * x[1])
+            fitness[_count + 1] = (total_recovered - x[2])
+            fitness[_count + 2] = (total_deaths    - x[4])
+            # get new date to target
+            time_date_target = time_date_target + delta_days[_count]
+            _count += 1
+            # exist loop if we got all data we need
+            if (_count == nbDates):
+                break;
+
+    print("fitness value = ", norm(fitness, ord=2) ** 2)
+    return norm(fitness, ord=2) ** 2
+
 # parameters to fit AT THE MOMENT
 # R_0 (between 2 and 4) --> this gives k_IS
 # k_IR (between 1 / 10 and 1 / 20 days)
@@ -152,11 +222,23 @@ def InitFit():
     paramsToFit.add("k_ID", 0.01, min=0.005, max=0.05, vary=True)
     return paramsToFit
 
+def InitFitSIRLD():
+    print('InitFitSIRLD')
+    paramsToFit = lmfit.Parameters()
+    # set parameters that need to be fitted
+    paramsToFit.add("k_SI", value=1e-9, min=1e-10, max=1e-8, vary=True)
+    paramsToFit.add("k_IR", value=0.0666, min=0.1, max=0.05, vary=True)
+    paramsToFit.add("k_IL", value=0.01, min=0.0001, max=1, vary=True)
+    paramsToFit.add("k_LD", value=0.01, min=0.005, max=0.05, vary=True)
+    paramsToFit.add("L_ini", value=400, min=100, max=1000, vary=True)
+    paramsToFit.add("alpha", value=0.1, min=0.01, max=1, vary=True)
+    return paramsToFit
+
 
 def LaunchFit(paramsToFit, params, G):
     print('LaunchFit')
     mini = lmfit.Minimizer(
-        FitFuncOneComp, paramsToFit, fcn_args=(params, G)
+        FitFuncSIRLDOneComp, paramsToFit, fcn_args=(params, G)
     )
     # mini = lmfit.Minimizer(
         # FitFuncOnGraph, paramsToFit, fcn_args=(params, G)

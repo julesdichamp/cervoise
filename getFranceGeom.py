@@ -103,7 +103,6 @@ def getFranceGeomDpts(params):
             dic_data_covid[dpt_name][_date]['Confirmed'] = num_confirmed
             dic_data_covid[dpt_name][_date]['Deaths'] = num_deaths
             dic_data_covid[dpt_name][_date]['Recovered'] = num_recovered
-            # print(_date, dpt_name, num_confirmed, num_deaths)
 
     # the data set in departments does not include La Reunion for some reason
     # data for La Reunion is however available is directory regions-france
@@ -113,7 +112,7 @@ def getFranceGeomDpts(params):
         _date = fname[-15:-5]
         df = pd.read_json(fname, orient='columns')
         for i in range(0, df.shape[0]):
-            properties = df.iloc[i, 1]['properties']
+            properties = df.iloc[i, 1]['properties']            
             dpt_name = properties['Province/State']
             if dpt_name == "La Réunion":
                 if 'Confirmed' in properties:
@@ -135,8 +134,11 @@ def getFranceGeomDpts(params):
                 dic_data_covid[dpt_name][_date]['Confirmed'] = num_confirmed
                 dic_data_covid[dpt_name][_date]['Deaths'] = num_deaths
                 dic_data_covid[dpt_name][_date]['Recovered'] = num_recovered
-                # print(_date, dpt_name, num_confirmed, num_deaths)
+                    
 
+
+    print("WARNING: data in departements-france does not match data inregions-france for e.g. Martinique")
+    
     # %% sort and sum by dpt data train
     for i in range(gares.shape[0]):
         gare = gares.loc[i]
@@ -309,6 +311,47 @@ def getFranceGeomRegions(params):
     else:
         print("we found all regions")
 
+
+    # go look for covid data for every region because this might not be up to date
+    # i.e. sum over departments != region
+    covidRegionsFileNames = params['allCovid19RegionsFileNames']
+    dic_data_covid = {}
+    for fname in covidRegionsFileNames:
+        _date = fname[-15:-5]
+        df_covid = pd.read_json(fname, orient='columns')
+        for i in range(0, df_covid.shape[0]):
+            properties = df_covid.iloc[i, 1]['properties']            
+            reg_name = properties['Province/State']            
+            if 'Confirmed' in properties:
+                num_confirmed = properties['Confirmed']
+            else:
+                num_confirmed = 0
+            if 'Deaths' in properties:
+                num_deaths = properties['Deaths']
+            else:
+                num_deaths = 0
+            if ('Recovered'  in properties):
+                num_recovered = properties['Recovered']
+            else:
+                num_recovered = 0
+            
+            # change name to match other data set
+            if (reg_name == 'Île-de-France'):
+                reg_name = 'Ile-de-France'
+            
+            if (reg_name == "Provence-Alpes-Côte d'Azur"):
+                reg_name = "Provence-Alpes-Côte d’Azur"
+            
+            if (not(reg_name in dic_data_covid)):
+                dic_data_covid[reg_name] = {}
+
+            dic_data_covid[reg_name][_date] = {}
+            dic_data_covid[reg_name][_date]['Confirmed'] = num_confirmed
+            dic_data_covid[reg_name][_date]['Deaths'] = num_deaths
+            dic_data_covid[reg_name][_date]['Recovered'] = num_recovered
+            print(_date, reg_name, num_confirmed, num_deaths)        
+        
+    
     # for each  region get list of departments in that region
     franceGeomRegions = {}
     for regName in LIST_REGIONS:
@@ -322,24 +365,30 @@ def getFranceGeomRegions(params):
         franceGeomRegions[regName]["freqGare"] = 0.
         franceGeomRegions[regName]["agesSex"] = {}
         franceGeomRegions[regName]["airways"] = []
+        franceGeomRegions[regName]["data_covid"] = dic_data_covid[regName]
+        
         # loop over all departments that are part of the region
         for dptName in franceGeomRegions[regName]['departments']:
+            # JD: BELOW IS OLD WAY TO COMPUTE COVID19 DATA AT REGION SCALE
+            # NOW WE RE-COMPUTE IT FROM FILES FOR REGIONS DIRECTLY
+            # BECAUSE THIS MIGHT NOT BE UP TO DATE AT DEPARTMENTS SCALE
             # sum all confirmed and deaths from departments in region and
             # set those values in region dictionnary
             # do it for each date there are data for
-            for _date in franceGeomDpts[dptName]["data_covid"].keys():
-                if not (_date in franceGeomRegions[regName]["data_covid"]):
-                    franceGeomRegions[regName]["data_covid"][_date] = {}
-                    franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] = 0
-                    franceGeomRegions[regName]["data_covid"][_date]['Deaths'] = 0
-                    franceGeomRegions[regName]["data_covid"][_date]['Recovered'] = 0
+            # for _date in franceGeomDpts[dptName]["data_covid"].keys():
+                # if not (_date in franceGeomRegions[regName]["data_covid"]):
+                    # franceGeomRegions[regName]["data_covid"][_date] = {}
+                    # franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] = 0
+                    # franceGeomRegions[regName]["data_covid"][_date]['Deaths'] = 0
+                    # franceGeomRegions[regName]["data_covid"][_date]['Recovered'] = 0
                 
-                franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] += \
-                    franceGeomDpts[dptName]["data_covid"][_date]['Confirmed']
-                franceGeomRegions[regName]["data_covid"][_date]['Deaths'] += \
-                    franceGeomDpts[dptName]["data_covid"][_date]['Deaths']
-                franceGeomRegions[regName]["data_covid"][_date]['Recovered'] += \
-                    franceGeomDpts[dptName]["data_covid"][_date]['Recovered']            
+                # franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] += \
+                    # franceGeomDpts[dptName]["data_covid"][_date]['Confirmed']
+                # franceGeomRegions[regName]["data_covid"][_date]['Deaths'] += \
+                    # franceGeomDpts[dptName]["data_covid"][_date]['Deaths']
+                # franceGeomRegions[regName]["data_covid"][_date]['Recovered'] += \
+                    # franceGeomDpts[dptName]["data_covid"][_date]['Recovered']            
+            
             # add train stations frequentations = sum over all train frequentations
             # in departments
             franceGeomRegions[regName]["freqGare"] += franceGeomDpts[dptName]["freqGare"]

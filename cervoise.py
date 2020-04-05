@@ -37,12 +37,13 @@ import getFranceGeom
 # from getFranceGeom import *
 from models import *
 from plotModels import *
+from plotData import *
 import distutils
 from distutils.util import strtobool
 
 # contains functions to perform fit of the model
 import lmfit
-from fit import InitFit, LaunchFit
+from fit import InitFit, LaunchFit, InitFitSIRLD
 
 
 print(
@@ -174,12 +175,19 @@ def InitParams(config_name):
         params["k_IR"] = config.getfloat("model", "k_IR")        
         params["k_ID"] = config.getfloat("model", "k_ID")
         params["time_start_day"] = config.get("model", "time_start_day")
-    elif params["model_name"] == "RealSIRDWellMixed":  # load parameters needed for this model
+    elif params["model_name"] == "RealSIRDWellMixed":  # load parameters needed for this model        
         # For now all parameters are the same wherever the region: 
         # fix R_0 per region and addapt k_IS accordingly to population
         params["R_0"] = config.getfloat("model", "R_0")
         params["k_IR"] = config.getfloat("model", "k_IR")        
         params["k_ID"] = config.getfloat("model", "k_ID")
+        params["time_start_day"] = config.get("model", "time_start_day")
+    elif params["model_name"] == "RealSIRLDWellMixed":  # load parameters needed for this model        
+        params["k_SI"]  = config.getfloat("model", "k_SI")
+        params["k_IR"]  = config.getfloat("model", "k_IR")        
+        params["k_IL"]  = config.getfloat("model", "k_IL")
+        params["k_LD"]  = config.getfloat("model", "k_LD")
+        params["alpha"] = config.getfloat("model", "alpha")
         params["time_start_day"] = config.get("model", "time_start_day")
     else:
         print("[ERROR]: model name not found. Exit here.")
@@ -388,9 +396,15 @@ else:
         params["franceFileExist"] = True
         G = InitGraph(params)
 
+if ("PlotData" in params['plot_options']):
+    dates_to_plot = params['dates_for_fit']
+    dates_to_plot.insert(0, params['time_start_day'])
+    plotData(params, G, dates_to_plot)
+
 if (params['fit_model']):
     print("Start fitting procedure, Inch'Allah...")
-    paramsToFit = InitFit()
+    # paramsToFit = InitFit()
+    paramsToFit = InitFitSIRLD()
     df = LaunchFit(paramsToFit, params, G)
 
 LaunchModel(params, G)
