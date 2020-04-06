@@ -231,7 +231,9 @@ def InitGraph(params):
     ### --- 1/ read data we need depending of what is written on params["graph_type"]
     franceGeom = getFranceGeom.readFranceGeom(params)
     G = nx.Graph()
-
+    params['total_pop'] = 0 # feed dictionnary with aggregated data from graph
+    params['total_covid_data'] = {} # feed dictionnary with aggregated data from graph
+    
     ### --- Construct graph
     # same routine for regions and departments as it is handled by readFranceGeom(params)
     if (params['graph_type'] == 'regions') or (params['graph_type'] == 'departments'):
@@ -255,6 +257,16 @@ def InitGraph(params):
             centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
             dic_positions[id_node] = centroid
             dic_names[id_node] = key
+            params['total_pop'] += dic_total_population[id_node]
+            for _date in dic_data_covid[id_node].keys():
+                if not(_date in params['total_covid_data']):
+                    params['total_covid_data'][_date] = {}
+                    params['total_covid_data'][_date]['Confirmed'] = 0
+                    params['total_covid_data'][_date]['Deaths']    = 0
+                    params['total_covid_data'][_date]['Recovered'] = 0
+                params['total_covid_data'][_date]['Confirmed'] += dic_data_covid[id_node][_date]['Confirmed']
+                params['total_covid_data'][_date]['Deaths']    += dic_data_covid[id_node][_date]['Deaths']
+                params['total_covid_data'][_date]['Recovered'] += dic_data_covid[id_node][_date]['Recovered']
             id_node += 1
 
         # add attributes with positions to graph
@@ -309,6 +321,16 @@ def InitGraph(params):
             centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
             dic_positions[id_node] = centroid
             dic_names[id_node] = key
+            params['total_pop'] += dic_total_population[id_node]
+            for _date in dic_data_covid[id_node].keys():
+                if not(_date in params['total_covid_data']):
+                    params['total_covid_data'][_date] = {}
+                    params['total_covid_data'][_date]['Confirmed'] = 0
+                    params['total_covid_data'][_date]['Deaths']    = 0
+                    params['total_covid_data'][_date]['Recovered'] = 0
+                params['total_covid_data'][_date]['Confirmed'] += dic_data_covid[id_node][_date]['Confirmed']
+                params['total_covid_data'][_date]['Deaths']    += dic_data_covid[id_node][_date]['Deaths']
+                params['total_covid_data'][_date]['Recovered'] += dic_data_covid[id_node][_date]['Recovered']        
             id_node += 1
         # add attributes with positions to graph
         nx.set_node_attributes(G, name='positions', values=dic_positions)
@@ -326,8 +348,8 @@ def InitGraph(params):
     print("num_edges = ", G.number_of_edges())
     print("num_nodes = ", G.number_of_nodes())
 
-    print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
-    print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
+    # print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
+    # print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
     # ### --- plot graph
     # fig, ax = plt.subplots()    
     # dic_pos = nx.get_node_attributes(G, 'positions')
@@ -397,17 +419,26 @@ else:
         G = InitGraph(params)
 
 if ("PlotData" in params['plot_options']):
-    dates_to_plot = params['dates_for_fit']
-    dates_to_plot.insert(0, params['time_start_day'])
+    dates_to_plot = []
+    # copy list otherwize references are copied... and it messes up
+    # with params['dates_for_fit'] list later on (e.g. on the fit function)
+    dates_to_plot = params['dates_for_fit'].copy() 
+    dates_to_plot.insert(0, params['time_start_day'])    
     plotData(params, G, dates_to_plot)
 
 if (params['fit_model']):
     print("Start fitting procedure, Inch'Allah...")
     # paramsToFit = InitFit()
+    print("data at start ", params['time_start_day'] , ' = ' , params['total_covid_data'][params['time_start_day']])
+    for _date in params['dates_for_fit']:
+        print ('data at ' , _date , ' = ' , params['total_covid_data'][_date])
+            
     paramsToFit = InitFitSIRLD()
+    params['num_iter_fit'] = 0
+    
     df = LaunchFit(paramsToFit, params, G)
 
-LaunchModel(params, G)
+# LaunchModel(params, G)
 
 t1 = time.time()
 print("Code ran for: ", t1 - t0, " seconds")

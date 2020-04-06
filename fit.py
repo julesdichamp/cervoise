@@ -149,7 +149,11 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G):
     params["k_IL"]  = float(paramsToFit["k_IL"])
     params["k_LD"]  = float(paramsToFit["k_LD"])
     params["L_ini"] = int(paramsToFit["L_ini"])
+    params["I_ini"] = int(paramsToFit["I_ini"])
     params["alpha"] = float(paramsToFit["alpha"])
+    
+    print(paramsToFit)
+    
     # transform to datetime format
     dates = [datetime.datetime.strptime(ts, "%Y-%m-%d") for ts in params["dates_for_fit"]] 
     time_start_date = datetime.datetime.strptime(params['time_start_day'], "%Y-%m-%d")        
@@ -158,7 +162,7 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G):
     # fill vector with relative increase from one date to the other    
     # dates[0] should NOT be the same than time_start_date otherwise 
     # delta_days[0] = 0 and the first fit data point is the intial values...
-    # dates bmust be sorted in params['dates_for_fit']
+    # dates bmust be sorted in params['dates_for_fit']    
     delta_days = []
     delta_days.append((dates[0] - time_start_date).days) # transform to number of days
     for i in range(1,nbDates):
@@ -173,19 +177,22 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G):
     [params , G] = InitModels(params, G)
     outputs = SolveOneCompartment(params)
     nbTimes = len(outputs)
-    
     fitness = np.zeros(3 * nbDates)
     time_date_target = params['time_start'] + delta_days[0]
     _count = 0
     # get all data we need    
     dic_data_covid = nx.get_node_attributes(G, name='data_covid')    
     # loop over time steps to get simu results and compute fit function
-    for i in range(0,nbTimes):
-        mytime = outputs[i][0]
+    x = np.zeros([nbTimes,params['nbStates']])
+    _time = np.zeros(nbTimes)
+    for i in range(0,nbTimes):        
+        mytime = outputs[i][0]        
+        _time[i] = mytime
+        x[i,:] = outputs[i][1]
         # not sure of what precision to take
         if (abs(mytime - time_date_target) <= 0.01) :
             print('[TARGET FOUND]: mytime, date_target = ' , mytime, time_date_target)
-            x = outputs[i][1]
+            
             total_confirmed = 0
             total_recovered = 0
             total_deaths    = 0
@@ -196,17 +203,26 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G):
                 total_deaths    += dic_data_covid[n][params["dates_for_fit"][_count]]['Deaths']
             
             # compare confirmed to confirmed
-            fitness[_count + 0] = (total_confirmed - params['alpha'] * x[1])
-            fitness[_count + 1] = (total_recovered - x[2])
-            fitness[_count + 2] = (total_deaths    - x[4])
+            # do not add revoered to the fit function as it is not sure yet 
+            # if there isn' t a delay like for the deaths
+            # params["k_SI"] * params['alpha'] * x[1] 
+            # tmp_funct = alpha * k_SI * S * I = beta I in marc lavielle
+            tmp_func = params['alpha'] * params["k_SI"] * x[0:i,0] * x[0:i,1]            
+            W_c = np.trapz(tmp_func, _time[0:i] ) # integral over time of I until mytime[i]
+            print("W_c = ", W_c)
+            fitness[_count + 0] = (total_confirmed - W_c)
+            # fitness[_count + 1] = (total_recovered - x[2])
+            fitness[_count + 2] = (total_deaths    - x[i,4])
             # get new date to target
             time_date_target = time_date_target + delta_days[_count]
             _count += 1
             # exist loop if we got all data we need
             if (_count == nbDates):
                 break;
-
-    print("fitness value = ", norm(fitness, ord=2) ** 2)
+    
+    params['num_iter_fit'] += 1
+    
+    print("num_iter_fit, fitness value = ", params['num_iter_fit'], norm(fitness, ord=2) ** 2)
     return norm(fitness, ord=2) ** 2
 
 # parameters to fit AT THE MOMENT
@@ -224,13 +240,17 @@ def InitFit():
 
 def InitFitSIRLD():
     print('InitFitSIRLD')
-    paramsToFit = lmfit.Parameters()
+    paramsToFit = lmfit.Parameters()    
     # set parameters that need to be fitted
-    paramsToFit.add("k_SI", value=1e-9, min=1e-10, max=1e-8, vary=True)
+    #beta between 0.01 and 1 
+    paramsToFit.add("k_SI", value=1.4911195702987055e-9, min=1.4911195702987055e-10, max=1.4911195702987055e-8, vary=True)    
+    #beta between 0.0001 and 0.001 to test quickly
+    # paramsToFit.add("k_SI", value=1.4911195702987055e-9, min=1.4911195702987055e-12, max=1.4911195702987055e-11, vary=True)
     paramsToFit.add("k_IR", value=0.0666, min=0.1, max=0.05, vary=True)
     paramsToFit.add("k_IL", value=0.01, min=0.0001, max=1, vary=True)
     paramsToFit.add("k_LD", value=0.01, min=0.005, max=0.05, vary=True)
     paramsToFit.add("L_ini", value=400, min=100, max=1000, vary=True)
+    paramsToFit.add("I_ini", value=400, min=5000, max=200000, vary=True)
     paramsToFit.add("alpha", value=0.1, min=0.01, max=1, vary=True)
     return paramsToFit
 

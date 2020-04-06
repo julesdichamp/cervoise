@@ -650,7 +650,7 @@ def InitModels(params, G):
         # get data for entire france
         for n in G.nodes():                        
             # I_confirmed = alpha * I, thus I = 1/alpha * I_confirmed
-            I += dic_simu_data_covid[n][params["time_start_day"]]['Confirmed']
+            # I += dic_simu_data_covid[n][params["time_start_day"]]['Confirmed']
             # get fraction of deaths
             D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
             R += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']            
@@ -660,7 +660,8 @@ def InitModels(params, G):
         
         # get N = total population        
         L = params['L_ini'] # people who are isolated and will die 
-        I = np.floor((1/params['alpha']) * I)
+        # I = np.floor((1/params['alpha']) * I)
+        I = params['I_ini']
         S = N - I - D - R
         
         # adjust k_SI to each node population        
@@ -668,8 +669,6 @@ def InitModels(params, G):
         x_ini = np.array([S, I, R, L, D])
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
-        
-        print("k_plus = " , k_plus)
         
         
     return params, G
@@ -691,7 +690,7 @@ def SolveOneCompartment(params):
     count_loops = 0
     while t < params["time_end"]:        
         outputs.append((t, x))
-        if ((count_loops % 10000) == 0):
+        if ((count_loops % 100000) == 0):
             print("t, count_loops, x = " , t, count_loops, x)
         # forward reaction rates
         t_forward_plus = np.zeros(nbReactions)
