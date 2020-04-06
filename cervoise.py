@@ -423,9 +423,10 @@ if ("PlotData" in params['plot_options']):
     # copy list otherwize references are copied... and it messes up
     # with params['dates_for_fit'] list later on (e.g. on the fit function)
     dates_to_plot = params['dates_for_fit'].copy() 
-    dates_to_plot.insert(0, params['time_start_day'])    
+    dates_to_plot.insert(0, params['time_start_day'])
     plotData(params, G, dates_to_plot)
-
+    plotDataAndResults(params, G, dates_to_plot)
+    
 if (params['fit_model']):
     print("Start fitting procedure, Inch'Allah...")
     # paramsToFit = InitFit()
@@ -438,7 +439,7 @@ if (params['fit_model']):
     
     df = LaunchFit(paramsToFit, params, G)
 
-# LaunchModel(params, G)
+LaunchModel(params, G)
 
 t1 = time.time()
 print("Code ran for: ", t1 - t0, " seconds")

@@ -140,7 +140,7 @@ def FitFuncOneComp(paramsToFit, params, G):
     return norm(fitness, ord=2) ** 2
 
 
-def FitFuncSIRLDOneComp(paramsToFit, params, G): 
+def FitFuncSIRLDOneComp(paramsToFit, params, G, save_outputs=[]): 
     print('FitFuncSIRLDOneComp')  
     # add parameters to fit into (that will be varied every call to the fitfunction)
     # to the dictionnary that contains all parameters
@@ -151,8 +151,13 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G):
     params["L_ini"] = int(paramsToFit["L_ini"])
     params["I_ini"] = int(paramsToFit["I_ini"])
     params["alpha"] = float(paramsToFit["alpha"])
-    
-    print(paramsToFit)
+    print("k_SI  = " , params["k_SI"] )
+    print("k_IR  = " , params["k_IR"] )
+    print("k_IL  = " , params["k_IL"] )
+    print("k_LD  = " , params["k_LD"] )
+    print("L_ini = " , params["L_ini"])
+    print("I_ini = " , params["I_ini"])
+    print("alpha = " , params["alpha"])    
     
     # transform to datetime format
     dates = [datetime.datetime.strptime(ts, "%Y-%m-%d") for ts in params["dates_for_fit"]] 
@@ -208,10 +213,10 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G):
             # params["k_SI"] * params['alpha'] * x[1] 
             # tmp_funct = alpha * k_SI * S * I = beta I in marc lavielle
             tmp_func = params['alpha'] * params["k_SI"] * x[0:i,0] * x[0:i,1]            
-            W_c = np.trapz(tmp_func, _time[0:i] ) # integral over time of I until mytime[i]
+            W_c = np.trapz(tmp_func, _time[0:i] ) # integral over time of I until _time[i]
             print("W_c = ", W_c)
             fitness[_count + 0] = (total_confirmed - W_c)
-            # fitness[_count + 1] = (total_recovered - x[2])
+            fitness[_count + 1] = (total_recovered - x[2])
             fitness[_count + 2] = (total_deaths    - x[i,4])
             # get new date to target
             time_date_target = time_date_target + delta_days[_count]
@@ -220,8 +225,7 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G):
             if (_count == nbDates):
                 break;
     
-    params['num_iter_fit'] += 1
-    
+    params['num_iter_fit'] += 1    
     print("num_iter_fit, fitness value = ", params['num_iter_fit'], norm(fitness, ord=2) ** 2)
     return norm(fitness, ord=2) ** 2
 
@@ -263,7 +267,7 @@ def LaunchFit(paramsToFit, params, G):
     # mini = lmfit.Minimizer(
         # FitFuncOnGraph, paramsToFit, fcn_args=(params, G)
     # )
-    results = mini.minimize(method="differential_evolution") #  plein de methods, least-square par default
+    results = mini.minimize(method=params['method']) #  plein de methods, least-square par default
     results.paramsToFit.pretty_print() #  nice display of fit results
     bic = results.bic #  example of info in results
     residuals = results.residuals #  example of info in results
@@ -271,9 +275,13 @@ def LaunchFit(paramsToFit, params, G):
     df = pd.DataFrame()  #  dataframe init
     df = df.append(results.paramsToFit.valuesdict(), ignore_index=True) #  tout le monde il est bien range
     
-    params["R_0"]  = paramsToFit["R_0"]
-    params["k_IR"] = paramsToFit["k_IR"]
-    params["k_ID"] = paramsToFit["k_ID"]     
+    params["k_SI"]  = float(paramsToFit["k_SI"])
+    params["k_IR"]  = float(paramsToFit["k_IR"])
+    params["k_IL"]  = float(paramsToFit["k_IL"])
+    params["k_LD"]  = float(paramsToFit["k_LD"])
+    params["L_ini"] = int(paramsToFit["L_ini"])
+    params["I_ini"] = int(paramsToFit["I_ini"])
+    params["alpha"] = float(paramsToFit["alpha"])
     
     return df , params
     

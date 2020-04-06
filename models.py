@@ -662,19 +662,20 @@ def InitModels(params, G):
             dic_simu_total_pop[n]
 
             N += dic_simu_total_pop[n]
-        
+                
         # get N = total population        
         L = params['L_ini'] # people who are isolated and will die 
         # I = np.floor((1/params['alpha']) * I)
         I = params['I_ini']
-        S = N - I - D - R
+        R =  np.floor((1/params['alpha']) * R)
+        S = N - I - D - R - L
         
         # adjust k_SI to each node population        
         k_plus = np.array([k_SI, k_IR, k_IL, k_LD])
         x_ini = np.array([S, I, R, L, D])
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
-        
+        print(x_ini)
         
     return params, G
         
@@ -693,10 +694,11 @@ def SolveOneCompartment(params):
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0
-    while t < params["time_end"]:        
-        outputs.append((t, x))
-        if ((count_loops % 100000) == 0):
-            print("t, count_loops, x = " , t, count_loops, x)
+    while t < params["time_end"]:                
+        if ((count_loops % params['save_frequency']) == 0):            
+            x_save = copy.deepcopy(x)
+            outputs.append((t, x_save))
+            print(t,count_loops, x_save)
         # forward reaction rates
         t_forward_plus = np.zeros(nbReactions)
         for j in range(0, nbReactions):
