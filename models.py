@@ -9,7 +9,7 @@ import copy
 from decimal import *
 import fastrand
 
-def randZeroOne(x):
+def randZeroOne():
     return fastrand.pcg32bounded(1000)/1000
 
 
