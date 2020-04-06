@@ -7,6 +7,11 @@ import networkx as nx
 import collections
 import copy
 from decimal import *
+import fastrand
+
+def randZeroOne(x):
+    return fastrand.pcg32bounded(1000)/1000
+
 
 def checkConservation(x_ini, x):
     
@@ -712,7 +717,7 @@ def SolveOneCompartment(params):
                         
         # total rate which the state can be left with
         W = np.sum(t_forward_plus)
-        xi = np.random.uniform(0, 1)
+        xi = randZeroOne()
         # if the total rate is 0, nothing more can happen anymore
         if (abs(W) <= 0.00000001):
             print("W = " , W)
@@ -730,7 +735,7 @@ def SolveOneCompartment(params):
         next_states = next_states / W
 
         # choose reaction
-        xi = np.random.uniform(0, 1)        
+        xi = randZeroOne()
         if xi <= next_states[0]:
             id_reaction = 0
         else:
@@ -809,7 +814,7 @@ def SolveOnGraph(params, G):
                 
                 # total rate which the state can be left with
                 W_node = np.sum(t_forward_plus)
-                xi = np.random.uniform(0, 1)
+                xi = randZeroOne()
                 W_inside += W_node
             
             ### --- 2-2/ compute total between rate = total rate of leaving the state with a 
@@ -874,7 +879,7 @@ def SolveOnGraph(params, G):
             next_states_sum = next_states_sum / W_total
             
             ### --- 2-5/ choose reaction according to a random uniform variable drop        
-            xi = np.random.uniform(0, 1)
+            xi = randZeroOne()
             if xi <= next_states_sum[0]:
                 id_reaction = 0
             else:
