@@ -87,47 +87,38 @@ def plotDataAndResults(params, G, days_to_plot):
     p_confirmed = plt.plot(days_to_plot, total_Confirmed, linestyle=None, marker='o')    
     paramsToFit = {}
     # test params from fit 
-    paramsToFit['k_SI' ] = 1.41350287619901e-10
-    paramsToFit['k_IR' ] = 0.0025
-    paramsToFit['k_IL' ] = 0.0005025625589838139
-    paramsToFit['k_LD' ] = 0.025596063067312054
-    paramsToFit['L_ini'] = 510.1404424811643
-    paramsToFit['I_ini'] = 10**6
-    paramsToFit['alpha'] = 0.1
-    params["k_SI"]  = float(paramsToFit["k_SI"])
-    params["k_IR"]  = float(paramsToFit["k_IR"])
-    params["k_IL"]  = float(paramsToFit["k_IL"])
-    params["k_LD"]  = float(paramsToFit["k_LD"])
-    params["L_ini"] = int(paramsToFit["L_ini"])
-    params["I_ini"] = int(paramsToFit["I_ini"])
-    params["alpha"] = float(paramsToFit["alpha"])
+    # num_iter = 599
+    # params["k_SI"]  = 9.920536701756457e-10
+    # params["k_IR"]  = 0.001567701816094487
+    # params["k_IL"]  = 0.005050629963096649
+    # params["k_LD"]  = 0.04805887514399763
+    # params["L_ini"] = 313
+    # params["I_ini"] = 88693
+    # params["alpha"] = 0.3061530569552827
     
-    # compute W_c_t0 = int_t^t0 alpha * k_SI * S(s) * I(s) ds
-    # tmp_func[0] = params['alpha'] * params["k_SI"] * x[0:i,0] * x[0:i,1]    
-    # dates_before_lockdown = ['2020-03-01', '2020-03-02', '2020-03-03', '2020-03-04', '2020-03-05', '2020-03-06', '2020-03-07', '2020-03-08', '2020-03-09', '2020-03-10', '2020-03-11', '2020-03-12', '2020-03-13', '2020-03-14', '2020-03-15', '2020-03-16', '2020-03-17', '2020-03-18']
-    # for _date in dates_before_lockdown:
-        # I = params['alpha'] * params['total_covid_data']['Confirmed']
-        # R = params['total_covid_data']['Recovered']
-        # D = params['total_covid_data']['Deaths']
-        # S = N - I - D - R
-        # S = params['total_pop'] - 
-    # W_c[i] = np.trapz(tmp_func, _time[0:i] ) # integral over time of I until _time[i]
+    params["k_SI"]  = 9.920536701756457e-10
+    params["k_IR"]  = 0.01567701816094487
+    params["k_IL"]  = 0.005050629963096649
+    params["k_LD"]  = 0.08
+    params["L_ini"] = 313
+    params["I_ini"] = 88693
+    params["alpha"] = 0.3061530569552827
     
     [params , G] = InitModels(params, G)
     outputs = SolveOneCompartment(params)
     nbTimes = len(outputs)
-    W_c=np.zeros(nbTimes)    
+    W_c=np.zeros(nbTimes)
     x = np.zeros([nbTimes,params['nbStates']])
-    _time = np.zeros(nbTimes)
-    print(nbTimes)
+    _time = np.zeros(nbTimes)    
     for i in range(0,nbTimes):
         _time[i] = outputs[i][0]
         x[i,:] = outputs[i][1]
         tmp_func = params['alpha'] * params["k_SI"] * x[0:i+1,0] * x[0:i+1,1]
-        W_c[i] = np.trapz(tmp_func, _time[0:i+1] ) # integral over time of I until _time[i]    
-    
-    W_c_t0 = params['alpha'] * params["k_SI"] * x[0,0] * x[0,1]
-    W_c += W_c_t0
+        W_c[i] = np.trapz(tmp_func, _time[0:i+1] ) # integral over time of I until _time[i]  
+        
+    # W_c_t0 = params['alpha'] * params["k_SI"] * x[0,0] * x[0,1]
+    # W_c += W_c_t0
+    W_c  += params['total_covid_data'][params['time_start_day']]['Confirmed']
     
     plt.figure('Deaths', figsize=(16, 10))
     p_deaths = plt.plot(_time, x[:,4], linestyle=None, marker='o')
@@ -148,4 +139,4 @@ def plotDataAndResults(params, G, days_to_plot):
     string_for_savefig = 'Recovered'
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
     
-    plt.show()
+    # plt.show()

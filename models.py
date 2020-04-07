@@ -675,7 +675,7 @@ def InitModels(params, G):
         x_ini = np.array([S, I, R, L, D])
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
-        print(x_ini)
+        # print(x_ini)
         
     return params, G
         
@@ -698,7 +698,8 @@ def SolveOneCompartment(params):
         if ((count_loops % params['save_frequency']) == 0):            
             x_save = copy.deepcopy(x)
             outputs.append((t, x_save))
-            print(t,count_loops, x_save)
+            if ((count_loops % 100000) == 0):            
+                print(t,count_loops, x_save)
         # forward reaction rates
         t_forward_plus = np.zeros(nbReactions)
         for j in range(0, nbReactions):

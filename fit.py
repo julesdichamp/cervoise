@@ -140,7 +140,7 @@ def FitFuncOneComp(paramsToFit, params, G):
     return norm(fitness, ord=2) ** 2
 
 
-def FitFuncSIRLDOneComp(paramsToFit, params, G, save_outputs=[]): 
+def FitFuncSIRLDOneComp(paramsToFit, params, G): 
     print('FitFuncSIRLDOneComp')  
     # add parameters to fit into (that will be varied every call to the fitfunction)
     # to the dictionnary that contains all parameters
@@ -151,14 +151,15 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G, save_outputs=[]):
     params["L_ini"] = int(paramsToFit["L_ini"])
     params["I_ini"] = int(paramsToFit["I_ini"])
     params["alpha"] = float(paramsToFit["alpha"])
-    print("k_SI  = " , params["k_SI"] )
-    print("k_IR  = " , params["k_IR"] )
-    print("k_IL  = " , params["k_IL"] )
-    print("k_LD  = " , params["k_LD"] )
-    print("L_ini = " , params["L_ini"])
-    print("I_ini = " , params["I_ini"])
-    print("alpha = " , params["alpha"])    
     
+    print("params['k_SI']  = " , params["k_SI"] )
+    print("params['k_IR'] = " , params["k_IR"] )
+    print("params['k_IL'] = " , params["k_IL"] )
+    print("params['k_LD'] = " , params["k_LD"] )
+    print("params['L_ini'] = " , params["L_ini"])
+    print("params['I_ini'] = " , params["I_ini"])
+    print("params['alpha'] = " , params["alpha"])    
+        
     # transform to datetime format
     dates = [datetime.datetime.strptime(ts, "%Y-%m-%d") for ts in params["dates_for_fit"]] 
     time_start_date = datetime.datetime.strptime(params['time_start_day'], "%Y-%m-%d")        
@@ -193,11 +194,11 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G, save_outputs=[]):
     for i in range(0,nbTimes):        
         mytime = outputs[i][0]        
         _time[i] = mytime
-        x[i,:] = outputs[i][1]
+        x[i,:] = outputs[i][1]        
         # not sure of what precision to take
+        W_c = 0.
         if (abs(mytime - time_date_target) <= 0.01) :
             print('[TARGET FOUND]: mytime, date_target = ' , mytime, time_date_target)
-            
             total_confirmed = 0
             total_recovered = 0
             total_deaths    = 0
@@ -205,18 +206,15 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G, save_outputs=[]):
                 # Infected       
                 total_confirmed += dic_data_covid[n][params["dates_for_fit"][_count]]['Confirmed']
                 total_recovered += dic_data_covid[n][params["dates_for_fit"][_count]]['Recovered']
-                total_deaths    += dic_data_covid[n][params["dates_for_fit"][_count]]['Deaths']
+                total_deaths    += dic_data_covid[n][params["dates_for_fit"][_count]]['Deaths']            
             
-            # compare confirmed to confirmed
-            # do not add revoered to the fit function as it is not sure yet 
-            # if there isn' t a delay like for the deaths
-            # params["k_SI"] * params['alpha'] * x[1] 
-            # tmp_funct = alpha * k_SI * S * I = beta I in marc lavielle
-            tmp_func = params['alpha'] * params["k_SI"] * x[0:i,0] * x[0:i,1]            
-            W_c = np.trapz(tmp_func, _time[0:i] ) # integral over time of I until _time[i]
-            print("W_c = ", W_c)
+            tmp_func = params['alpha'] * params["k_SI"] * x[0:i+1,0] * x[0:i+1,1]
+            W_c = np.trapz(tmp_func, _time[0:i+1] ) # integral over time of I until _time[i]  
+            # add integral from 0 to t_0 from data so we can compare
+            W_c += params['total_covid_data'][params['time_start_day']]['Confirmed']            
             fitness[_count + 0] = (total_confirmed - W_c)
-            fitness[_count + 1] = (total_recovered - x[2])
+            # recovered in model is a fraction of recovered measured
+            fitness[_count + 1] = (total_recovered - params['alpha'] * x[i,2])
             fitness[_count + 2] = (total_deaths    - x[i,4])
             # get new date to target
             time_date_target = time_date_target + delta_days[_count]
@@ -226,8 +224,10 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G, save_outputs=[]):
                 break;
     
     params['num_iter_fit'] += 1    
-    print("num_iter_fit, fitness value = ", params['num_iter_fit'], norm(fitness, ord=2) ** 2)
-    return norm(fitness, ord=2) ** 2
+    fitness_L2_square = norm(fitness, ord=2) ** 2
+    print("num_iter_fit, fitness value = ", params['num_iter_fit'], fitness_L2_square)
+
+    return fitness_L2_square
 
 # parameters to fit AT THE MOMENT
 # R_0 (between 2 and 4) --> this gives k_IS
@@ -247,12 +247,12 @@ def InitFitSIRLD():
     paramsToFit = lmfit.Parameters()    
     # set parameters that need to be fitted
     #beta between 0.01 and 1 
-    paramsToFit.add("k_SI", value=1.4911195702987055e-9, min=1.4911195702987055e-10, max=1.4911195702987055e-8, vary=True)    
+    paramsToFit.add("k_SI", value=1.5e-10, min=1e-10, max=1e-9, vary=True)    
     #beta between 0.0001 and 0.001 to test quickly
     # paramsToFit.add("k_SI", value=1.4911195702987055e-9, min=1.4911195702987055e-12, max=1.4911195702987055e-11, vary=True)
-    paramsToFit.add("k_IR", value=0.0666, min=0.1, max=0.05, vary=True)
-    paramsToFit.add("k_IL", value=0.01, min=0.0001, max=1, vary=True)
-    paramsToFit.add("k_LD", value=0.01, min=0.005, max=0.05, vary=True)
+    paramsToFit.add("k_IR", value=0.0666, min=0.0001, max=0.1, vary=True)
+    paramsToFit.add("k_IL", value=0.01, min=0.0001, max=0.1, vary=True)
+    paramsToFit.add("k_LD", value=0.01, min=0.0001, max=0.1, vary=True)
     paramsToFit.add("L_ini", value=400, min=100, max=1000, vary=True)
     paramsToFit.add("I_ini", value=400, min=5000, max=200000, vary=True)
     paramsToFit.add("alpha", value=0.1, min=0.01, max=1, vary=True)
@@ -267,7 +267,7 @@ def LaunchFit(paramsToFit, params, G):
     # mini = lmfit.Minimizer(
         # FitFuncOnGraph, paramsToFit, fcn_args=(params, G)
     # )
-    results = mini.minimize(method=params['method']) #  plein de methods, least-square par default
+    results = mini.minimize(method=str(params['method'])) #  plein de methods, least-square par default
     results.paramsToFit.pretty_print() #  nice display of fit results
     bic = results.bic #  example of info in results
     residuals = results.residuals #  example of info in results

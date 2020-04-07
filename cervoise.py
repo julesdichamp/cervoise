@@ -43,7 +43,7 @@ from distutils.util import strtobool
 
 # contains functions to perform fit of the model
 import lmfit
-from fit import InitFit, LaunchFit, InitFitSIRLD
+from fit import InitFit, LaunchFit, InitFitSIRLD, FitFuncSIRLDOneComp
 
 
 print(
@@ -203,7 +203,7 @@ def InitParams(config_name):
     dates_for_fit = config.get("fit", "dates_for_fit")        
     params["dates_for_fit"] = [p.replace(" ", "").replace('\n','') for p in
                               dates_for_fit.split(",")]
-    method = config.get("fit", "method")
+    params['method'] = config.get("fit", "method")
     
     #  load outputs infos
     params["outputs_dir"] = config.get("outputs", "outputs_dir")
@@ -424,8 +424,11 @@ if ("PlotData" in params['plot_options']):
     # with params['dates_for_fit'] list later on (e.g. on the fit function)
     dates_to_plot = params['dates_for_fit'].copy() 
     dates_to_plot.insert(0, params['time_start_day'])
-    plotData(params, G, dates_to_plot)
-    plotDataAndResults(params, G, dates_to_plot)
+    # plotData(params, G, dates_to_plot)
+    # plotDataAndResults(params, G, dates_to_plot)
+    # paramsToFit = InitFitSIRLD()
+    # params['num_iter_fit'] = 0
+    # FitFuncSIRLDOneComp(paramsToFit, params, G)
     
 if (params['fit_model']):
     print("Start fitting procedure, Inch'Allah...")
@@ -439,7 +442,7 @@ if (params['fit_model']):
     
     df = LaunchFit(paramsToFit, params, G)
 
-LaunchModel(params, G)
+# LaunchModel(params, G)
 
 t1 = time.time()
 print("Code ran for: ", t1 - t0, " seconds")
