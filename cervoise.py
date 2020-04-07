@@ -41,7 +41,7 @@ from plotData import *
 import distutils
 from distutils.util import strtobool
 
-# contains functions to perform fit of the model
+# contains functions to perform fit of the model
 import lmfit
 from fit import InitFit, LaunchFit, InitFitSIRLD
 
@@ -57,7 +57,7 @@ t0 = time.time()
 if len(sys.argv) > 1:
     inputFile = sys.argv[1]
 else:
-    inputFile = "config.ini"
+    inputFile = "/home/florian/PycharmProjects/cervoise/config_VALIDATION_SIR_one_compartment.ini"
 
 
 def LoadRoads(road_names):
@@ -169,42 +169,42 @@ def InitParams(config_name):
         params["R_ini"] = config.getint("model", "R_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
     elif params["model_name"] == "RealSIRDOnGraph":  # load parameters needed for this model
-        # For now all parameters are the same wherever the region: 
-        # fix R_0 per region and addapt k_IS accordingly to population
+        # For now all parameters are the same wherever the region:
+        # fix R_0 per region and addapt k_IS accordingly to population
         params["R_0"] = config.getfloat("model", "R_0")
-        params["k_IR"] = config.getfloat("model", "k_IR")        
+        params["k_IR"] = config.getfloat("model", "k_IR")
         params["k_ID"] = config.getfloat("model", "k_ID")
         params["time_start_day"] = config.get("model", "time_start_day")
-    elif params["model_name"] == "RealSIRDWellMixed":  # load parameters needed for this model        
-        # For now all parameters are the same wherever the region: 
-        # fix R_0 per region and addapt k_IS accordingly to population
+    elif params["model_name"] == "RealSIRDWellMixed":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region:
+        # fix R_0 per region and addapt k_IS accordingly to population
         params["R_0"] = config.getfloat("model", "R_0")
-        params["k_IR"] = config.getfloat("model", "k_IR")        
+        params["k_IR"] = config.getfloat("model", "k_IR")
         params["k_ID"] = config.getfloat("model", "k_ID")
         params["time_start_day"] = config.get("model", "time_start_day")
-    elif params["model_name"] == "RealSIRLDWellMixed":  # load parameters needed for this model        
+    elif params["model_name"] == "RealSIRLDWellMixed":  # load parameters needed for this model
         params["k_SI"]  = config.getfloat("model", "k_SI")
-        params["k_IR"]  = config.getfloat("model", "k_IR")        
+        params["k_IR"]  = config.getfloat("model", "k_IR")
         params["k_IL"]  = config.getfloat("model", "k_IL")
         params["k_LD"]  = config.getfloat("model", "k_LD")
         params["alpha"] = config.getfloat("model", "alpha")
         params["time_start_day"] = config.get("model", "time_start_day")
     else:
         print("[ERROR]: model name not found. Exit here.")
-        exit(0)        
-    
+        exit(0)
+
     # load settigns infos
     params["time_start"] = config.getfloat("settings", "time_start")
     params["time_end"] = config.getfloat("settings", "time_end")
-    
+
     # load fit infos
     # to know if we fit or not
-    params["fit_model"] = strtobool(config.get("fit", "fit_model"))  
-    dates_for_fit = config.get("fit", "dates_for_fit")        
+    params["fit_model"] = strtobool(config.get("fit", "fit_model"))
+    dates_for_fit = config.get("fit", "dates_for_fit")
     params["dates_for_fit"] = [p.replace(" ", "").replace('\n','') for p in
                               dates_for_fit.split(",")]
     method = config.get("fit", "method")
-    
+
     #  load outputs infos
     params["outputs_dir"] = config.get("outputs", "outputs_dir")
     if not (
@@ -215,7 +215,7 @@ def InitParams(config_name):
     # remove spaces and return to line if there are different plot options
     params["plot_options"] = [p.replace(" ", "").replace('\n','') for p in
                               plot_options.split(",")]
-    
+
     params["save_frequency"] = config.getint("outputs", "save_frequency")
 
     return params
@@ -233,7 +233,7 @@ def InitGraph(params):
     G = nx.Graph()
     params['total_pop'] = 0 # feed dictionnary with aggregated data from graph
     params['total_covid_data'] = {} # feed dictionnary with aggregated data from graph
-    
+
     ### --- Construct graph
     # same routine for regions and departments as it is handled by readFranceGeom(params)
     if (params['graph_type'] == 'regions') or (params['graph_type'] == 'departments'):
@@ -252,7 +252,7 @@ def InitGraph(params):
             # - Deaths
             # - Position
             dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
-            dic_data_covid[id_node] = franceGeom[key]['data_covid']            
+            dic_data_covid[id_node] = franceGeom[key]['data_covid']
 
             centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
             dic_positions[id_node] = centroid
@@ -330,7 +330,7 @@ def InitGraph(params):
                     params['total_covid_data'][_date]['Recovered'] = 0
                 params['total_covid_data'][_date]['Confirmed'] += dic_data_covid[id_node][_date]['Confirmed']
                 params['total_covid_data'][_date]['Deaths']    += dic_data_covid[id_node][_date]['Deaths']
-                params['total_covid_data'][_date]['Recovered'] += dic_data_covid[id_node][_date]['Recovered']        
+                params['total_covid_data'][_date]['Recovered'] += dic_data_covid[id_node][_date]['Recovered']
             id_node += 1
         # add attributes with positions to graph
         nx.set_node_attributes(G, name='positions', values=dic_positions)
@@ -351,9 +351,9 @@ def InitGraph(params):
     # print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
     # print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
     # ### --- plot graph
-    # fig, ax = plt.subplots()    
+    # fig, ax = plt.subplots()
     # dic_pos = nx.get_node_attributes(G, 'positions')
-    # dic_labels = nx.get_node_attributes(G, 'names')            
+    # dic_labels = nx.get_node_attributes(G, 'names')
     # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
     # plt.show()
 
@@ -368,7 +368,7 @@ def LaunchModel(params, graph):
     """
     print('LaunchModel')
     # initialize models
-    params, graph = InitModels(params, graph)    
+    params, graph = InitModels(params, graph)
     if params["model_name"] == "SIRWellMixed":
         outputs = SolveOneCompartment(params)
         plot_SIRWellMixed(params, outputs)
@@ -390,10 +390,10 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "RealSIRDOnGraph":
         outputs , graph = SolveOnGraph(params, graph)
         plot_TEST(params,outputs, graph)
-    
+
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
-        exit(0)
+        sys.exit(0)
 
 
 # =============================================================================
@@ -420,23 +420,23 @@ else:
 
 if ("PlotData" in params['plot_options']):
     dates_to_plot = []
-    # copy list otherwize references are copied... and it messes up
-    # with params['dates_for_fit'] list later on (e.g. on the fit function)
-    dates_to_plot = params['dates_for_fit'].copy() 
+    # copy list otherwize references are copied... and it messes up
+    # with params['dates_for_fit'] list later on (e.g. on the fit function)
+    dates_to_plot = params['dates_for_fit'].copy()
     dates_to_plot.insert(0, params['time_start_day'])
     plotData(params, G, dates_to_plot)
     plotDataAndResults(params, G, dates_to_plot)
-    
+
 if (params['fit_model']):
     print("Start fitting procedure, Inch'Allah...")
     # paramsToFit = InitFit()
     print("data at start ", params['time_start_day'] , ' = ' , params['total_covid_data'][params['time_start_day']])
     for _date in params['dates_for_fit']:
         print ('data at ' , _date , ' = ' , params['total_covid_data'][_date])
-            
+
     paramsToFit = InitFitSIRLD()
     params['num_iter_fit'] = 0
-    
+
     df = LaunchFit(paramsToFit, params, G)
 
 LaunchModel(params, G)

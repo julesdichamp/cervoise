@@ -8,9 +8,15 @@ import collections
 import copy
 from decimal import *
 import fastrand
+from numba import jit
+import numba as nb
 
 def randZeroOne():
     return fastrand.pcg32bounded(1000)/1000
+
+@jit(nopython=True)
+def randZeroOneSlow():
+    return np.random.uniform(0, 1)
 
 
 def checkConservation(x_ini, x):
@@ -679,6 +685,102 @@ def InitModels(params, G):
 
     return params, G
 
+
+def SolveOneCompartment(params):
+    aa =params["nbReactions"]
+    b =params["nbStates"]
+    c =params["k_plus"]
+    d =params["N_matrix"]
+    e =params["R_matrix"]
+    print('\n\n\n',params["x_ini"])
+    f =params["x_ini"]
+    # f = [nb.int64(i) for i in f]
+    # f = np.array(f)
+
+    g =params["save_frequency"]
+    h =params["time_start"]
+    iii =params["time_end"]
+    @jit(nopython=True)
+    def SolveOneCompartmentNumba(a,b,c,d,e,f,g,h,iii):
+        # solve master equation with one compartment
+
+        nbReactions = a
+        nbStates =b
+        k_plus         = c
+        N              = d
+        R              = e
+        x_ini          = f
+        x_ini = [nb.float64(i) for i in x_ini]
+        x_ini = np.array(x_ini)
+        x = x_ini
+        t = float(h)
+        outputs = []  # we will fill this list with data to be plotted
+        count_loops = 0
+        for count_loops in range(100000000):
+        # while t < params["time_end"]:
+            if ((count_loops % g ) == 0):
+                # x_save = copy.deepcopy(x)
+                x_save = np.copy(x)
+
+                outputs.append((t, x_save))
+                # print(t,count_loops, x_save)
+            # forward reaction rates
+            t_forward_plus = np.zeros(nbReactions)
+            for j in range(0, nbReactions):
+                t_forward_plus[j] = 1.0
+                for i in range(0, nbStates):
+                    # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
+                    y = 1.0
+                    # only considers states that are present in current reaction
+                    # see Example 1 from DD powerpoint
+                    if (abs(N[i,j]) > 0.00000001):
+                        for k in range(0,int(N[i,j])):
+                            y = y * (x[i] -k)
+
+                    t_forward_plus[j] = t_forward_plus[j] * y
+
+                # finally multiply the forward reaction rate by the reaction rate k+
+                t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
+
+            # total rate which the state can be left with
+            W = np.sum(t_forward_plus)
+            xi = randZeroOneSlow()
+            # if the total rate is 0, nothing more can happen anymore
+            if (abs(W) <= 0.00000001):
+                print("W = " , W)
+                break
+
+            # Gillepsie time of next event
+            dt = -1 / W * np.log(1 - xi)
+            t = t + dt
+
+            # sum reactions forward rates to choose reaction
+            next_states = np.zeros(nbReactions)
+            next_states[0] = t_forward_plus[0]
+            for j in range(1, nbReactions):
+                next_states[j] = next_states[j - 1] + t_forward_plus[j]
+            next_states = next_states / W
+
+            # choose reaction
+            xi = randZeroOneSlow()
+            if xi <= next_states[0]:
+                id_reaction = 0
+            else:
+                for j in range(1, nbReactions):
+                    if (next_states[j - 1] < xi) and (xi < next_states[j]):
+                        id_reaction = j
+
+            # set new state according to reaction
+            x = x + R[:, id_reaction]
+
+            count_loops += 1
+            if t > iii:
+                break
+        # print(count_loops)
+        return outputs
+    outputs = SolveOneCompartmentNumba(aa,b,c,d,e,f,g,h,iii)
+    return outputs
+
 def SolveOneCompartment_(params):
     """
     solve master equation with one compartment
@@ -694,11 +796,12 @@ def SolveOneCompartment_(params):
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0
-    while t < params["time_end"]:
+    while True:
+    # while t < params["time_end"]:
         if ((count_loops % params['save_frequency']) == 0):
             x_save = copy.deepcopy(x)
             outputs.append((t, x_save))
-            print(t,count_loops, x_save)
+            # print(t,count_loops, x_save)
         # forward reaction rates
         t_forward_plus = np.zeros(nbReactions)
         for j in range(0, nbReactions):
@@ -749,11 +852,13 @@ def SolveOneCompartment_(params):
         x = x + R[:, id_reaction]
 
         count_loops += 1
-
+        if t > params["time_end"]:
+            break
+    print(count_loops)
     return outputs
 
 
-SolveOneCompartment = np.vectorize(SolveOneCompartment,cache=True)
+# SolveOneCompartment = np.vectorize(SolveOneCompartment_,cache=True)
 
 
 def SolveOnGraph(params, G):

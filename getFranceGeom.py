@@ -335,7 +335,7 @@ def getFranceGeomRegions(params):
             else:
                 num_recovered = 0
             
-            # change name to match other data set
+            # change name to match other data set
             if (reg_name == 'Île-de-France'):
                 reg_name = 'Ile-de-France'
             
@@ -369,8 +369,8 @@ def getFranceGeomRegions(params):
         
         # loop over all departments that are part of the region
         for dptName in franceGeomRegions[regName]['departments']:
-            # JD: BELOW IS OLD WAY TO COMPUTE COVID19 DATA AT REGION SCALE
-            # NOW WE RE-COMPUTE IT FROM FILES FOR REGIONS DIRECTLY
+            # JD: BELOW IS OLD WAY TO COMPUTE COVID19 DATA AT REGION SCALE
+            # NOW WE RE-COMPUTE IT FROM FILES FOR REGIONS DIRECTLY
             # BECAUSE THIS MIGHT NOT BE UP TO DATE AT DEPARTMENTS SCALE
             # sum all confirmed and deaths from departments in region and
             # set those values in region dictionnary
