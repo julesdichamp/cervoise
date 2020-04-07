@@ -678,7 +678,7 @@ def InitModels(params, G):
 
     return params, G
 
-def SolveOneCompartment_(params):
+def SolveOneCompartment(params):
     """
     solve master equation with one compartment
     """
@@ -751,9 +751,6 @@ def SolveOneCompartment_(params):
         count_loops += 1
 
     return outputs
-
-
-SolveOneCompartment = np.vectorize(SolveOneCompartment,cache=True)
 
 
 def SolveOnGraph(params, G):
@@ -939,4 +936,3 @@ def SolveOnGraph(params, G):
     except KeyboardInterrupt:
         pass
     return outputs , G
-

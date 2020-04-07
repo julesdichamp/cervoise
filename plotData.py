@@ -96,13 +96,21 @@ def plotDataAndResults(params, G, days_to_plot):
     # params["I_ini"] = 88693
     # params["alpha"] = 0.3061530569552827
     
-    params["k_SI"]  = 9.920536701756457e-10
-    params["k_IR"]  = 0.01567701816094487
-    params["k_IL"]  = 0.005050629963096649
-    params["k_LD"]  = 0.08
-    params["L_ini"] = 313
-    params["I_ini"] = 88693
-    params["alpha"] = 0.3061530569552827
+    # params["k_SI"]  = 9.920536701756457e-10
+    # params["k_IR"]  = 0.01567701816094487
+    # params["k_IL"]  = 0.005050629963096649
+    # params["k_LD"]  = 0.08
+    # params["L_ini"] = 313
+    # params["I_ini"] = 88693
+    # params["alpha"] = 0.3061530569552827
+    
+    params['k_SI']  =  9.869485458981546e-10
+    params['k_IR'] =  0.009187710904960454
+    params['k_IL'] =  0.009718995748178264
+    params['k_LD'] =  0.09999998471569059
+    params['L_ini'] =  257
+    params['I_ini'] =  32709
+    params['alpha'] =  0.8557664516090089 
     
     [params , G] = InitModels(params, G)
     outputs = SolveOneCompartment(params)

@@ -425,7 +425,7 @@ if ("PlotData" in params['plot_options']):
     dates_to_plot = params['dates_for_fit'].copy() 
     dates_to_plot.insert(0, params['time_start_day'])
     # plotData(params, G, dates_to_plot)
-    # plotDataAndResults(params, G, dates_to_plot)
+    plotDataAndResults(params, G, dates_to_plot)
     # paramsToFit = InitFitSIRLD()
     # params['num_iter_fit'] = 0
     # FitFuncSIRLDOneComp(paramsToFit, params, G)
