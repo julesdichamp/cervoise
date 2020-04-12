@@ -1117,8 +1117,9 @@ def InitModels(params, G):
         k_EI = params["k_EI"]  # A = 1
         k_IR = params["k_IR"]  # A = 2
         k_IL = params["k_IL"]  # A = 3
-        k_LD = params["k_LD"]  # A = 4
-        k_LR = params["k_LR"]  # A = 5
+        k_LR = params["k_LR"]  # A = 4
+        k_LD = params["k_LD"]  # A = 5
+        
         # indices S = 0, I = 1, R = 2
         # N_ij = stoechiomatrix coefficients on left hand side of reactions
         # M_ij = stoechiomatrix coefficients on right hand side of reactions
@@ -1204,11 +1205,11 @@ def InitModels(params, G):
         R =  np.floor((1/params['alpha']) * R) # real "recovered people"
         L = params['L_ini'] # people who are isolated and will die or recover
         S = N -E - I - D - R - L
-
-
+                
         # adjust k_SI to each node population
-        k_plus = np.array([k_SE, k_EI, k_IR, k_IL, k_LD, k_LR])
+        k_plus = np.array([k_SE, k_EI, k_IR, k_IL, k_LR, k_LD])
         x_ini = np.array([S, E, I, R, L, D])
+        print("k_plus = ", k_plus)
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
 
@@ -1229,68 +1230,78 @@ def SolveOneCompartment(params):
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0
-    while t < params["time_end"]:
-        if ((count_loops % params['save_frequency']) == 0):
-            x_save = copy.deepcopy(x)
-            outputs.append((t, x_save))
-            if ((count_loops % 100000) == 0):            
-                print(t,count_loops, x_save)
-            # print(t,count_loops, x_save)
-        # forward reaction rates
-        t_forward_plus = np.zeros(nbReactions)
-        for j in range(0, nbReactions):
-            t_forward_plus[j] = 1.0
-            for i in range(0, nbStates):
-                # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
-                y = 1.0
-                # only considers states that are present in current reaction
-                # see Example 1 from DD powerpoint
-                if (abs(N[i,j]) > 0.00000001):
-                    for k in range(0,int(N[i,j])):
-                        y = y * (x[i] -k)
+    try: # so we can exit the loop at any time with ctrl + C
+        while t < params["time_end"]:
+            if ((count_loops % params['save_frequency']) == 0):
+                x_save = copy.deepcopy(x)
+                outputs.append((t, x_save))
+                if ((count_loops % 100000) == 0):            
+                    print(t,count_loops, x_save)
+                # print(t,count_loops, x_save)
+            # forward reaction rates
+            t_forward_plus = np.zeros(nbReactions)
+            for j in range(0, nbReactions):
+                t_forward_plus[j] = 1.0
+                for i in range(0, nbStates):
+                    # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
+                    y = 1.0
+                    # only considers states that are present in current reaction
+                    # see Example 1 from DD powerpoint
+                    if (abs(N[i,j]) > 0.00000001):
+                        for k in range(0,int(N[i,j])):
+                            y = y * (x[i] -k)
 
-                t_forward_plus[j] = t_forward_plus[j] * y
+                    t_forward_plus[j] = t_forward_plus[j] * y
 
-            # finally multiply the forward reaction rate by the reaction rate k+
-            t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
+                # finally multiply the forward reaction rate by the reaction rate k+
+                t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
 
-        # total rate which the state can be left with
-        W = np.sum(t_forward_plus)
-        xi = randZeroOne()
-        # xi = np.random.uniform(0,1)
-        # if the total rate is 0, nothing more can happen anymore
-        if (abs(W) <= 0.0000000001):
-            # print("W = " , W)
+            # print("t_forward_plus = " , t_forward_plus)
             # print("x = " , x)
-            break
+            # total rate which the state can be left with
+            W = np.sum(t_forward_plus)
+            xi = randZeroOne()
+            # xi = np.random.uniform(0,1)
+            # if the total rate is 0, nothing more can happen anymore
+            if (abs(W) <= 0.0000000001):
+                # print("W = " , W)
+                # print("x = " , x)
+                break
 
-        # Gillepsie time of next event
-        dt = -1 / W * np.log(1 - xi)
-        t = t + dt
+            # Gillepsie time of next event
+            dt = -1 / W * np.log(1 - xi)
+            t = t + dt
 
-        # sum reactions forward rates to choose reaction
-        next_states = np.zeros(nbReactions)
-        next_states[0] = t_forward_plus[0]
-        for j in range(1, nbReactions):
-            next_states[j] = next_states[j - 1] + t_forward_plus[j]
-        next_states = next_states / W
-
-        # choose reaction
-        xi = randZeroOne()
-        # xi = np.random.uniform(0,1)
-        if xi <= next_states[0]:
-            id_reaction = 0
-        else:
+            # sum reactions forward rates to choose reaction
+            next_states = np.zeros(nbReactions)
+            next_states[0] = t_forward_plus[0]
             for j in range(1, nbReactions):
-                if (next_states[j - 1] < xi) and (xi < next_states[j]):
-                    id_reaction = j
+                next_states[j] = next_states[j - 1] + t_forward_plus[j]
+            next_states = next_states / W
 
-        # set new state according to reaction
-        x = x + R[:, id_reaction]
+            # choose reaction
+            xi = randZeroOne()
+            # xi = np.random.uniform(0,1)
+            if xi <= next_states[0]:
+                id_reaction = 0
+            else:
+                for j in range(1, nbReactions):
+                    if (next_states[j - 1] < xi) and (xi < next_states[j]):
+                        id_reaction = j
+            
+            # print("id_reaction = " , id_reaction)
+            # set new state according to reaction
+            x = x + R[:, id_reaction]
 
-        count_loops += 1
+            count_loops += 1        
+        
+    
+    except KeyboardInterrupt:
+        pass
     
     print(t,count_loops, x)
+    
+            
     return outputs
 
 
