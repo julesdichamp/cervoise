@@ -10,7 +10,7 @@ from decimal import *
 import fastrand
 
 def randZeroOne():
-    return fastrand.pcg32bounded(1000)/1000
+    return fastrand.pcg32bounded(1000000)/1000000
 
 
 def checkConservation(x_ini, x):
@@ -145,6 +145,7 @@ def InitModels(params, G):
     where m is the number of intermediate states
     """
     if (params["model_name"] == "SIRerlangWellMixed"):
+        
         k_SI = params["k_SI"]
         k_IR = params["k_IR"]
         S_ini = params["S_ini"]
@@ -152,8 +153,8 @@ def InitModels(params, G):
         R_ini = params["R_ini"]
         m = params["nb_intermediate_states"]
 
-        Lambda_SI = m * k_SI # recovery after 1 event
-        Lambda_IR = m * k_IR # recovery after 1 event
+        Lambda_SI = k_SI * m # recovery after 1 event
+        Lambda_IR = k_IR * m # recovery after 1 event
 
         # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
         # R_1 = m+1, ..., R (=R_m) = m+m
@@ -210,7 +211,438 @@ def InitModels(params, G):
         params['N_matrix'] = N
         params['M_matrix'] = M
         params['R_matrix'] = R
+        print("k_plus = ", k_plus)
+    
+    """
+    SIR model with well mixed hypothesis and erlang waiting time
+    for the first reaction reaction
+    S + I   -> I + I_1 (with rate m * k_{SI})
+    I_1     -> I_2     (with rate m * k_{SI})
+    ...
+    I_{m-1} -> I       (with rate m * k_{SI})
 
+    I       -> R       (with rate k_{IR})    
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SIRerlang1WellMixed"):
+        
+        k_SI = params["k_SI"]
+        k_IR = params["k_IR"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_SI = k_SI * m # recovery after 1 event        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 1 + m
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 2
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[m] = I_ini
+        x_ini[nbStates - 1] = R_ini
+        params['x_ini'] = x_ini
+
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        # k_plus[0:m] = Lambda_SI
+        # k_plus[m:nbReactions] = k_IR
+        k_plus[0] = k_SI * (m)
+        k_plus[1:m] = k_SI * (m) * S_ini
+        k_plus[m:nbReactions] = k_IR
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> I + I1 (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[m][0] = 1 ; M[m][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        # reactions I_1 -> I_2
+        #           I_2 -> I_3
+        #               ...
+        #       I_{m-1} -> I_m = I
+        # i ranges from 1 to m-1
+        for i in range(1,m):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 #diagonal matrix
+            M[i+1][i] = 1
+        # reaction: I -> R
+        N[m][m] = 1 ; M[m+1][m] = 1
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus)    
+    
+    """
+    SIR model with well mixed hypothesis and erlang waiting time
+    for the second reaction reaction
+    S + I   -> 2 I (with rate k_{SI})
+    I -> R_1              (with rate m * k_{IR})
+    R_1 -> R_2            (with rate m * k_{IR})
+    ...
+    R_{m-1} -> R  (= R_m) (with rate m * k_{IR})
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SIRerlang2WellMixed"):
+        
+        k_SI = params["k_SI"]
+        k_IR = params["k_IR"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_IR = k_IR * m # recovery after 1 event        
+        
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 1 + m
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 2
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[m] = I_ini
+        x_ini[nbStates - 1] = R_ini
+        params['x_ini'] = x_ini
+
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        k_plus[0] = k_SI
+        k_plus[1:nbReactions] = Lambda_IR
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> I + I1 (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[1][0] = 1 ; M[1][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        # reaction: I -> R_1
+        N[1][1] = 1 ; M[1+1][1] = 1
+        # reaections: R_1 -> R_2
+        #                 ...
+        #         R_{m-1} -> R_m = R
+        # states number go from m + 1 to nbStates
+        for i in range(1+1, nbReactions):
+            N[i][i] = 1 # diagonal matrix
+            M[i+1][i] = 1
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus)    
+    
+    
+    """
+    SI model with well mixed hypothesis a
+    S + I   -> I + I (with rate k_{SI})    
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SIWellMixed"):
+        
+        k_SI = params["k_SI"]        
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 1
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = 2
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[1] = I_ini        
+        params['x_ini'] = x_ini
+
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        k_plus[0] = k_SI        
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> I + I1 (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[1][0] = 1 ; M[1][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus)    
+    
+    """
+    SI model with well mixed hypothesis and erlang waiting time
+    for the first reaction reaction
+    S + I   -> I + I_1 (with rate m * k_{SI})
+    I_1     -> I_2     (with rate m * k_{SI})
+    ...
+    I_{m-1} -> I       (with rate m * k_{SI})    
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SIerlangWellMixed"):
+        
+        k_SI = params["k_SI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_SI = k_SI * m # recovery after 1 event        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 1
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[m] = I_ini
+        params['x_ini'] = x_ini
+
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        # k_plus[0] = k_SI
+        # k_plus[1:m] = k_SI * S_ini
+        k_plus[0] = k_SI   * (m)
+        k_plus[1:m] = k_SI * (m)
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> I + I1 (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[m][0] = 1 ; M[m][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        # reactions I_1 -> I_2
+        #           I_2 -> I_3
+        #               ...
+        #       I_{m-1} -> I_m = I
+        # i ranges from 1 to m-1
+        for i in range(1,m):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 #diagonal matrix
+            M[i+1][i] = 1        
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus) 
+        print("x_ini = ", x_ini) 
+    
+    """
+    SI model with well mixed hypothesis and erlang waiting time
+    for the first reaction reaction
+    
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SIerlangOtherWellMixed"):
+        
+        k_SI = params["k_SI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_SI = k_SI * m # recovery after 1 event        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m + m-1
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 1
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[1] = I_ini
+        params['x_ini'] = x_ini
+
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        k_plus[0:m] = k_SI * S_ini
+        k_plus[m:nbReactions] = k_SI * m
+        # k_plus[0:m] = k_SI * m
+        # k_plus[m:nbReactions] = k_SI * m
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+        
+        # reactions S + I_[k} -> I_1 + I_k
+        # there are m of them
+        for i in range(0,m):
+            # state indice is one more in right hand side than in left hand side
+            N[0][i] = 1 # for S specie, appears on lhs of every first m reactions
+            N[i+1][i] = 1 # diagonal
+            M[1][i] = 1 # for I_1 specie, appears on lhs of every first m reactions
+            M[i+1][i] += 1 # diagonal + 1 to account for case of M[1][1] where we need 2
+        # reactions I_{k-1} -> I_k
+        # there are m-1 of them
+        for i in range(0,m-1):
+            N[1+i][m+i] = 1
+            M[1+1+i][m+i] = 1
+        
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus)
+        print("x_ini = ", x_ini)
+    
+    
+    """
+    SI model with linear reaction to infect S for the first reaction 
+    and erlang wiaitng time 
+    S   -> I_1
+    I_1 -> I_2     (with rate m * k_{SI})
+    ...
+    I_{m-1} -> I       (with rate m * k_{SI})    
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SILinearErlangWellMixed"):
+        
+        k_SI = params["k_SI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_SI = k_SI * m # recovery after 1 event        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 1
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[m] = I_ini
+        params['x_ini'] = x_ini
+
+        # first m reactions  = Lambda_SI = k_SI * m        
+        k_plus = np.zeros(nbReactions)
+        k_plus[0] = k_SI * (m)
+        k_plus[1:m] = k_SI *  (m)
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+        # first reaction: S-> I_1
+        N[0][0] = 1 ; M[1][0] = 1        
+        # reactions I_1 -> I_2
+        #           I_2 -> I_3
+        #               ...
+        #       I_{m-1} -> I_m = I
+        # i ranges from 1 to m-1
+        for i in range(1,m):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 #diagonal matrix
+            M[i+1][i] = 1
+            
+        # M[nbStates-1][nbReactions-1] += 1
+        
+        R = M - N     
+        
+        #nbReactions =  m + 1
+        #nbStates = m + 1
+        #N = np.zeros([nbStates, nbReactions])
+        #M = np.zeros([nbStates, nbReactions])
+
+        ## first reaction: S-> I_1
+        #N[0][0] = 1 ; M[1][0] = 2        
+        ## reactions I_1 -> I_2
+        ##           I_2 -> I_3
+        ##               ...
+        ##       I_{m-1} -> I_m = I
+        ## i ranges from 1 to m-1
+        #for i in range(1,m):
+            ## state indice is one more in right hand side than in left hand side
+            #N[i][i] = 1 #diagonal matrix
+            #M[i+1][i] = 1   
+        #N[m][m] = 1 ; M[m][0] = 1 ;
+        #R = M - N
+        
+        #k_plus = np.zeros(nbReactions)
+        #k_plus[0] = k_SI * m 
+        #k_plus[1:m+1] = k_SI *  m
+        #params['k_plus'] = k_plus
+        
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus)    
+    
     """
     simple SIR model and hopping between nodes of graph
     S + I -> 2I (with rate k_SI)
@@ -675,11 +1107,115 @@ def InitModels(params, G):
         x_ini = np.array([S, I, R, L, D])
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
-        print(x_ini)
+
+    """
+    TODO
+    """
+    if (params["model_name"] == "RealSEIRLDWellMixed"):
+        # load initial state, and reactions values
+        k_SE = params["k_SE"]  # A = 0
+        k_EI = params["k_EI"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        k_IL = params["k_IL"]  # A = 3
+        k_LR = params["k_LR"]  # A = 4
+        k_LD = params["k_LD"]  # A = 5
+        
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 6
+        nbStates = 6
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # 1st reaction: S + I -> I + E
+        N[0][0] = 1 ; M[0][0] = 0
+        N[1][0] = 0 ; M[1][0] = 1
+        N[2][0] = 1 ; M[2][0] = 1
+        N[3][0] = 0 ; M[3][0] = 0
+        N[4][0] = 0 ; M[4][0] = 0
+        N[5][0] = 0 ; M[5][0] = 0
+        # 2nd reaction: E -> I
+        N[0][1] = 0 ; M[0][1] = 0
+        N[1][1] = 1 ; M[1][1] = 0
+        N[2][1] = 0 ; M[2][1] = 1
+        N[3][1] = 0 ; M[3][1] = 0
+        N[4][1] = 0 ; M[4][1] = 0
+        N[5][1] = 0 ; M[5][1] = 0
+        # 3rd reaction: I -> R
+        N[0][2] = 0 ; M[0][2] = 0
+        N[1][2] = 0 ; M[1][2] = 0
+        N[2][2] = 1 ; M[2][2] = 0
+        N[3][2] = 0 ; M[3][2] = 1
+        N[4][2] = 0 ; M[4][2] = 0
+        N[5][2] = 0 ; M[5][2] = 0
+        # 4th reaction: I -> L
+        N[0][3] = 0 ; M[0][3] = 0
+        N[1][3] = 0 ; M[1][3] = 0
+        N[2][3] = 1 ; M[2][3] = 0
+        N[3][3] = 0 ; M[3][3] = 0
+        N[4][3] = 0 ; M[4][3] = 1
+        N[5][3] = 0 ; M[5][3] = 0
+        # 5th reaction: L -> R
+        N[0][4] = 0 ; M[0][4] = 0
+        N[1][4] = 0 ; M[1][4] = 0
+        N[2][4] = 0 ; M[2][4] = 0
+        N[3][4] = 0 ; M[3][4] = 1
+        N[4][4] = 1 ; M[4][4] = 0
+        N[5][4] = 0 ; M[5][4] = 0
+        # 6th reaction: L -> D
+        N[0][5] = 0 ; M[0][5] = 0
+        N[1][5] = 0 ; M[1][5] = 0
+        N[2][5] = 0 ; M[2][5] = 0
+        N[3][5] = 0 ; M[3][5] = 0
+        N[4][5] = 1 ; M[4][5] = 0
+        N[5][5] = 0 ; M[5][5] = 1    
+        
+        R = M - N
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        
+        print("N_matrix = \n" , N)
+        print("M_matrix = \n" , M)
+        print("R_matrix = \n" , R)
+        
+        dic_data_covid = nx.get_node_attributes(G, name='data_covid')
+        dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+        dic_simu_total_pop = copy.deepcopy(dic_total_pop)
+        dic_simu_data_covid = copy.deepcopy(dic_data_covid)
+        S = 0 ; I = 0 ; R = 0 ; D = 0; N = 0;
+        # get data for entire france
+        for n in G.nodes():
+            # I_confirmed = alpha * I, thus I = 1/alpha * I_confirmed
+            # I += dic_simu_data_covid[n][params["time_start_day"]]['Confirmed']
+            # get fraction of deaths
+            D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
+            R += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
+            dic_simu_total_pop[n]
+
+            N += dic_simu_total_pop[n]
+
+        E = params['E_ini']
+        I = params['I_ini']        
+        R =  np.floor((1/params['alpha']) * R) # real "recovered people"
+        L = params['L_ini'] # people who are isolated and will die or recover
+        S = N -E - I - D - R - L
+                
+        # adjust k_SI to each node population
+        k_plus = np.array([k_SE, k_EI, k_IR, k_IL, k_LR, k_LD])
+        x_ini = np.array([S, E, I, R, L, D])
+        print("k_plus = ", k_plus)
+        params['k_plus'] = k_plus
+        params['x_ini'] = x_ini
 
     return params, G
 
-def SolveOneCompartment_(params):
+def SolveOneCompartment(params):
     """
     solve master equation with one compartment
     """
@@ -694,66 +1230,79 @@ def SolveOneCompartment_(params):
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0
-    while t < params["time_end"]:
-        if ((count_loops % params['save_frequency']) == 0):
-            x_save = copy.deepcopy(x)
-            outputs.append((t, x_save))
-            print(t,count_loops, x_save)
-        # forward reaction rates
-        t_forward_plus = np.zeros(nbReactions)
-        for j in range(0, nbReactions):
-            t_forward_plus[j] = 1.0
-            for i in range(0, nbStates):
-                # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
-                y = 1.0
-                # only considers states that are present in current reaction
-                # see Example 1 from DD powerpoint
-                if (abs(N[i,j]) > 0.00000001):
-                    for k in range(0,int(N[i,j])):
-                        y = y * (x[i] -k)
+    try: # so we can exit the loop at any time with ctrl + C
+        while t < params["time_end"]:
+            if ((count_loops % params['save_frequency']) == 0):
+                x_save = copy.deepcopy(x)
+                outputs.append((t, x_save))
+                if ((count_loops % 100000) == 0):            
+                    print(t,count_loops, x_save)
+                # print(t,count_loops, x_save)
+            # forward reaction rates
+            t_forward_plus = np.zeros(nbReactions)
+            for j in range(0, nbReactions):
+                t_forward_plus[j] = 1.0
+                for i in range(0, nbStates):
+                    # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
+                    y = 1.0
+                    # only considers states that are present in current reaction
+                    # see Example 1 from DD powerpoint
+                    if (abs(N[i,j]) > 0.00000001):
+                        for k in range(0,int(N[i,j])):
+                            y = y * (x[i] -k)
 
-                t_forward_plus[j] = t_forward_plus[j] * y
+                    t_forward_plus[j] = t_forward_plus[j] * y
 
-            # finally multiply the forward reaction rate by the reaction rate k+
-            t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
+                # finally multiply the forward reaction rate by the reaction rate k+
+                t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
 
-        # total rate which the state can be left with
-        W = np.sum(t_forward_plus)
-        xi = randZeroOne()
-        # if the total rate is 0, nothing more can happen anymore
-        if (abs(W) <= 0.00000001):
-            print("W = " , W)
-            break
+            # print("t_forward_plus = " , t_forward_plus)
+            # print("x = " , x)
+            # total rate which the state can be left with
+            W = np.sum(t_forward_plus)
+            xi = randZeroOne()
+            # xi = np.random.uniform(0,1)
+            # if the total rate is 0, nothing more can happen anymore
+            if (abs(W) <= 0.0000000001):
+                # print("W = " , W)
+                # print("x = " , x)
+                break
 
-        # Gillepsie time of next event
-        dt = -1 / W * np.log(1 - xi)
-        t = t + dt
+            # Gillepsie time of next event
+            dt = -1 / W * np.log(1 - xi)
+            t = t + dt
 
-        # sum reactions forward rates to choose reaction
-        next_states = np.zeros(nbReactions)
-        next_states[0] = t_forward_plus[0]
-        for j in range(1, nbReactions):
-            next_states[j] = next_states[j - 1] + t_forward_plus[j]
-        next_states = next_states / W
-
-        # choose reaction
-        xi = randZeroOne()
-        if xi <= next_states[0]:
-            id_reaction = 0
-        else:
+            # sum reactions forward rates to choose reaction
+            next_states = np.zeros(nbReactions)
+            next_states[0] = t_forward_plus[0]
             for j in range(1, nbReactions):
-                if (next_states[j - 1] < xi) and (xi < next_states[j]):
-                    id_reaction = j
+                next_states[j] = next_states[j - 1] + t_forward_plus[j]
+            next_states = next_states / W
 
-        # set new state according to reaction
-        x = x + R[:, id_reaction]
+            # choose reaction
+            xi = randZeroOne()
+            # xi = np.random.uniform(0,1)
+            if xi <= next_states[0]:
+                id_reaction = 0
+            else:
+                for j in range(1, nbReactions):
+                    if (next_states[j - 1] < xi) and (xi < next_states[j]):
+                        id_reaction = j
+            
+            # print("id_reaction = " , id_reaction)
+            # set new state according to reaction
+            x = x + R[:, id_reaction]
 
-        count_loops += 1
-
+            count_loops += 1        
+        
+    
+    except KeyboardInterrupt:
+        pass
+    
+    print(t,count_loops, x)
+    
+            
     return outputs
-
-
-SolveOneCompartment = np.vectorize(SolveOneCompartment,cache=True)
 
 
 def SolveOnGraph(params, G):
@@ -939,4 +1488,3 @@ def SolveOnGraph(params, G):
     except KeyboardInterrupt:
         pass
     return outputs , G
-

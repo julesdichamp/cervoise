@@ -80,7 +80,6 @@ def plot_SIRDWellMixed(params,outputs):
     string_for_savefig = 'SIRDWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_k_ID='+ str(params['k_ID']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])+ '_D_ini='+ str(params['D_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
     
-
 def plot_SIRerlangWellMixed(params,outputs):
     """
     plot SIRerlangWellMixed model results
@@ -102,25 +101,321 @@ def plot_SIRerlangWellMixed(params,outputs):
     nbStates = outputs[0][1].shape[0]
     m = params["nb_intermediate_states"]
     x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
     for i in range(0,nbTimeSteps):
         time[i] = outputs[i][0]
         x[i,:] = outputs[i][1]        
     
-    S = x[:,0]
-    I = x[:,m]
-    R = x[:,nbStates  - 1]
-    
-    fig2 = plt.figure(figsize=(16, 10)) # in inches!
-    plt.plot(time,S, 'red', label='Susceptible')
-    plt.plot(time,I, 'green', label='Infected')
-    plt.plot(time,R, 'blue', label='Recovered')
-    plt.legend()
-    plt.xlabel('Arbitrary time unit')
-    plt.ylabel('Population numbers')
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            _label='Susceptible'
+        if (ii==m):
+            _label='Infected'
+        if(ii==nbStates  - 1):
+            _label='Recovered'
+        if((ii>0) and (ii<m)):
+            _label='I'+str(ii)
+        if ((ii>m) and (ii<nbStates -1)):
+            _label='R'+str(ii-m)        
+        plt.plot(time,x[:,ii], label=_label)        
+        plt.legend()
+        plt.xlabel('Arbitrary time unit')
+        plt.ylabel('Population numbers')
     string_for_title='SIRerlangWellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
     plt.title(string_for_title)
     string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.show()
+    
+def plot_SIRerlang1WellMixed(params,outputs):
+    """
+    plot SIRerlangWellMixed model results
+    S,I, R populations over time
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    m = params["nb_intermediate_states"]
+    x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]        
+    
+    tmp_sum = np.zeros(nbTimeSteps)
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            tmp_sum+=x[:,ii]
+            _label='Susceptible'
+        if (ii==m):
+            _label='Infected'
+            tmp_sum+=x[:,ii]
+        if(ii==nbStates  - 1):
+            _label='Recovered'            
+        if((ii>0) and (ii<m)):
+            _label='I'+str(ii)     
+            tmp_sum+=x[:,ii]
+        plt.plot(time,x[:,ii], label=_label)            
+    
+    plt.plot(time,tmp_sum,color='black',label='sum of S + I_i (i=1:m-1)')    
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRerlang1WellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRerlang1WellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.show()  
+    
+def plot_SIRerlang2WellMixed(params,outputs):
+    """
+    plot SIRerlangWellMixed model results
+    S,I, R populations over time
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    m = params["nb_intermediate_states"]
+    x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]        
+    
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            _label='Susceptible'
+        if (ii==1):
+            _label='Infected'
+        if(ii==nbStates  - 1):
+            _label='Recovered'
+        if((ii>1) and (ii<params['nbStates'] - 1)):
+            _label='R'+str(ii-1)     
+        plt.plot(time,x[:,ii], label=_label)        
+        plt.legend()
+        plt.xlabel('Arbitrary time unit')
+        plt.ylabel('Population numbers')
+    string_for_title='SIRerlang2WellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRerlang2WellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.show()      
+
+    
+def plot_SIWellMixed(params,outputs):
+    """
+    plot SIRerlangWellMixed model results
+    S,I
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]        
+    
+    I_sum = np.zeros(nbTimeSteps)
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            _label='Susceptible'
+        if (ii==1):
+            _label='Infected'                    
+        plt.plot(time,x[:,ii], label=_label)        
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIWellMixed, k_SI ='+str(params['k_SI'])+ ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) 
+    plt.title(string_for_title)
+    string_for_savefig = 'SIWellMixed_k_SI='+str(params['k_SI'])+ '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.show()  
+
+
+def plot_SIerlangWellMixed(params,outputs):
+    """
+    plot SIerlangWellMixed model results
+    S,I
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    fname_outputs  = params['outputs_dir']+'/outputs_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
+    f = open(fname_outputs,"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    fname_params  = params['outputs_dir']+'/params_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
+    f = open(fname_params,"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    m = params["nb_intermediate_states"]
+    x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]        
+    
+    tmp_sum = np.zeros(nbTimeSteps)
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            _label='Susceptible'
+            tmp_sum += x[:,ii]
+        if (ii==m):
+            _label='Infected'            
+        if((ii>0) and (ii<m)):
+            _label='I'+str(ii)     
+            tmp_sum += x[:,ii]
+        plt.plot(time,x[:,ii], label=_label)            
+    
+    plt.plot(time,tmp_sum,color='black',label='sum of S + I_i (i=1:m-1)')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRerlangWellMixed, k_SI ='+str(params['k_SI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.show()  
+
+
+def plot_SIerlangOtherWellMixed(params,outputs):
+    """
+    plot_SIerlangOtherWellMixed model results
+    S,I
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    fname_outputs  = params['outputs_dir']+'/outputs_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
+    f = open(fname_outputs,"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    fname_params  = params['outputs_dir']+'/params_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
+    f = open(fname_params,"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    m = params["nb_intermediate_states"]
+    x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]        
+    
+    tmp_sum = np.zeros(nbTimeSteps)
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            _label='Susceptible'
+            tmp_sum += x[:,ii]
+        if (ii==m):
+            _label='Infected'            
+        if((ii>0) and (ii<m)):
+            _label='I'+str(ii)     
+            tmp_sum += x[:,ii]
+        plt.plot(time,x[:,ii], label=_label)            
+    
+    plt.plot(time,tmp_sum,color='black',label='sum of S + I_i (i=1:m-1)')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRerlangOtherWellMixed, k_SI ='+str(params['k_SI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRerlangOtherWellMixed_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.show()  
+
+def plot_SILinearErlangWellMixed(params,outputs):
+    """
+    plot SIerlangWellMixed model results
+    S,I
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    m = params["nb_intermediate_states"]
+    x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]        
+    
+    tmp_sum = np.zeros(nbTimeSteps)
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            _label='Susceptible'
+            tmp_sum += x[:,ii]
+        if (ii==m):
+            _label='Infected'
+        if((ii>0) and (ii<m)):
+            _label='I'+str(ii)
+            tmp_sum += x[:,ii]
+        plt.plot(time,x[:,ii], label=_label)
+    
+    
+    plt.plot(time,tmp_sum,color='gray',label='sum of S + I_i (i=1:m-1)')
+    plt.plot(time,tmp_sum+x[:,m],color='black',label='sum of all')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRerlang1WellMixed, k_SI ='+str(params['k_SI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRerlang1WellMixed_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.show()  
 
 
 def plot_SIROnGraph(params,outputs, G):
@@ -307,8 +602,6 @@ def plot_SIROnGraph(params,outputs, G):
         string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
         plt.close()
-
-
 
 def plot_SIRDOnGraph(params,outputs, G):
     """
@@ -527,12 +820,10 @@ def plot_SIRDOnGraph(params,outputs, G):
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
         plt.close()
 
-
 def plot_SIRerlangOnGraph(params,outputs, G):
     """
     TODO
     """
-    
 
 def plot_TEST(params,outputs, G):
     """
