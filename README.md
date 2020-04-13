@@ -14,7 +14,10 @@ Contains:
 - models.py: compute models 
 - plotModels.py: plot models results
 
-
+Install:
+ - install pip (typically : *conda install pip*)
+ - REQUIRES_PYTHON = '>=3.6.0'
+ - from the cervoise folder : *python setup.py install*
 
 TODO:
 - Get data from cases/deaths 
