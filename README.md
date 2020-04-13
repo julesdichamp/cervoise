@@ -14,7 +14,10 @@ Contains:
 - models.py: compute models 
 - plotModels.py: plot models results
 
-
+INSTALL:
+- from a conda env.
+    - conda install pip
+    - 
 
 TODO:
 - Get data from cases/deaths 
