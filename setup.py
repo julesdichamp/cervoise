@@ -38,7 +38,8 @@ REQUIRED = [
     # 'pyproj~=2.6.0',
     # 'branca~=0.4.0',
     'scipy~=1.4.1',
-    'numexpr~=2.7.1'
+    'numexpr~=2.7.1',
+    'progressbar'
 ]
 
 # What packages are optional?
