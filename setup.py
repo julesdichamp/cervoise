@@ -21,7 +21,25 @@ REQUIRES_PYTHON = '>=3.6.0'
 VERSION = '0.0.1'
 
 # What packages are required for this module to be executed?
-REQUIRED = ['pandas==1.0.3'
+REQUIRED = [
+    'lmfit~=1.0.0',
+    'numpy~=1.18.2',
+    'pandas~=1.0.3',
+    'networkx~=2.4',
+    'setuptools~=46.1.3',
+    # 'geopy~=1.21.0',
+    'geopandas~=0.7.0',
+    'fastrand>=1.2.2',
+    'numba~=0.48.0',
+    # 'cartopy~=0.17.0',
+    'matplotlib~=3.2.1',
+    'seaborn~=0.10.0',
+    # 'folium~=0.10.1',
+    'bokeh~=2.0.1',
+    # 'pyproj~=2.6.0',
+    # 'branca~=0.4.0',
+    'scipy~=1.4.1',
+    'numexpr~=2.7.1'
 ]
 
 # What packages are optional?
@@ -120,8 +138,8 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6'
-        #'Programming Language :: Python :: Implementation :: CPython',
-        #'Programming Language :: Python :: Implementation :: PyPy'
+        # 'Programming Language :: Python :: Implementation :: CPython',
+        # 'Programming Language :: Python :: Implementation :: PyPy'
     ],
     # $ setup.py publish support.
     cmdclass={
