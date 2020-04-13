@@ -23,4 +23,4 @@
   'saint-barthelemy',
   'saint-martin',
   'wallis-et-futuna'
-]
+];

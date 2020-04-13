@@ -1,15 +1,15 @@
-const path = require('path')
-const moment = require('moment')
-const program = require('commander')
+const path = require('path');
+const moment = require('moment');
+const program = require('commander');
 
 // By default try to grap latest data
 program
     .option('-d, --date [date]', 'Change the date of the data to be generated (defaults to yesterday)', moment().subtract(1, 'day').format('YYYY-MM-DD'))
-    .parse(process.argv)
+    .parse(process.argv);
 
-const date = moment(program.date)
+const date = moment(program.date);
 if (!date.isValid()) {
-  console.error('Invalid date, using yesterday as default')
+  console.error('Invalid date, using yesterday as default');
   date = moment().subtract(1, 'day')
 }
 
@@ -82,4 +82,4 @@ module.exports = {
       }
     }
   }
-}
+};

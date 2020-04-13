@@ -57,7 +57,7 @@ t0 = time.time()
 if len(sys.argv) > 1:
     inputFile = sys.argv[1]
 else:
-    inputFile = "config.ini"
+    inputFile = "/home/florian/PycharmProjects/cervoise/config_VALIDATION_SIR_one_compartment.ini"
 
 
 def LoadRoads(road_names):

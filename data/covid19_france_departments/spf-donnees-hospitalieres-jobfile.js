@@ -1,26 +1,26 @@
-const path = require('path')
-const fs = require('fs-extra')
-const _ = require('lodash')
-const moment = require('moment')
-const program = require('commander')
+const path = require('path');
+const fs = require('fs-extra');
+const _ = require('lodash');
+const moment = require('moment');
+const program = require('commander');
 
 // Build departements list for each region to compute region statistics
-const departements = fs.readJsonSync(path.join(__dirname, 'codes-departements-france.json'), { encoding: 'utf8' })
-let regions = {}
+const departements = fs.readJsonSync(path.join(__dirname, 'codes-departements-france.json'), { encoding: 'utf8' });
+let regions = {};
 departements.forEach(departement => {
-  const region = departement.reg.toString()
-  if (!regions[region]) regions[region] = []
+  const region = departement.reg.toString();
+  if (!regions[region]) regions[region] = [];
   regions[region].push(departement.dep.toString())
-})
+});
 
 // By default try to grap latest data
 program
     .option('-d, --date [date]', 'Change the date of the data to be generated (defaults to yesterday)', moment().subtract(1, 'day').format('YYYY-MM-DD'))
-    .parse(process.argv)
+    .parse(process.argv);
 
-const date = moment(program.date)
+const date = moment(program.date);
 if (!date.isValid()) {
-  console.error('Invalid date, using yesterday as default')
+  console.error('Invalid date, using yesterday as default');
   date = moment().subtract(1, 'day')
 }
 
@@ -63,11 +63,11 @@ module.exports = {
           hook: 'apply',
           dataPath: 'result.data',
           function: (data) => {
-            const donneesDepartementales = data.donneesDepartementales
-            data.donneesRegionales = []
+            const donneesDepartementales = data.donneesDepartementales;
+            data.donneesRegionales = [];
             _.forOwn(regions, (value, key) => {
               // Find matches
-              const entries = _.filter(donneesDepartementales, element => value.includes(element.code))
+              const entries = _.filter(donneesDepartementales, element => value.includes(element.code));
               if (entries.length > 1) data.donneesRegionales.push(_.reduce(entries, (total, entry) => {
                 return {
                   code: key,
@@ -76,7 +76,7 @@ module.exports = {
                   gueris: total.gueris + entry.gueris,
                   deces: total.deces + entry.deces
                 }
-              }, entries.shift()))
+              }, entries.shift()));
               else if (entries.length > 0) data.donneesRegionales.push(Object.assign({ code: key }, _.omit(entries[0], ['code'])))
             })
           }
@@ -101,4 +101,4 @@ module.exports = {
       }
     }
   }
-}
+};

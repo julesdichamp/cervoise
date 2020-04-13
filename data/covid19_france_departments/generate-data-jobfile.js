@@ -1,31 +1,31 @@
-const moment = require('moment')
-const program = require('commander')
+const moment = require('moment');
+const program = require('commander');
 
 // By default try to grap data from now
 program
     .option('-s, --start [date]', 'Change the start date of the data to be generated (defaults to 2020-03-01)', moment('2020-03-01').format('YYYY-MM-DD'))
     .option('-e, --end [date]', 'Change the end date of the data to be generated (defaults to yesterday)', moment().subtract(1, 'day').format('YYYY-MM-DD'))
-    .parse(process.argv)
+    .parse(process.argv);
 
-let start = moment(program.start)
+let start = moment(program.start);
 if (!start.isValid()) {
-  console.error('Invalid start date, using 2020-03-01 as default')
+  console.error('Invalid start date, using 2020-03-01 as default');
   start = moment('2020-03-01')
 }
-let end = moment(program.end)
+let end = moment(program.end);
 if (!end.isValid()) {
-  console.error('Invalid end date, using yesterday as default')
+  console.error('Invalid end date, using yesterday as default');
   end = moment().subtract(1, 'day')
 }
 
-let tasks = []
-let date = start
+let tasks = [];
+let date = start;
 while (date.isSameOrBefore(end)) {
   tasks.push({
     id: `${date.format('YYYY-MM-DD')}`,
     type: 'noop',
     date
-  })
+  });
   date = date.clone().add(1, 'day')
 }
 
@@ -80,4 +80,4 @@ module.exports = {
       }
     }
   }
-}
+};

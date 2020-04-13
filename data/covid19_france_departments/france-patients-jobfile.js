@@ -1,25 +1,25 @@
-const path = require('path')
-const _ = require('lodash')
-const fs = require('fs-extra')
-const sift = require('sift')
-const turf = require('@turf/turf')
-const program = require('commander')
+const path = require('path');
+const _ = require('lodash');
+const fs = require('fs-extra');
+const sift = require('sift');
+const turf = require('@turf/turf');
+const program = require('commander');
 
 program
     .option('-d, --departements', 'Aggregate data by departement')
-    .parse(process.argv)
+    .parse(process.argv);
 
 // By default we generate a list of geolocated patients
 // Finest granularity now is departement level, we use their centroids
 // In that case each departement has a count with patients
-console.log('Computing patients map')
+console.log('Computing patients map');
 // Read departemnts DB
-const departements = fs.readJsonSync(path.join(__dirname, 'departements-france-outre-mer.geojson'))
+const departements = fs.readJsonSync(path.join(__dirname, 'departements-france-outre-mer.geojson'));
 departements.features.forEach(feature => {
   // Compute centroid of real geometry and update in place
-  const centroid = turf.centroid(feature.geometry)
+  const centroid = turf.centroid(feature.geometry);
   feature.geometry = centroid.geometry
-})
+});
 
 module.exports = {
   id: 'patients-france',
@@ -39,18 +39,18 @@ module.exports = {
         },
         apply: {
           function: (item) => {
-            const nbPatients = item.data.length
-            let count = 0
+            const nbPatients = item.data.length;
+            let count = 0;
             if (program.departements) {
               departements.features.forEach(feature => {
                 // Find corresponding patients, we use JSON parsing to manage unicode
-                const match = sift({ departement: feature.properties.nom }, item.data)
+                const match = sift({ departement: feature.properties.nom }, item.data);
                 if (match.length) {
-                  count += match.length
-                  feature.properties.Confirmed = match.length
+                  count += match.length;
+                  feature.properties.Confirmed = match.length;
                   feature.properties.Deaths = match.filter(patient => patient.deceased_date).length
                 }
-              })
+              });
               item.data = departements.features.map(feature => ({
                 'Country/Region': 'France',
                 'Province/State': feature.properties.nom,
@@ -62,18 +62,18 @@ module.exports = {
             } else {
               item.data.forEach(patient => {
                 // Find corresponding departement
-                const match = sift({ 'properties.nom': patient.departement }, departements.features)
+                const match = sift({ 'properties.nom': patient.departement }, departements.features);
                 if (match.length) {
-                  count++
-                  const departement = match[0]
-                  patient.Longitude = departement.geometry.coordinates[0]
+                  count++;
+                  const departement = match[0];
+                  patient.Longitude = departement.geometry.coordinates[0];
                   patient.Latitude = departement.geometry.coordinates[1]
                 } else {
                   //console.log(`Skipping patient from ${patient.departement} departement because it has not been found in database`)
                 }
               })
             }
-            console.log(`Geolocated ${count} patients on ${nbPatients} patients`)
+            console.log(`Geolocated ${count} patients on ${nbPatients} patients`);
             console.log(`Skipped ${nbPatients - count} patients whose departement has not been found in database`)
           }
         },
@@ -120,4 +120,4 @@ module.exports = {
       }
     }
   }
-}
+};
