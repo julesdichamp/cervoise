@@ -316,6 +316,156 @@ def plot_SIerlangWellMixed(params,outputs):
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
     plt.show()  
 
+def plot_SIAndIntermediateErlangWellMixed(params,outputs):
+    """
+    plot SIAndIntermediateErlangWellMixed model results
+    S,I
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    fname_outputs  = params['outputs_dir']+'/outputs_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
+    f = open(fname_outputs,"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    fname_params  = params['outputs_dir']+'/params_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
+    f = open(fname_params,"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    m = params["nb_intermediate_states"]
+    x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]
+    
+    tmp_sum = np.zeros(nbTimeSteps)
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            _label='Susceptible'
+            tmp_sum += x[:,ii]
+        if (ii ==1):
+            _label='Intermediate L'
+            tmp_sum += x[:,ii]
+        if (ii==params['nbStates']-1):
+            _label='Infected'     
+        if((ii>1) and (ii<params['nbStates']-1)):
+            _label='I'+str(ii-1)     
+            tmp_sum += x[:,ii]
+        plt.plot(time,x[:,ii], label=_label)            
+    
+    plt.plot(time,tmp_sum,color='black',label='sum of S + L + I_i (i=1:m-1)')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIAndIntermediateErlangWellMixed, k_SL ='+str(params['k_SL'])+' k_LI ='+str(params['k_LI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIAndIntermediateErlangWellMixed_k_SL='+str(params['k_SL'])+str(params['k_LI'])+'_k_LI=' +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.close()
+    # plt.show()  
+    
+    # plot waiting times    
+    if ('WaitingTimes' in params['plot_options']):
+        # FOR NOW: it only works in the case where S = 0, I_m = 0, L = L_ini
+        if (params['S_ini'] == 0) and (params['I_ini'] == 0):
+            count_I_m = 0
+            I_m = x[:,nbStates-1]
+            arrival_times = []
+            for i in range(0,nbTimeSteps):
+                if (I_m[i] > count_I_m) :
+                    count_I_m +=1
+                    arrival_times.append(time[i])
+            # convert to numpy
+            arrival_times = np.array(arrival_times)    
+            
+            # check we found all arrival times
+            # highliy specific test, be careful !!
+            if not(len(arrival_times) == params['L_ini']):
+                print('we missed something. Exit here')
+                exit(0)
+                    
+            # m * rate gives rate of erlang distrib
+            k_LI = params['k_LI']
+            m = params['nb_intermediate_states']
+            Lambda_LI = m * k_LI
+            time_real = np.linspace(0, np.max(arrival_times), 1000)        
+            # compute (m-1)!
+            facto_m_minus_1 = 1
+            for i in range(1,m):
+                facto_m_minus_1 *= i
+            real_erlang_distrib = Lambda_LI * (Lambda_LI * time_real) **(m-1) * np.exp(-Lambda_LI * time_real) / facto_m_minus_1
+            
+            # plot histogram
+            fig100 = plt.figure(figsize=(16, 10)) # in inches!
+            plt.hist(arrival_times, bins=int(params['L_ini']/200), density=True, label='Waiting times distribution')
+            plt.xlabel('Waiting times')
+            plt.ylabel('PDF')
+            # plot real erlang distrib
+            plt.plot(time_real, real_erlang_distrib, label='Erlang distribution')
+            plt.legend()
+            string_for_title='SIAndIntermediateErlangWellMixed, k_SL ='+str(params['k_SL'])+' k_LI ='+str(params['k_LI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', L_ini = '+str( params['L_ini'])
+            plt.title(string_for_title)
+            string_for_savefig = 'SIAndIntermediateErlangWellMixed_waiting_times_pdf_k_SL='+str(params['k_SL'])+str(params['k_LI'])+'_k_LI=' +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])+ '_L_ini='+str( params['L_ini'])
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            # plt.show()
+    
+def plot_SIerlangWellMixed(params,outputs):
+    """
+    plot SIerlangWellMixed model results
+    S,I
+    respective indices for plot are 0, m, nbStates
+    """
+    # save outputs
+    fname_outputs  = params['outputs_dir']+'/outputs_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
+    f = open(fname_outputs,"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    fname_params  = params['outputs_dir']+'/params_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
+    f = open(fname_params,"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    nbStates = outputs[0][1].shape[0]
+    m = params["nb_intermediate_states"]
+    x = np.zeros([nbTimeSteps, nbStates])
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]        
+    
+    tmp_sum = np.zeros(nbTimeSteps)
+    for ii in range(0,params['nbStates']):
+        if (ii ==0):
+            _label='Susceptible'
+            tmp_sum += x[:,ii]
+        if (ii==m):
+            _label='Infected'            
+        if((ii>0) and (ii<m)):
+            _label='I'+str(ii)     
+            tmp_sum += x[:,ii]
+        plt.plot(time,x[:,ii], label=_label)            
+    
+    plt.plot(time,tmp_sum,color='black',label='sum of S + I_i (i=1:m-1)')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRerlangWellMixed, k_SI ='+str(params['k_SI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.show()  
+
 
 def plot_SIerlangOtherWellMixed(params,outputs):
     """

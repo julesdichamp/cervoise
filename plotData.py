@@ -226,4 +226,4 @@ def plotDataAndSEIRLDResults(params, G, outputs, days_to_plot):
     string_for_savefig = 'Recovered'
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
     
-    plt.show()
+    # plt.show()

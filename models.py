@@ -360,8 +360,7 @@ def InitModels(params, G):
         print('M = \n' , M)
         print('R = \n' , R)
         print("k_plus = ", k_plus)    
-    
-    
+        
     """
     SI model with well mixed hypothesis a
     S + I   -> I + I (with rate k_{SI})    
@@ -411,7 +410,7 @@ def InitModels(params, G):
         print('M = \n' , M)
         print('R = \n' , R)
         print("k_plus = ", k_plus)    
-    
+            
     """
     SI model with well mixed hypothesis and erlang waiting time
     for the first reaction reaction
@@ -448,10 +447,10 @@ def InitModels(params, G):
         # first m reactions  = Lambda_SI
         # second m reactions = Lambda_IR
         k_plus = np.zeros(nbReactions)
-        # k_plus[0] = k_SI
-        # k_plus[1:m] = k_SI * S_ini
-        k_plus[0] = k_SI   * (m)
-        k_plus[1:m] = k_SI * (m)
+        k_plus[0] = k_SI
+        k_plus[1:m] = k_SI * m * S_ini
+        # k_plus[0] = k_SI   * (m)
+        # k_plus[1:m] = k_SI * (m)
         params['k_plus'] = k_plus
 
         N = np.zeros([nbStates, nbReactions])
@@ -481,11 +480,83 @@ def InitModels(params, G):
         print('R = \n' , R)
         print("k_plus = ", k_plus) 
         print("x_ini = ", x_ini) 
+        
+    """
+    SI model with erlang and fixed Susceptible population
+    """
+    if (params["model_name"] == "SIerlangFixSWellMixed"):
+        
+        k_SI = params["k_SI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_SI = k_SI * m # recovery after 1 event        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 1
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[m] = I_ini
+        params['x_ini'] = x_ini
+
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        # k_plus[0] = k_SI
+        # k_plus[1:m] = k_SI * S_ini
+        k_plus[0] = k_SI * m
+        k_plus[1:m] = k_SI * (m) * S_ini
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> S + I + I1 (and all intermediate reactions)        
+        # (S is an enzyme)
+        N[0][0] = 1
+        N[m][0] = 1
+        M[0][0] = 1 # so that R[0][0] = 0 
+        M[1][0] = 1
+        M[m][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        # reactions I_1 -> I_2
+        #           I_2 -> I_3
+        #               ...
+        #       I_{m-1} -> I_m = I
+        # i ranges from 1 to m-1
+        for i in range(1,m):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 #diagonal matrix
+            M[i+1][i] = 1        
+
+        R = M - N
+        
+        # small hack to ensure that Susceptible population is kept constant:        
+        # R[0][0] = 0 # it should -1 here
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus)
+        print("x_ini = ", x_ini)
     
     """
-    SI model with well mixed hypothesis and erlang waiting time
-    for the first reaction reaction
-    
+    SI model with well mixed hypothesis and another type of
+    erlang waiting time
+    for the first reaction reaction    
     where m is the number of intermediate states
     """
     if (params["model_name"] == "SIerlangOtherWellMixed"):
@@ -515,7 +586,7 @@ def InitModels(params, G):
         # first m reactions  = Lambda_SI
         # second m reactions = Lambda_IR
         k_plus = np.zeros(nbReactions)
-        k_plus[0:m] = k_SI * S_ini
+        k_plus[0:m] = k_SI * m
         k_plus[m:nbReactions] = k_SI * m
         # k_plus[0:m] = k_SI * m
         # k_plus[m:nbReactions] = k_SI * m
@@ -550,6 +621,64 @@ def InitModels(params, G):
         print("k_plus = ", k_plus)
         print("x_ini = ", x_ini)
     
+    """
+    SI model with well mixed hypothesis and intermediate L step
+    and erlang waiting time after that
+    """
+    if (params["model_name"] == "SIAndIntermediateErlangWellMixed"):
+        k_SL = params["k_SL"]
+        k_LI = params["k_LI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        L_ini = params["L_ini"]
+        m = params["nb_intermediate_states"]        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m + 1
+        # S, L, m * I_{i=1:m}
+        nbStates = m + 1 + 1
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[1] = L_ini
+        x_ini[nbStates -1] = I_ini
+        params['x_ini'] = x_ini
+        
+        k_plus = np.zeros(nbReactions)
+        k_plus[0] = k_SL        
+        k_plus[1:nbReactions] = k_LI * (m)
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I_m -> I_m + L (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[nbStates-1][0] = 1 ; M[nbStates-1][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        
+        # reactions L -> I_1
+        # and all other I_{k-1} -> I_k        
+        for i in range(1,nbReactions):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 
+            M[i+1][i] = 1    
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus) 
+        print("x_ini = ", x_ini)             
     
     """
     SI model with linear reaction to infect S for the first reaction 
@@ -586,8 +715,8 @@ def InitModels(params, G):
 
         # first m reactions  = Lambda_SI = k_SI * m        
         k_plus = np.zeros(nbReactions)
-        k_plus[0] = k_SI * (m)
-        k_plus[1:m] = k_SI *  (m)
+        k_plus[0] = k_SI * (m) * S_ini
+        k_plus[1:m] = k_SI * (m) * S_ini
         params['k_plus'] = k_plus
 
         N = np.zeros([nbStates, nbReactions])
@@ -603,36 +732,8 @@ def InitModels(params, G):
             # state indice is one more in right hand side than in left hand side
             N[i][i] = 1 #diagonal matrix
             M[i+1][i] = 1
-            
-        # M[nbStates-1][nbReactions-1] += 1
-        
         R = M - N     
-        
-        #nbReactions =  m + 1
-        #nbStates = m + 1
-        #N = np.zeros([nbStates, nbReactions])
-        #M = np.zeros([nbStates, nbReactions])
-
-        ## first reaction: S-> I_1
-        #N[0][0] = 1 ; M[1][0] = 2        
-        ## reactions I_1 -> I_2
-        ##           I_2 -> I_3
-        ##               ...
-        ##       I_{m-1} -> I_m = I
-        ## i ranges from 1 to m-1
-        #for i in range(1,m):
-            ## state indice is one more in right hand side than in left hand side
-            #N[i][i] = 1 #diagonal matrix
-            #M[i+1][i] = 1   
-        #N[m][m] = 1 ; M[m][0] = 1 ;
-        #R = M - N
-        
-        #k_plus = np.zeros(nbReactions)
-        #k_plus[0] = k_SI * m 
-        #k_plus[1:m+1] = k_SI *  m
-        #params['k_plus'] = k_plus
-        
-        
+             
         params["nbReactions"] = nbReactions
         params["nbStates"] = nbStates
         params['N_matrix'] = N
@@ -1261,6 +1362,7 @@ def SolveOneCompartment(params):
             # total rate which the state can be left with
             W = np.sum(t_forward_plus)
             xi = randZeroOne()
+            # print(t,count_loops, x, W, t_forward_plus)
             # xi = np.random.uniform(0,1)
             # if the total rate is 0, nothing more can happen anymore
             if (abs(W) <= 0.0000000001):
@@ -1289,9 +1391,11 @@ def SolveOneCompartment(params):
                     if (next_states[j - 1] < xi) and (xi < next_states[j]):
                         id_reaction = j
             
-            # print("id_reaction = " , id_reaction)
+            
             # set new state according to reaction
             x = x + R[:, id_reaction]
+
+            # print(count_loops, t, x, t_forward_plus, next_states, id_reaction)
 
             count_loops += 1        
         
@@ -1304,6 +1408,170 @@ def SolveOneCompartment(params):
             
     return outputs
 
+
+#def SolveAgentBasedOneCompartment(params):
+    #"""
+    #solve master equation with one compartment
+    #and track every individual in a agent based fashion
+    #if the rate of the reaction for state S e.g. is k then every
+    #individual S^1, S^2, ...S^n such that 
+    #S^1 + S^2 + ... + S^n = S (total number of individuals)
+    #each individual can jump from state S^1 to state I^1
+    #IMPORTANT: WE ASSUME CONSERVATION SO THAT EVERY STATE HAS A PRE-ALLOCATED
+    #SPACE OF N (TOTAL NUMBER) INDIVIDUALS. This is useful to deal with indices
+    #of particles 
+    #TODO: THINK OF A DIFFERENT APPROACH
+    #"""
+    #nbReactions   = params["nbReactions"]
+    #nbStates      = params["nbStates"]
+    #nbIndividuals = params["nbIndividuals"]
+    #k_plus        = params['k_plus']
+    #N             = params['N_matrix']
+    #R             = params['R_matrix']
+    ## x_ini is a matrix with NbStates columns
+    ## and N lines (total number of particles) 
+    ## it is either 1 or 0 
+    ## x[i,j] = 1 means that individual 'i' is in state 'j'
+    #x_ini          = params['x_ini']
+    
+    ## x is a list of list of size nbStates
+    
+    #x = x_ini
+    #t = params["time_start"]
+    #outputs = []  # we will fill this list with data to be plotted
+    #count_loops = 0
+    #try: # so we can exit the loop at any time with ctrl + C
+        #while t < params["time_end"]:
+            #if ((count_loops % params['save_frequency']) == 0):
+                #x_save = copy.deepcopy(x)
+                #outputs.append((t, x_save))
+                #if ((count_loops % 100000) == 0):            
+                    #print(t,count_loops, x_save)
+                ## print(t,count_loops, x_save)                        
+            ## forward reaction rates            
+            #t_forward_plus = np.zeros(nbReactions)
+            #indices_states_per_reaction = np.zeros([nbStates, nbReactions])
+            #for j in range(0, nbReactions):
+                #t_forward_plus[j] = 1.0
+                #for i in range(0, nbStates):
+                    ## y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
+                    #y = 1.0
+                    ## only considers states that are present in current reaction
+                    ## see Example 1 from DD powerpoint
+                    #if (abs(N[i,j]) > 0.00000001):
+                        #indices_states_per_reaction[i][j] = 1
+                        #for k in range(0,int(N[i,j])):
+                            #y = y * (len(x[i]) -k) # x[i] is a list with all indices that are in 
+
+                    #t_forward_plus[j] = t_forward_plus[j] * y
+
+                ## finally multiply the forward reaction rate by the reaction rate k+
+                #t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
+
+            ## print("t_forward_plus = " , t_forward_plus)
+            ## print("x = " , x)
+            ## total rate which the state can be left with
+            #W = np.sum(t_forward_plus)
+            #xi = randZeroOne()
+            ## print(t,count_loops, x, W, t_forward_plus)
+            ## xi = np.random.uniform(0,1)
+            ## if the total rate is 0, nothing more can happen anymore
+            #if (abs(W) <= 0.0000000001):
+                ## print("W = " , W)
+                ## print("x = " , x)
+                #break
+
+            ## Gillepsie time of next event
+            #dt = -1 / W * np.log(1 - xi)
+            #t = t + dt
+
+            ## sum reactions forward rates to choose reaction
+            #next_states = np.zeros(nbReactions)
+            #next_states[0] = t_forward_plus[0]
+            #for j in range(1, nbReactions):
+                #next_states[j] = next_states[j - 1] + t_forward_plus[j]
+            #next_states = next_states / W
+
+            ## choose reaction
+            #xi = randZeroOne()
+            ## xi = np.random.uniform(0,1)
+            #if xi <= next_states[0]:
+                #id_reaction = 0
+            #else:
+                #for j in range(1, nbReactions):
+                    #if (next_states[j - 1] < xi) and (xi < next_states[j]):
+                        #id_reaction = j
+            
+            ## we chose reaction id_reaction but we now need to know to 
+            ## which sub-reaction (i.e. which individual in particular 
+            ## moves)
+            ## compute total number of sub-reactions. e.g. t_0 = k * S * I
+            ## that would be k * S1 * I1, k * S2 * I1, ..., k * Sn * I1,
+            ## k * S1 * I2 , ... * k Sn * I2
+            #nbStatesInReaction = 0
+            #nbSubReactions = 1
+            #for kk in range(0, nbStates):
+                ## get number of combinations that can happen between each pair 
+                ## of states involve in each reaction
+                #nbSubReactions = nbSubReactions * indices_states_per_reaction[kk][id_reaction] * len(x[kk])
+                #nbStatesInReaction += indices_states_per_reaction[kk][id_reaction]
+            
+            ## each sub event has the same proba and their sum equals
+            ## t_forward_plus[id_reaction] 
+            ## we keep it normalized to match the value of xi which is 
+            ## between 0 and 1
+            #proba_each_sub_event = t_forward_plus[id_reaction] / nbSubReactions / W
+            
+            #if (id_reaction == 0): # first reaction we loop from 0
+                #min_lbound = 0.
+            #else: # start from the previous value of the chosen reaction
+                #min_lbound = next_states[id_reaction -1]
+            #indice = 0
+            #max_ubound = next_states[id_reaction]
+            #lbound = min_lbound
+            #ubound = min_lbound += proba_each_sub_event    
+            #done = False
+            #if (xi < lbound): # lucky, we found the first indice as quickly as possible
+                #indice = 0 
+            #else: # we need to iterate between next_states[id_reaction-1] and next_states[id_reaction] 
+                #while (not(done)):
+                    ## we found the sub event that 
+                    #if (lbound < xi) and (xi < ubound):
+                        #done = True
+                    #elif (xi > max_ubound):
+                        #print('Something went wrong we went over the interval where we were supposed to look for the indice of individual to move. Exit here')
+                        #exit(0)
+                    #else :
+                        ## increase bounds by one sub event
+                        #lbound += proba_each_sub_event
+                        #ubound += proba_each_sub_event
+                        #indice += 1                    
+            
+            ## in case where 1 state is involved in reaction id_reaction 
+            ## the indice we found is the same as the position in the corresponding
+            ## vector of states
+            #if (nbStatesInReaction == 1):
+                #indice_sub_event = indice
+            #if (nbStatesInReaction == 2):
+            ## x[indice_sub_event]
+            ## set new state according to reaction
+            #for ii in range(0,nbStates):
+                #if (abs(R[ii, id_reaction]) > 0.00000001)
+                    #x[ii].[indice_sub_event]
+            #x = x + R[:, id_reaction]
+
+            ## print(count_loops, t, x, t_forward_plus, next_states, id_reaction)
+
+            #count_loops += 1        
+        
+    
+    #except KeyboardInterrupt:
+        #pass
+    
+    #print(t,count_loops, x)
+    
+            
+    #return outputs
 
 def SolveOnGraph(params, G):
     """
