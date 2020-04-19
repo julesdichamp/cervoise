@@ -323,7 +323,7 @@ def InitModels(params, G):
         # initialize population with known values
         x_ini = np.zeros(nbStates)
         x_ini[0] = S_ini
-        x_ini[m] = I_ini
+        x_ini[1] = I_ini
         x_ini[nbStates - 1] = R_ini
         params['x_ini'] = x_ini
 
@@ -331,7 +331,7 @@ def InitModels(params, G):
         # second m reactions = Lambda_IR
         k_plus = np.zeros(nbReactions)
         k_plus[0] = k_SI
-        k_plus[1:nbReactions] = Lambda_IR
+        k_plus[1:nbReactions] = k_IR * m
         params['k_plus'] = k_plus
 
         N = np.zeros([nbStates, nbReactions])
@@ -447,7 +447,7 @@ def InitModels(params, G):
         # first m reactions  = Lambda_SI
         # second m reactions = Lambda_IR
         k_plus = np.zeros(nbReactions)
-        k_plus[0] = k_SI
+        k_plus[0] = k_SI * m
         k_plus[1:m] = k_SI * m * S_ini
         # k_plus[0] = k_SI   * (m)
         # k_plus[1:m] = k_SI * (m)

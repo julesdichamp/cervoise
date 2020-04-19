@@ -221,9 +221,58 @@ def plot_SIRerlang2WellMixed(params,outputs):
     plt.title(string_for_title)
     string_for_savefig = 'SIRerlang2WellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])+'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-    plt.show()      
-
+    plt.close()
+    # plt.show()
     
+    if ('WaitingTimes' in params['plot_options']):
+        count_I_m = 1
+        count_S = params['S_ini']
+        count_R = 0
+        S = x[:,0]
+        I_m = x[:,nbStates-2]
+        R = x[:,nbStates-1]
+        arrival_times = []
+        count_append = 0
+        for i in range(0,nbTimeSteps):
+            if (R[i] > count_R):
+                count_R +=1
+                arrival_times.append(time[i])
+        
+        # convert to numpy
+        arrival_times = np.array(arrival_times)
+        
+        # m * rate gives rate of erlang distrib
+        k_IR = params['k_IR'] 
+        m = params['nb_intermediate_states'] 
+        Lambda_IR = m * k_IR
+        time_real = np.linspace(0, np.max(arrival_times), 1000)        
+        # compute (m-1)!
+        facto_m_minus_1 = 1
+        for i in range(1,m):
+            facto_m_minus_1 *= i
+        real_erlang_distrib = Lambda_IR * (Lambda_IR * time_real) **(m-1) * np.exp(-Lambda_IR * time_real) / facto_m_minus_1        
+        
+        # mu = 38.3479
+        # sigma = 6.5
+        # gaussian_distrib = 1./(sigma * np.sqrt(2 * np.pi)) * np.exp(-0.5*(time_real-mu)**2 / sigma**2)
+        
+        # plot histogram
+        fig100 = plt.figure(figsize=(16, 10)) # in inches!
+        plt.hist(arrival_times, bins=20, density=True, label='Waiting times distribution')
+        # plt.hist(departure_times, bins=int(params['S_ini']/200), density=True, label='Waiting times distribution (departure)')
+        plt.xlabel('Waiting times')
+        plt.ylabel('PDF')
+        # plot real erlang distrib
+        plt.plot(time_real, real_erlang_distrib, label='Erlang distribution')
+        # plt.plot(time_real, gaussian_distrib, label='Gaussian distribution')
+        plt.legend()
+        string_for_title='SIRerlang2WellMixed k_SI ='+str(params['k_SI'])+' k_IR = '+str(params['k_IR'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
+        plt.title(string_for_title)
+        string_for_savefig = 'SIRerlang2WellMixed_waiting_times_pdf_k_SI='+str(params['k_SI']) +'_k_IR='+str(params['k_IR'])+'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        # plt.close()
+        plt.show()   
+      
 def plot_SIWellMixed(params,outputs):
     """
     plot SIRerlangWellMixed model results
@@ -263,58 +312,7 @@ def plot_SIWellMixed(params,outputs):
     plt.title(string_for_title)
     string_for_savefig = 'SIWellMixed_k_SI='+str(params['k_SI'])+ '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-    plt.show()  
-
-
-def plot_SIerlangWellMixed(params,outputs):
-    """
-    plot SIerlangWellMixed model results
-    S,I
-    respective indices for plot are 0, m, nbStates
-    """
-    # save outputs
-    fname_outputs  = params['outputs_dir']+'/outputs_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
-    f = open(fname_outputs,"w")
-    f.write(str(outputs))
-    f.close()
-    
-    # save params inputs
-    fname_params  = params['outputs_dir']+'/params_'+params['model_name']+'_m='+str(params['nb_intermediate_states'])+'.txt'
-    f = open(fname_params,"w")
-    f.write(str(params))
-    f.close()
-    
-    nbTimeSteps = len(outputs)
-    time=np.zeros(nbTimeSteps)
-    nbStates = outputs[0][1].shape[0]
-    m = params["nb_intermediate_states"]
-    x = np.zeros([nbTimeSteps, nbStates])
-    fig2 = plt.figure(figsize=(16, 10)) # in inches!
-    for i in range(0,nbTimeSteps):
-        time[i] = outputs[i][0]
-        x[i,:] = outputs[i][1]        
-    
-    tmp_sum = np.zeros(nbTimeSteps)
-    for ii in range(0,params['nbStates']):
-        if (ii ==0):
-            _label='Susceptible'
-            tmp_sum += x[:,ii]
-        if (ii==m):
-            _label='Infected'            
-        if((ii>0) and (ii<m)):
-            _label='I'+str(ii)     
-            tmp_sum += x[:,ii]
-        plt.plot(time,x[:,ii], label=_label)            
-    
-    plt.plot(time,tmp_sum,color='black',label='sum of S + I_i (i=1:m-1)')
-    plt.legend()
-    plt.xlabel('Arbitrary time unit')
-    plt.ylabel('Population numbers')
-    string_for_title='SIRerlangWellMixed, k_SI ='+str(params['k_SI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
-    plt.title(string_for_title)
-    string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
-    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-    plt.show()  
+    plt.show()   
 
 def plot_SIAndIntermediateErlangWellMixed(params,outputs):
     """
@@ -414,8 +412,7 @@ def plot_SIAndIntermediateErlangWellMixed(params,outputs):
             string_for_savefig = 'SIAndIntermediateErlangWellMixed_waiting_times_pdf_k_SL='+str(params['k_SL'])+str(params['k_LI'])+'_k_LI=' +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])+ '_L_ini='+str( params['L_ini'])
             plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
             plt.close()
-            # plt.show()
-    
+              
 def plot_SIerlangWellMixed(params,outputs):
     """
     plot SIerlangWellMixed model results
@@ -460,12 +457,78 @@ def plot_SIerlangWellMixed(params,outputs):
     plt.legend()
     plt.xlabel('Arbitrary time unit')
     plt.ylabel('Population numbers')
+    plt.yscale('log')
     string_for_title='SIRerlangWellMixed, k_SI ='+str(params['k_SI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
     plt.title(string_for_title)
     string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    # plt.close() 
     plt.show()  
-
+    # plot waiting times    
+    if ('WaitingTimes' in params['plot_options']):
+        count_I_m = 1
+        count_S = params['S_ini']
+        I_m = x[:,nbStates-1]
+        S = x[:,0]
+        arrival_times = []
+        departure_times = []
+        count_append = 0
+        for i in range(0,nbTimeSteps):
+            if (I_m[i] > count_I_m):
+                
+                count_I_m +=1
+                arrival_times.append(time[i])
+            if (S[i] < count_S) :
+                count_S -=1
+                departure_times.append(time[i])
+                
+        # convert to numpy
+        arrival_times = np.array(arrival_times)
+        departure_times = np.array(departure_times)
+        # for i in range(0,len(arrival_times)):
+            # print(i, arrival_times[i], departure_times[i])
+            
+        # check we found all arrival times
+        # highliy specific test, be careful !!
+        # if not(len(arrival_times) == params['S_ini']):
+            # print('we missed something. Exit here')
+            # print(len(arrival_times))
+            # exit(0)
+                
+        
+        # m * rate gives rate of erlang distrib
+        k_SI = params['k_SI'] 
+        m = params['nb_intermediate_states'] 
+        S_ini = params['S_ini']
+        # Lambda_SI = m * k_SI * S_ini
+        Lambda_SI = m * k_SI  * S_ini
+        time_real = np.linspace(0, np.max(arrival_times), 1000)        
+        # compute (m-1)!
+        facto_m_minus_1 = 1
+        for i in range(1,m):
+            facto_m_minus_1 *= i
+        real_erlang_distrib = Lambda_SI * (Lambda_SI * time_real) **(m-1) * np.exp(-Lambda_SI * time_real) / facto_m_minus_1        
+        
+        mu = 38.3479
+        sigma = 6.5
+        gaussian_distrib = 1./(sigma * np.sqrt(2 * np.pi)) * np.exp(-0.5*(time_real-mu)**2 / sigma**2)
+        
+        # plot histogram
+        fig100 = plt.figure(figsize=(16, 10)) # in inches!
+        plt.hist(arrival_times, bins=int(params['S_ini']/200), density=True, label='Waiting times distribution (arrival)')
+        # plt.hist(departure_times, bins=int(params['S_ini']/200), density=True, label='Waiting times distribution (departure)')
+        plt.xlabel('Waiting times')
+        plt.ylabel('PDF')
+        # plot real erlang distrib
+        plt.plot(time_real, real_erlang_distrib, label='Erlang distribution')
+        plt.plot(time_real, gaussian_distrib, label='Gaussian distribution')
+        plt.legend()
+        string_for_title='SIerlangWellMixed k_SI ='+str(params['k_SI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
+        plt.title(string_for_title)
+        string_for_savefig = 'SIerlangWellMixed_waiting_times_pdf_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        # plt.close()
+        plt.show()   
 
 def plot_SIerlangOtherWellMixed(params,outputs):
     """
@@ -566,7 +629,6 @@ def plot_SILinearErlangWellMixed(params,outputs):
     string_for_savefig = 'SIRerlang1WellMixed_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
     plt.show()  
-
 
 def plot_SIROnGraph(params,outputs, G):
     """
