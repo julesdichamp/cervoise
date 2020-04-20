@@ -266,8 +266,14 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["L_ini"] = config.getint("model", "L_ini")
     
+    elif params["model_name"] == "SIRWellMixedAgentBased":  # load parameters needed for this model
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
     else:
-        print("[ERROR]: model name not found. Exit here.")
+        print("[ERROR]: model name: ",params['model_name']," not found. Exit here.")
         exit(0)        
     
     # load settigns infos
@@ -499,6 +505,9 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "RealSIRDOnGraph":
         outputs , graph = SolveOnGraph(params, graph)
         plot_TEST(params,outputs, graph)
+    elif params["model_name"] == "SIRWellMixedAgentBased":
+        outputs = SolveAgentBasedOneCompartment(params)
+        plot_SIRWellMixedAgentBased(params, outputs)
     
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")

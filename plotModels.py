@@ -457,7 +457,7 @@ def plot_SIerlangWellMixed(params,outputs):
     plt.legend()
     plt.xlabel('Arbitrary time unit')
     plt.ylabel('Population numbers')
-    plt.yscale('log')
+    # plt.yscale('log')
     string_for_title='SIRerlangWellMixed, k_SI ='+str(params['k_SI'])+' , nb_intermediate_states = ' +str(params['nb_intermediate_states']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini'])
     plt.title(string_for_title)
     string_for_savefig = 'SIRerlangWellMixed_k_SI='+str(params['k_SI']) +'_nb_intermediate_states=' + str(params['nb_intermediate_states']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini'])
@@ -473,29 +473,28 @@ def plot_SIerlangWellMixed(params,outputs):
         arrival_times = []
         departure_times = []
         count_append = 0
+        count_loop = 0
         for i in range(0,nbTimeSteps):
             if (I_m[i] > count_I_m):
-                
-                count_I_m +=1
+                # if (count_loop == 0):
+                    # arrival_times.append(time[i])
+                # else:
+                    # arrival_times.append(time[i] - arrival_times[count_loop -1])
+
                 arrival_times.append(time[i])
+                count_I_m +=1
+                count_loop += 1
             if (S[i] < count_S) :
                 count_S -=1
                 departure_times.append(time[i])
                 
-        # convert to numpy
-        arrival_times = np.array(arrival_times)
+        # convert to numpy        
+        arrival_times =  np.array(arrival_times)
+        print("arrival_times = " , arrival_times)
         departure_times = np.array(departure_times)
         # for i in range(0,len(arrival_times)):
             # print(i, arrival_times[i], departure_times[i])
             
-        # check we found all arrival times
-        # highliy specific test, be careful !!
-        # if not(len(arrival_times) == params['S_ini']):
-            # print('we missed something. Exit here')
-            # print(len(arrival_times))
-            # exit(0)
-                
-        
         # m * rate gives rate of erlang distrib
         k_SI = params['k_SI'] 
         m = params['nb_intermediate_states'] 
@@ -1254,3 +1253,40 @@ def plot_TEST(params,outputs, G):
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
         plt.close()
 
+def plot_SIRWellMixedAgentBased(params,outputs):
+    """
+    plot SIRWellMixed model results with individual tracking of every agent
+    S,I, R populations over time
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    x = np.zeros([nbTimeSteps, 3])    
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,0] = len(outputs[i][1][0])
+        x[i,1] = len(outputs[i][1][1])
+        x[i,2] = len(outputs[i][1][2])
+        
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    plt.plot(time,x[:,0], 'red', label='Susceptible')
+    plt.plot(time,x[:,1], 'green', label='Infected')
+    plt.plot(time,x[:,2], 'blue', label='Recovered')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRWellMixedAgentBased, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRWellMixedAgentBased_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    # plt.close()
+    plt.show()
