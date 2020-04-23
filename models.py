@@ -12,7 +12,6 @@ import fastrand
 def randZeroOne():
     return fastrand.pcg32bounded(1000000)/1000000
 
-
 def checkConservation(x_ini, x):
 
     if (isinstance(x_ini, collections.Mapping) and isinstance(x, collections.Mapping)):
@@ -212,7 +211,7 @@ def InitModels(params, G):
         params['M_matrix'] = M
         params['R_matrix'] = R
         print("k_plus = ", k_plus)
-    
+
     """
     SIR model with well mixed hypothesis and erlang waiting time
     for the first reaction reaction
@@ -289,7 +288,7 @@ def InitModels(params, G):
         print('M = \n' , M)
         print('R = \n' , R)
         print("k_plus = ", k_plus)    
-    
+
     """
     SIR model with well mixed hypothesis and erlang waiting time
     for the second reaction reaction
@@ -360,7 +359,7 @@ def InitModels(params, G):
         print('M = \n' , M)
         print('R = \n' , R)
         print("k_plus = ", k_plus)    
-        
+
     """
     SI model with well mixed hypothesis a
     S + I   -> I + I (with rate k_{SI})    
@@ -410,7 +409,7 @@ def InitModels(params, G):
         print('M = \n' , M)
         print('R = \n' , R)
         print("k_plus = ", k_plus)    
-            
+
     """
     SI model with well mixed hypothesis and erlang waiting time
     for the first reaction reaction
@@ -442,13 +441,15 @@ def InitModels(params, G):
         x_ini = np.zeros(nbStates)
         x_ini[0] = S_ini
         x_ini[m] = I_ini
+        # x_ini[1] = I_ini
         params['x_ini'] = x_ini
 
         # first m reactions  = Lambda_SI
         # second m reactions = Lambda_IR
         k_plus = np.zeros(nbReactions)
-        k_plus[0] = k_SI * m
-        k_plus[1:m] = k_SI * m * S_ini
+        k_plus[0] = k_SI
+        k_plus[1:m] = k_SI * m  * S_ini
+        # k_plus[1:m] = k_SI * (m)
         # k_plus[0] = k_SI   * (m)
         # k_plus[1:m] = k_SI * (m)
         params['k_plus'] = k_plus
@@ -480,7 +481,76 @@ def InitModels(params, G):
         print('R = \n' , R)
         print("k_plus = ", k_plus) 
         print("x_ini = ", x_ini) 
+
+    """
+    SI model with well mixed hypothesis and erlang waiting time
+    for the first reaction reaction and we modify it so that 
+    that there is no I_m trigger. [USEFUL TO COMPUTE WAITING TIMES]
+    S + I   -> I + I_1 (with rate m * k_{SI})
+    I_1     -> I_2     (with rate m * k_{SI})
+    ...
+    I_{m-1} -> I_{m-1}       (with rate m * k_{SI})    
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SIerlangWellMixedModified"):
         
+        k_SI = params["k_SI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_SI = k_SI * m # recovery after 1 event        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 1
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[m] = I_ini
+        params['x_ini'] = x_ini
+        
+        k_plus = np.zeros(nbReactions)
+        k_plus[0] =   k_SI * (m)
+        k_plus[1:m] = k_SI * (m) 
+        # k_plus[0] = k_SI   * (m)
+        # k_plus[1:m] = k_SI * (m)
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> I + I1 (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[m][0] = 1 ; M[m][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        # reactions I_1 -> I_2
+        #           I_2 -> I_3
+        #               ...
+        #       I_{m-1} -> I_m = I
+        # i ranges from 1 to m-1
+        for i in range(1,m):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 #diagonal matrix
+            M[i+1][i] = 1
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus) 
+        print("x_ini = ", x_ini) 
+
     """
     SI model with erlang and fixed Susceptible population
     """
@@ -552,7 +622,7 @@ def InitModels(params, G):
         print('R = \n' , R)
         print("k_plus = ", k_plus)
         print("x_ini = ", x_ini)
-    
+
     """
     SI model with well mixed hypothesis and another type of
     erlang waiting time
@@ -620,7 +690,7 @@ def InitModels(params, G):
         print('R = \n' , R)
         print("k_plus = ", k_plus)
         print("x_ini = ", x_ini)
-    
+
     """
     SI model with well mixed hypothesis and intermediate L step
     and erlang waiting time after that
@@ -650,8 +720,11 @@ def InitModels(params, G):
         params['x_ini'] = x_ini
         
         k_plus = np.zeros(nbReactions)
-        k_plus[0] = k_SL        
-        k_plus[1:nbReactions] = k_LI * (m)
+        # identical results to SIerlangWellMixed
+        k_plus[0] = k_SL
+        # k_plus[1] = k_LI
+        k_plus[1:nbReactions] = k_LI * m
+        # k_plus[2:nbReactions] = k_SL * m * S_ini
         params['k_plus'] = k_plus
 
         N = np.zeros([nbStates, nbReactions])
@@ -679,7 +752,77 @@ def InitModels(params, G):
         print('R = \n' , R)
         print("k_plus = ", k_plus) 
         print("x_ini = ", x_ini)             
-    
+
+    """
+    SI model + interemdiate state with well mixed hypothesis and erlang waiting time
+    for the first reaction reaction and we modify it so that 
+    that there is no I_m trigger. [USEFUL TO COMPUTE WAITING TIMES]
+    S + I   -> I + I_1 (with rate m * k_{SI})
+    I_1     -> I_2     (with rate m * k_{SI})
+    ...
+    I_{m-1} -> I_{m-1}       (with rate m * k_{SI})    
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SIAndIntermediateErlangWellMixedModified"):
+        
+        k_SL = params["k_SL"]
+        k_LI = params["k_LI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        L_ini = params["L_ini"]
+        m = params["nb_intermediate_states"]        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m + 1
+        # S, L, m * I_{i=1:m}
+        nbStates = m + 1 + 1
+
+        # initialize population with known values
+        x_ini = np.zeros(nbStates)
+        x_ini[0] = S_ini
+        x_ini[1] = L_ini
+        x_ini[nbStates -1] = I_ini
+        params['x_ini'] = x_ini
+        
+        k_plus = np.zeros(nbReactions)
+        # identical results to SIerlangWellMixed
+        k_plus[0] = k_SL
+        k_plus[1] = k_LI
+        # k_plus[1:nbReactions] = k_LI * m
+        k_plus[2:nbReactions] = k_SL * m * S_ini
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I_m -> I_m + L (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[nbStates-1][0] = 1 ; M[nbStates-1][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        
+        # reactions L -> I_1
+        # and all other I_{k-1} -> I_k        
+        for i in range(1,nbReactions):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 
+            M[i+1][i] = 1    
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus)
+        print("x_ini = ", x_ini)
+
+
     """
     SI model with linear reaction to infect S for the first reaction 
     and erlang wiaitng time 
@@ -743,7 +886,7 @@ def InitModels(params, G):
         print('M = \n' , M)
         print('R = \n' , R)
         print("k_plus = ", k_plus)    
-    
+
     """
     simple SIR model and hopping between nodes of graph
     S + I -> 2I (with rate k_SI)
@@ -1314,7 +1457,6 @@ def InitModels(params, G):
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
 
-
     """
     simple SIR model where we track down every individual
     S + I -> 2I (with rate k_SI)
@@ -1337,7 +1479,7 @@ def InitModels(params, G):
         for i in range(S_ini+I_ini, S_ini+I_ini+R_ini):
             x_ini[2].append(i)
         
-        params['x_ini'] = x_ini
+        params['x_ini'] = copy.deepcopy(x_ini)
         params['k_plus'] = np.array([k_SI, k_IR])
         # indices S = 0, I = 1, R = 2
         # N_ij = stoechiomatrix coefficients on left hand side of reactions
@@ -1368,7 +1510,158 @@ def InitModels(params, G):
         print("M_matrix = \n" , M)
         print("R_matrix = \n" , R)
         print('ENDINIT\n\n')
+
+    """
+    SI model with well mixed hypothesis and erlang waiting time
+    for the first reaction and agent based tracking
+    S + I   -> I + I_1 (with rate m * k_{SI})
+    I_1     -> I_2     (with rate m * k_{SI})
+    ...
+    I_{m-1} -> I       (with rate m * k_{SI})    
+    where m is the number of intermediate states
+    """
+    if (params["model_name"] == "SIerlangWellMixedAgentBased"):
         
+        k_SI = params["k_SI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_SI = k_SI * m # recovery after 1 event        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 1
+
+        # initialize population with known values
+        # declare indices of every state
+        # intialize list
+        x_ini = [[]] # declare list for S
+        for k in range(0,m):
+            x_ini.append([]) # declare list for all m other states (infected)
+        for i in range(0, S_ini):
+            x_ini[0].append(i)
+        for i in range(S_ini, S_ini+I_ini):
+            x_ini[nbStates-1].append(i)        
+        
+        params['x_ini'] = copy.deepcopy(x_ini)
+
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        k_plus[0] = k_SI * m
+        k_plus[1:m] = k_SI * m * S_ini
+        # k_plus[0] = k_SI   * (m)
+        # k_plus[1:m] = k_SI * (m)
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> I + I1 (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[m][0] = 1 ; M[m][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        # reactions I_1 -> I_2
+        #           I_2 -> I_3
+        #               ...
+        #       I_{m-1} -> I_m = I
+        # i ranges from 1 to m-1
+        for i in range(1,m):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 #diagonal matrix
+            M[i+1][i] = 1        
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus) 
+        print("x_ini = ", x_ini) 
+
+    """
+    SI model with well mixed hypothesis and intermediate L step
+    and erlang waiting time after that
+    agent based approac
+    """
+    if (params["model_name"] == "SIAndIntermediateErlangWellMixedAgentBased"):
+        k_SL = params["k_SL"]
+        k_LI = params["k_LI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        L_ini = params["L_ini"]
+        m = params["nb_intermediate_states"]        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m + 1
+        # S, L, m * I_{i=1:m}
+        nbStates = m + 1 + 1
+
+        # initialize population with known values
+        # declare indices of every state
+        # intialize list
+        x_ini = [[], []] # declare list for S and L
+        for k in range(0,m):
+            x_ini.append([]) # declare list for all m other states (infected)
+        for i in range(0, S_ini):
+            x_ini[0].append(i)
+        # add L initial states
+        for i in range(S_ini, S_ini+L_ini):
+            x_ini[1].append(i)        
+        # add I initial states
+        for i in range(S_ini+L_ini, S_ini+L_ini+I_ini):
+            x_ini[nbStates-1].append(i)
+            
+        params['x_ini'] = copy.deepcopy(x_ini)
+        
+        k_plus = np.zeros(nbReactions)
+        # identical results to SIerlangWellMixed
+        k_plus[0] = k_SL
+        # k_plus[1] = k_LI
+        k_plus[1:nbReactions] = k_LI * m
+        # k_plus[2:nbReactions] = k_SL * m * S_ini
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I_m -> I_m + L (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[nbStates-1][0] = 1 ; M[nbStates-1][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        
+        # reactions L -> I_1
+        # and all other I_{k-1} -> I_k        
+        for i in range(1,nbReactions):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 
+            M[i+1][i] = 1    
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus) 
+        print("x_ini = ", x_ini)             
+
+
     return params, G
 
 def SolveOneCompartment(params):
@@ -1381,6 +1674,9 @@ def SolveOneCompartment(params):
     N              = params['N_matrix']
     R              = params['R_matrix']
     x_ini          = params['x_ini']
+
+    if (params["model_name"] == "SIerlangWellMixedModified") or (params["model_name"] == "SIAndIntermediateErlangWellMixedModified"):
+        waiting_times = []
 
     x = x_ini
     t = params["time_start"]
@@ -1448,8 +1744,15 @@ def SolveOneCompartment(params):
             
             
             # set new state according to reaction
+            
             x = x + R[:, id_reaction]
-
+            # special case of a custom model to test waiting times...
+            if (params["model_name"] == "SIerlangWellMixedModified") or (params["model_name"] == "SIAndIntermediateErlangWellMixedModified"):
+                # if we triggered the last reaction, meaning I_m was increased by 1
+                # we register the time at which it happened and remove it right away
+                if (id_reaction == nbReactions-1) :
+                    waiting_times.append(t)
+                    x[nbStates - 1] -= 1
             # print(count_loops, t, x, t_forward_plus, next_states, id_reaction)
             # print(count_loops, t, x, t_forward_plus, W)
 
@@ -1461,9 +1764,11 @@ def SolveOneCompartment(params):
     
     print(t,count_loops, x)
     
+    if (params["model_name"] == "SIerlangWellMixedModified") or (params["model_name"] == "SIAndIntermediateErlangWellMixedModified"):
+        return outputs , waiting_times
+    else:
+        return outputs
             
-    return outputs
-
 def SolveAgentBasedOneCompartment(params):
     """
     solve master equation with one compartment
@@ -1497,7 +1802,7 @@ def SolveAgentBasedOneCompartment(params):
             if (abs(N[i,j]) > 0.00000001):  
                 indices_states_per_reaction[i,j] = 1
                 
-    x = x_ini
+    x = copy.deepcopy(x_ini)
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0
@@ -1581,7 +1886,7 @@ def SolveAgentBasedOneCompartment(params):
             # we keep it normalized to match the value of xi which is 
             # between 0 and 1                        
             proba_each_sub_event = t_forward_plus[id_reaction] / nbSubReactions / W
-            
+            # print("id_reaction, nbStatesInReaction, nbSubReactions = " , id_reaction, nbStatesInReaction, nbSubReactions)
             if (id_reaction == 0): # first reaction we loop from 0
                 min_lbound = 0.
             else: # start from the previous value of the chosen reaction
@@ -1619,8 +1924,7 @@ def SolveAgentBasedOneCompartment(params):
                     if (R[ii, id_reaction] == -1):
                         state_to_remove = ii
                     elif (R[ii, id_reaction] == 1):
-                        state_to_add = ii
-                                                        
+                        state_to_add = ii                                                        
                 # get id of individual we will remove
                 id_individual_state_to_remove = x[state_to_remove][indice_sub_event_state_to_remove]
                 # remove individual from list
@@ -1652,10 +1956,10 @@ def SolveAgentBasedOneCompartment(params):
                     elif ((R[ii, id_reaction]) == 1):
                         state_to_add = ii
                         
-                indice_sub_event_state_to_remove = indice % len(x[state_to_remove])
-                # useless
-                indice_sub_event_state_to_add = np.floor(indice/len(x[state_to_add]))
+                # print("indice, state_to_remove, len(x[state_to_remove]) = " , indice, state_to_remove, len(x[state_to_remove]))
                 
+                indice_sub_event_state_to_remove = indice % len(x[state_to_remove])
+                                
                 # get id of individual we will remove
                 id_individual_state_to_remove = x[state_to_remove][indice_sub_event_state_to_remove]
                 # remove individual from list
@@ -1667,9 +1971,8 @@ def SolveAgentBasedOneCompartment(params):
             # print(count_loops, t, x, t_forward_plus, next_states, id_reaction)
             # print(count_loops, t, x, id_reaction)
 
-            count_loops += 1        
-        
-    
+            count_loops += 1
+
     except KeyboardInterrupt:
         pass
     

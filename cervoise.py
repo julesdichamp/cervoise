@@ -192,6 +192,12 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
     
+    elif params["model_name"] == "SIerlangWellMixedModified":  # load parameters needed for this model
+        params["k_SI"] = config.getfloat("model", "k_SI")        
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
+    
     elif params["model_name"] == "SIerlangOtherWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")        
         params["S_ini"] = config.getint("model", "S_ini")
@@ -199,6 +205,14 @@ def InitParams(config_name):
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
     
     elif params["model_name"] == "SIAndIntermediateErlangWellMixed":  # load parameters needed for this model
+        params["k_SL"] = config.getfloat("model", "k_SL")
+        params["k_LI"] = config.getfloat("model", "k_LI")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["L_ini"] = config.getint("model", "L_ini")
+        params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
+    
+    elif params["model_name"] == "SIAndIntermediateErlangWellMixedModified":  # load parameters needed for this model
         params["k_SL"] = config.getfloat("model", "k_SL")
         params["k_LI"] = config.getfloat("model", "k_LI")
         params["S_ini"] = config.getint("model", "S_ini")
@@ -272,6 +286,20 @@ def InitParams(config_name):
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
+    elif params["model_name"] == "SIerlangWellMixedAgentBased":  # load parameters needed for this model
+        params["k_SI"] = config.getfloat("model", "k_SI")        
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
+    elif params["model_name"] == "SIAndIntermediateErlangWellMixedAgentBased":  # load parameters needed for this model
+        params["k_SL"] = config.getfloat("model", "k_SL")
+        params["k_LI"] = config.getfloat("model", "k_LI")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["L_ini"] = config.getint("model", "L_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
+        
+
     else:
         print("[ERROR]: model name: ",params['model_name']," not found. Exit here.")
         exit(0)        
@@ -476,6 +504,9 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIerlangWellMixed":
         outputs = SolveOneCompartment(params)
         plot_SIerlangWellMixed(params, outputs)
+    elif params["model_name"] == "SIerlangWellMixedModified":
+        outputs, waiting_times = SolveOneCompartment(params)
+        plot_SIerlangWellMixedModified(params, outputs, waiting_times)
     elif params["model_name"] == "SIerlangOtherWellMixed":
         outputs = SolveOneCompartment(params)
         plot_SIerlangOtherWellMixed(params, outputs)
@@ -485,6 +516,9 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIAndIntermediateErlangWellMixed":
         outputs = SolveOneCompartment(params)
         plot_SIAndIntermediateErlangWellMixed(params, outputs)     
+    elif params["model_name"] == "SIAndIntermediateErlangWellMixedModified":
+        outputs, waiting_times = SolveOneCompartment(params)
+        plot_SIAndIntermediateErlangWellMixedModified(params, outputs, waiting_times)
     elif params["model_name"] == "RealSEIRLDWellMixed":
         outputs = SolveOneCompartment(params)
         dates_to_plot = []
@@ -508,6 +542,12 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIRWellMixedAgentBased":
         outputs = SolveAgentBasedOneCompartment(params)
         plot_SIRWellMixedAgentBased(params, outputs)
+    elif params["model_name"] == "SIerlangWellMixedAgentBased":
+        outputs = SolveAgentBasedOneCompartment(params)
+        plot_SIerlangWellMixedAgentBased(params, outputs)
+    elif params["model_name"] == "SIAndIntermediateErlangWellMixedAgentBased":
+        outputs = SolveAgentBasedOneCompartment(params)
+        plot_SIAndIntermediateErlangWellMixedAgentBased(params, outputs)
     
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
