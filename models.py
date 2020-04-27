@@ -822,7 +822,6 @@ def InitModels(params, G):
         print("k_plus = ", k_plus)
         print("x_ini = ", x_ini)
 
-
     """
     SI model with linear reaction to infect S for the first reaction 
     and erlang wiaitng time 
@@ -1432,31 +1431,177 @@ def InitModels(params, G):
         dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
         dic_simu_total_pop = copy.deepcopy(dic_total_pop)
         dic_simu_data_covid = copy.deepcopy(dic_data_covid)
-        S = 0 ; I = 0 ; R = 0 ; D = 0; N = 0;
+        S = 0 ; E = 0 ; I = 0 ; R_pop = 0 ; D = 0; N_pop = 0;
         # get data for entire france
         for n in G.nodes():
             # I_confirmed = alpha * I, thus I = 1/alpha * I_confirmed
             # I += dic_simu_data_covid[n][params["time_start_day"]]['Confirmed']
             # get fraction of deaths
             D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
-            R += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
+            R_pop += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
             dic_simu_total_pop[n]
 
-            N += dic_simu_total_pop[n]
+            N_pop += dic_simu_total_pop[n]
 
         E = params['E_ini']
         I = params['I_ini']        
-        R =  np.floor((1/params['alpha']) * R) # real "recovered people"
+        R_pop =  np.floor((1/params['alpha']) * R_pop) # real "recovered people"
         L = params['L_ini'] # people who are isolated and will die or recover
-        S = N -E - I - D - R - L
-                
+        S = N_pop -E - I - D - R_pop - L
+        print("N_pop = " , N_pop)
         # adjust k_SI to each node population
-        k_plus = np.array([k_SE, k_EI, k_IR, k_IL, k_LR, k_LD])
-        x_ini = np.array([S, E, I, R, L, D])
+        k_plus = np.array([k_SE / N_pop, k_EI, k_IR, k_IL, k_LR, k_LD])
+        x_ini = np.array([S, E, I, R_pop, L, D])
         print("k_plus = ", k_plus)
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
 
+    """
+    SEIRLD model on real data (pop, number of cases) and on graph
+    we test initialization on grand est and paris for custom plot
+    """
+    if (params["model_name"] == "RealSEIRLDOnGraphInitTEST"):
+        # load initial state, and reactions values
+        k_SE = params["k_SE"]  # A = 0
+        k_EI = params["k_EI"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        k_IL = params["k_IL"]  # A = 3
+        k_LR = params["k_LR"]  # A = 4
+        k_LD = params["k_LD"]  # A = 5
+        
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 6
+        nbStates = 6
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # 1st reaction: S + I -> I + E
+        N[0][0] = 1 ; M[0][0] = 0
+        N[1][0] = 0 ; M[1][0] = 1
+        N[2][0] = 1 ; M[2][0] = 1
+        N[3][0] = 0 ; M[3][0] = 0
+        N[4][0] = 0 ; M[4][0] = 0
+        N[5][0] = 0 ; M[5][0] = 0
+        # 2nd reaction: E -> I
+        N[0][1] = 0 ; M[0][1] = 0
+        N[1][1] = 1 ; M[1][1] = 0
+        N[2][1] = 0 ; M[2][1] = 1
+        N[3][1] = 0 ; M[3][1] = 0
+        N[4][1] = 0 ; M[4][1] = 0
+        N[5][1] = 0 ; M[5][1] = 0
+        # 3rd reaction: I -> R
+        N[0][2] = 0 ; M[0][2] = 0
+        N[1][2] = 0 ; M[1][2] = 0
+        N[2][2] = 1 ; M[2][2] = 0
+        N[3][2] = 0 ; M[3][2] = 1
+        N[4][2] = 0 ; M[4][2] = 0
+        N[5][2] = 0 ; M[5][2] = 0
+        # 4th reaction: I -> L
+        N[0][3] = 0 ; M[0][3] = 0
+        N[1][3] = 0 ; M[1][3] = 0
+        N[2][3] = 1 ; M[2][3] = 0
+        N[3][3] = 0 ; M[3][3] = 0
+        N[4][3] = 0 ; M[4][3] = 1
+        N[5][3] = 0 ; M[5][3] = 0
+        # 5th reaction: L -> R
+        N[0][4] = 0 ; M[0][4] = 0
+        N[1][4] = 0 ; M[1][4] = 0
+        N[2][4] = 0 ; M[2][4] = 0
+        N[3][4] = 0 ; M[3][4] = 1
+        N[4][4] = 1 ; M[4][4] = 0
+        N[5][4] = 0 ; M[5][4] = 0
+        # 6th reaction: L -> D
+        N[0][5] = 0 ; M[0][5] = 0
+        N[1][5] = 0 ; M[1][5] = 0
+        N[2][5] = 0 ; M[2][5] = 0
+        N[3][5] = 0 ; M[3][5] = 0
+        N[4][5] = 1 ; M[4][5] = 0
+        N[5][5] = 0 ; M[5][5] = 1    
+        
+        R = M - N
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        
+        print("N_matrix = \n" , N)
+        print("M_matrix = \n" , M)
+        print("R_matrix = \n" , R)
+        
+        # get dictionnary with data
+        dic_data_covid = nx.get_node_attributes(G, name='data_covid')
+        dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+        dic_simu_total_pop = copy.deepcopy(dic_total_pop)
+        dic_simu_data_covid = copy.deepcopy(dic_data_covid)
+
+        dic_x_ini = {}
+        dic_x = {}
+        dic_kinetic = {}
+        N_pop_france = 0
+        for n in G.nodes(): # loop over all compartments                        
+            N_pop = dic_simu_total_pop[n]            
+            N_pop_france += N_pop
+        print("N_pop_france = " , N_pop_france)
+        
+        density_france = 119.1
+        for n in G.nodes(): # loop over all compartments
+            D     = dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
+            R_pop = dic_simu_data_covid[n][params["time_start_day"]]['Recovered']                        
+            N_pop_local = dic_simu_total_pop[n]
+            R_pop =  np.floor((1/params['alpha']) * R_pop) # real "recovered people"            
+            if (n == 7): # Ile de France
+                E = params['E_ini']
+                I = params['I_ini']
+                L = params['L_ini'] # people who are isolated and will die or recover
+                density_local = 1001 #people per km^2
+            elif (n == 5) : # Grand-Est
+                E = params['E_ini']
+                I = params['I_ini']
+                L = params['L_ini'] # people who are isolated and will die or recover
+                density_local = 97. # people per km^2
+            else:
+                E = 0
+                I = 0                
+                L = 0
+                # for now: same density everywhere
+                density_local = density_france
+            
+            
+            # the constant k_SI given here is \tilde{k_SI_1} = k_SI^1 * N_1
+            # where indice 1 refers to that we fitted on France entirely
+            # for any other region k_SI^2 = k_SI^1 *(N1/N2) * (n2/n1)
+            # the code needs k_SI^2 so we compute 
+            # k_SI^2 = \tilde{k_SI^1] / N2 * (n2/n1)
+            # TODO: write into notes                
+            rescaled_k_SE = k_SE * (density_local / density_france) * (1./N_pop_local)
+            
+            S = N_pop_local - E - I - D - R_pop - L
+            # k_SE is involved in a nonlinear reaction so its value will 
+            # be divided by N = total population in the region
+            k_plus = np.array([rescaled_k_SE, k_EI, k_IR, k_IL, k_LR, k_LD])
+            
+            x_ini  = np.array([S, E, I, R_pop, L, D])
+            x      = np.array([S, E, I, R_pop, L, D])
+            
+            dic_x_ini[n] = x_ini
+            dic_x[n] = x
+            dic_kinetic[n] = k_plus
+            
+        nx.set_node_attributes(G, name='x_ini', values=dic_x_ini)
+        nx.set_node_attributes(G, name='x', values=dic_x)
+        nx.set_node_attributes(G, name='k_plus', values=dic_kinetic)
+            
+        # set edges attributes here
+        dic_hopping_rates = {}
+        for e in G.edges():
+            dic_hopping_rates[e] = 0.0001 # constant for now because TEST
+        nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)
+    
     """
     simple SIR model where we track down every individual
     S + I -> 2I (with rate k_SI)
@@ -1554,8 +1699,8 @@ def InitModels(params, G):
         # first m reactions  = Lambda_SI
         # second m reactions = Lambda_IR
         k_plus = np.zeros(nbReactions)
-        k_plus[0] = k_SI * m
-        k_plus[1:m] = k_SI * m * S_ini
+        k_plus[0] = k_SI 
+        k_plus[1:m] = k_SI *(m-1) * S_ini
         # k_plus[0] = k_SI   * (m)
         # k_plus[1:m] = k_SI * (m)
         params['k_plus'] = k_plus
@@ -1660,7 +1805,6 @@ def InitModels(params, G):
         print('R = \n' , R)
         print("k_plus = ", k_plus) 
         print("x_ini = ", x_ini)             
-
 
     return params, G
 
@@ -1987,9 +2131,9 @@ def SolveOnGraph(params, G):
     with hopping processes
     """
     nbReactions = params["nbReactions"]
-    nbStates = params["nbStates"]
-    N              = params['N_matrix']
-    R              = params['R_matrix']
+    nbStates    = params["nbStates"]
+    N           = params['N_matrix']
+    R           = params['R_matrix']
 
     # intialize states and time
     t = params["time_start"]
@@ -2012,9 +2156,9 @@ def SolveOnGraph(params, G):
                 for key in dic_x_for_save.keys():
                     for ii in range(0,nbStates):
                         x_print[ii] += dic_x_for_save[key][ii]
-                # print("t, count_loops, x = " , t, count_loops, x_print)
-                if ((count_loops % 10000) == 0):
-                    print("t, count_loops, x = " , t, count_loops, x_print)
+                print("t, count_loops, x = " , t, count_loops, x_print)
+                # if ((count_loops % 10000) == 0):
+                    # print("t, count_loops, x = " , t, count_loops, x_print)
                 outputs.append([t, dic_x_for_save])
 
             # compute W_inside: loop on every node
@@ -2076,11 +2220,12 @@ def SolveOnGraph(params, G):
 
             ### --- 2-3/ compute total rate and Gillepsie time step
             W_total = W_inside + W_between
-
+            # print("W_inside, W_between, W_total = " , W_inside, W_between, W_total)
+                
             # Gillepsie time of next event using total rate
             dt = -1 / W_total * np.log(1 - xi)
             t = t + dt
-
+            
             ### --- 2-4/ fill a vector that contains all sum of states: kinetics and hopping
             ###          there is probably a simpler way to do it but for now we play "by the book"
             ###          It allows to choose randomly but according to the weight of each reaction,
@@ -2102,7 +2247,7 @@ def SolveOnGraph(params, G):
             for ni in G.nodes(): # loop over all nodes
                 for nj in G.neighbors(ni): # loop over all neighbors
                     if (ni != nj):
-                        for i in range(0, nbStates): # loop over all states
+                        for i in range(0, nbStates): # loop over all states                            
                             next_states_sum[kk] = next_states_sum[kk-1] + dic_t_between[(ni,nj)][i]
                             kk+=1
 
@@ -2136,14 +2281,16 @@ def SolveOnGraph(params, G):
                     print('negative kinetic: id_reaction, node, react, dic_x[node] = ' , id_reaction, node, react, dic_x[node])
                     exit(-1)
             else: # we set a hopping process
-                # print("hopping")
+                # print("hopping")                
                 kk = nbReactions*len(G.nodes())
                 kk_init = kk
                 for ni in G.nodes(): # loop over all nodes
                     for nj in G.neighbors(ni): # loop over all neighbors
                         if (ni != nj):
-                            for i in range(0, nbStates): # loop over all states
+                            for i in range(0, nbStates): # loop over all states                                
                                 if (kk==id_reaction):
+                                    if (i > 0):
+                                        print('a hopping happens from someone who IS NOT susceptible i = ' , i)                                    
                                     dic_x[ni][i] -= 1 # add one
                                     dic_x[nj][i] += 1 # remove one
                                     # update attributes right away
@@ -2159,7 +2306,8 @@ def SolveOnGraph(params, G):
             ### -- comment it for now?
             # dic_x_ini = nx.get_node_attributes(G,'x_ini')
             # dic_x = nx.get_node_attributes(G,'x')
-            # checkConservation(dic_x_ini, dic_x)
+            # checkConservation(dic_x_ini, dic_x)            
+            
             count_loops+=1
     except KeyboardInterrupt:
         pass

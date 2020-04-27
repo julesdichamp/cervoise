@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import scipy as sp
+from numpy import * # in order to read numpy array rfom files
 
 import numexpr
 import json
@@ -280,6 +281,22 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["L_ini"] = config.getint("model", "L_ini")
     
+    elif params["model_name"] == "RealSEIRLDOnGraphInitTEST":  # load parameters needed for this model        
+        params["time_start_day"] = config.get("model", "time_start_day")
+        params["k_SE"] = config.getfloat("model", "k_SE")
+        params["k_EI"] = config.getfloat("model", "k_EI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["k_IL"] = config.getfloat("model", "k_IL")
+        params["k_LR"] = config.getfloat("model", "k_LR")
+        params["k_LD"] = config.getfloat("model", "k_LD")        
+        # fraction that relates confirmed and real infected
+        # I_confirmed = alpha * I
+        params["alpha"] = config.getfloat("model", "alpha")
+        # initial number of population
+        params["E_ini"] = config.getint("model", "E_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["L_ini"] = config.getint("model", "L_ini")
+    
     elif params["model_name"] == "SIRWellMixedAgentBased":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
@@ -345,6 +362,8 @@ def InitGraph(params):
     params['total_pop'] = 0 # feed dictionnary with aggregated data from graph
     params['total_covid_data'] = {} # feed dictionnary with aggregated data from graph
     
+    list_outremer = ['Mayotte', 'La Réunion', 'Guyane', 'Guadeloupe', 'Martinique']
+    
     ### --- Construct graph
     # same routine for regions and departments as it is handled by readFranceGeom(params)
     if (params['graph_type'] == 'regions') or (params['graph_type'] == 'departments'):
@@ -355,63 +374,117 @@ def InitGraph(params):
         # add nodes to the graph
         for key in franceGeom.keys():
             id_node = franceGeom[key]["id"]  # get ID attributed from readFranceGeom(params)
-            G.add_node(id_node)
+            
+            if (params['location'] == 'metropole'):
+                # only add departments/ergions which are in metropole
+                if not(key in list_outremer):
+                    G.add_node(id_node)                    
+                    # add data on node_attributes, for now:
+                    # - Total population
+                    # - Confirmed cases
+                    # - Deaths
+                    # - Position
+                    dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
+                    dic_data_covid[id_node] = franceGeom[key]['data_covid']
 
-            # add data on node_attributes, for now:
-            # - Total population
-            # - Confirmed cases
-            # - Deaths
-            # - Position
-            dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
-            dic_data_covid[id_node] = franceGeom[key]['data_covid']            
+                    centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
+                    dic_positions[id_node] = centroid
+                    dic_names[id_node] = key
+                    print("id_node, dic_names[id_node] = " , id_node, dic_names[id_node])
+                    params['total_pop'] += dic_total_population[id_node]
+                    for _date in dic_data_covid[id_node].keys():
+                        if not(_date in params['total_covid_data']):
+                            params['total_covid_data'][_date] = {}
+                            params['total_covid_data'][_date]['Confirmed'] = 0
+                            params['total_covid_data'][_date]['Deaths']    = 0
+                            params['total_covid_data'][_date]['Recovered'] = 0
+                        params['total_covid_data'][_date]['Confirmed'] += dic_data_covid[id_node][_date]['Confirmed']
+                        params['total_covid_data'][_date]['Deaths']    += dic_data_covid[id_node][_date]['Deaths']
+                        params['total_covid_data'][_date]['Recovered'] += dic_data_covid[id_node][_date]['Recovered']
+            else:
+                G.add_node(id_node)
+                # add data on node_attributes, for now:
+                # - Total population
+                # - Confirmed cases
+                # - Deaths
+                # - Position
+                dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
+                dic_data_covid[id_node] = franceGeom[key]['data_covid']
 
-            centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
-            dic_positions[id_node] = centroid
-            dic_names[id_node] = key
-            params['total_pop'] += dic_total_population[id_node]
-            for _date in dic_data_covid[id_node].keys():
-                if not(_date in params['total_covid_data']):
-                    params['total_covid_data'][_date] = {}
-                    params['total_covid_data'][_date]['Confirmed'] = 0
-                    params['total_covid_data'][_date]['Deaths']    = 0
-                    params['total_covid_data'][_date]['Recovered'] = 0
-                params['total_covid_data'][_date]['Confirmed'] += dic_data_covid[id_node][_date]['Confirmed']
-                params['total_covid_data'][_date]['Deaths']    += dic_data_covid[id_node][_date]['Deaths']
-                params['total_covid_data'][_date]['Recovered'] += dic_data_covid[id_node][_date]['Recovered']
-            id_node += 1
+                centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
+                dic_positions[id_node] = centroid
+                dic_names[id_node] = key
+                print("id_node, dic_names[id_node] = " , id_node, dic_names[id_node])
+                params['total_pop'] += dic_total_population[id_node]
+                for _date in dic_data_covid[id_node].keys():
+                    if not(_date in params['total_covid_data']):
+                        params['total_covid_data'][_date] = {}
+                        params['total_covid_data'][_date]['Confirmed'] = 0
+                        params['total_covid_data'][_date]['Deaths']    = 0
+                        params['total_covid_data'][_date]['Recovered'] = 0
+                    params['total_covid_data'][_date]['Confirmed'] += dic_data_covid[id_node][_date]['Confirmed']
+                    params['total_covid_data'][_date]['Deaths']    += dic_data_covid[id_node][_date]['Deaths']
+                    params['total_covid_data'][_date]['Recovered'] += dic_data_covid[id_node][_date]['Recovered']
 
         # add attributes with positions to graph
         nx.set_node_attributes(G, name='positions', values=dic_positions)
         nx.set_node_attributes(G, name='names', values=dic_names)
         nx.set_node_attributes(G, name='total_pop', values=dic_total_population)
         nx.set_node_attributes(G, name='data_covid', values=dic_data_covid)
-
-        # add edges to the graph
-        for key in franceGeom.keys():
-            id_node1 = franceGeom[key]["id"]  # get ID attributed from readFranceGeom(params)
-            for keyneigh in franceGeom[key]['neighbours']:
-                id_node2 = franceGeom[keyneigh]["id"]  # get ID attributed from readFranceGeom(params)
-                edge12 = (id_node1, id_node2)
-                edge21 = (id_node2, id_node1)
-                if (not (edge12 in G.edges())) or (not (edge21 in G.edges())):
-                    G.add_edge(*edge12)  # unpack edge tuple*
-        # add edges based on airways connections
-        for key in franceGeom.keys():
-            id_node1 = franceGeom[key]["id"]  # get ID attributed from readFranceGeom(params)
-            for connection in franceGeom[key]['airways']:
-                keyneigh = connection[0]
-                pax = connection[1]  # not used yet
-                id_node2 = franceGeom[keyneigh]["id"]  # get ID attributed from readFranceGeom(params)
-                # make sure to not add loop on itself
-                if id_node1 != id_node2:
+        
+        if (params['location'] == 'metropole'):
+            # add edges to the graph
+            for key in franceGeom.keys():
+                if not(key in list_outremer):
+                    id_node1 = franceGeom[key]["id"]  # get ID attributed from readFranceGeom(params)
+                    for keyneigh in franceGeom[key]['neighbours']:
+                        if not(keyneigh in list_outremer):
+                            id_node2 = franceGeom[keyneigh]["id"]  # get ID attributed from readFranceGeom(params)
+                            edge12 = (id_node1, id_node2)
+                            edge21 = (id_node2, id_node1)
+                            if (not (edge12 in G.edges())) or (not (edge21 in G.edges())):
+                                G.add_edge(*edge12)  # unpack edge tuple*
+            # add edges based on airways connections
+            for key in franceGeom.keys():
+                if not(key in list_outremer):
+                    id_node1 = franceGeom[key]["id"]  # get ID attributed from readFranceGeom(params)
+                    for connection in franceGeom[key]['airways']:
+                        keyneigh = connection[0]
+                        if not(keyneigh in list_outremer):
+                            pax = connection[1]  # not used yet
+                            id_node2 = franceGeom[keyneigh]["id"]  # get ID attributed from readFranceGeom(params)
+                            # make sure to not add loop on itself
+                            if id_node1 != id_node2:
+                                edge12 = (id_node1, id_node2)
+                                edge21 = (id_node2, id_node1)
+                                if (not (edge12 in G.edges())) or (not (edge21 in G.edges())):
+                                    G.add_edge(*edge12)  # unpack edge tuple*
+        
+        else:
+            # add edges to the graph
+            for key in franceGeom.keys():
+                id_node1 = franceGeom[key]["id"]  # get ID attributed from readFranceGeom(params)
+                for keyneigh in franceGeom[key]['neighbours']:
+                    id_node2 = franceGeom[keyneigh]["id"]  # get ID attributed from readFranceGeom(params)
                     edge12 = (id_node1, id_node2)
                     edge21 = (id_node2, id_node1)
                     if (not (edge12 in G.edges())) or (not (edge21 in G.edges())):
                         G.add_edge(*edge12)  # unpack edge tuple*
-
+            # add edges based on airways connections
+            for key in franceGeom.keys():
+                id_node1 = franceGeom[key]["id"]  # get ID attributed from readFranceGeom(params)
+                for connection in franceGeom[key]['airways']:
+                    keyneigh = connection[0]
+                    pax = connection[1]  # not used yet
+                    id_node2 = franceGeom[keyneigh]["id"]  # get ID attributed from readFranceGeom(params)
+                    # make sure to not add loop on itself
+                    if id_node1 != id_node2:
+                        edge12 = (id_node1, id_node2)
+                        edge21 = (id_node2, id_node1)
+                        if (not (edge12 in G.edges())) or (not (edge21 in G.edges())):
+                            G.add_edge(*edge12)  # unpack edge tuple*
 
     elif (params['graph_type'] == 'fullConnectedRegions') or (params['graph_type'] == 'fullConnectedDepartments'):
-
         dic_total_population = {}
         dic_data_covid = {}
         dic_positions = {}
@@ -462,12 +535,15 @@ def InitGraph(params):
     # print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
     # print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
     # ### --- plot graph
-    # fig, ax = plt.subplots()    
-    # dic_pos = nx.get_node_attributes(G, 'positions')
-    # dic_labels = nx.get_node_attributes(G, 'names')            
-    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels)
-    # plt.show()
-
+    fig, ax = plt.subplots()
+    dic_pos = nx.get_node_attributes(G, 'positions')
+    dic_labels = nx.get_node_attributes(G, 'names')
+    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels )
+    nx.draw_networkx_edges(G, font_weight='bold', pos=dic_pos, alpha = 0.5 )
+    nx.draw_networkx_nodes(G, font_weight='bold', pos=dic_pos, alpha = 0.5, node_size = 500)
+    nx.draw_networkx_labels(G, font_weight='bold', pos=dic_pos, labels=dic_labels, font_size=15)
+    plt.show()
+    exit(0)
     return G
 
 
@@ -526,7 +602,7 @@ def LaunchModel(params, graph):
         # with params['dates_for_fit'] list later on (e.g. on the fit function)
         dates_to_plot = params['dates_for_fit'].copy()
         dates_to_plot.insert(0, params['time_start_day'])
-        plotDataAndSEIRLDResults(params, G,outputs, dates_to_plot)
+        plotDataAndSEIRLDResults(params, graph,outputs, dates_to_plot)    
     elif params["model_name"] == "SIROnGraph":
         outputs, graph = SolveOnGraph(params, graph)
         plot_SIROnGraph(params, outputs, graph)
@@ -536,9 +612,17 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIRerlangOnGraph":
         outputs, graph = SolveOnGraph(params, graph)
         plot_SIRerlangOnGraph(params, outputs, graph)
-    elif params["model_name"] == "RealSIRDOnGraph":
+    elif params["model_name"] == "RealSIRDOnGraph":                 
         outputs , graph = SolveOnGraph(params, graph)
         plot_TEST(params,outputs, graph)
+    elif params["model_name"] == "RealSEIRLDOnGraphInitTEST":
+        outputs, G = SolveOnGraph(params, graph)
+        dates_to_plot = []
+        # copy list otherwize references are copied... and it messes up
+        # with params['dates_for_fit'] list later on (e.g. on the fit function)
+        dates_to_plot = params['dates_for_fit'].copy()
+        dates_to_plot.insert(0, params['time_start_day'])        
+        plotDataAndSEIRLDOnGraphResults(params, G, outputs, dates_to_plot)
     elif params["model_name"] == "SIRWellMixedAgentBased":
         outputs = SolveAgentBasedOneCompartment(params)
         plot_SIRWellMixedAgentBased(params, outputs)
@@ -585,7 +669,7 @@ if ("PlotData" in params['plot_options']):
     print("data at start ", params['time_start_day'] , ' = ' , params['total_covid_data'][params['time_start_day']])
     for _date in params['dates_for_fit']:
         print ('data at ' , _date , ' = ' , params['total_covid_data'][_date])
-    plotDataFrance(params, G, dates_to_plot)    
+    # plotDataFrance(params, G, dates_to_plot)    
     
 if (params['fit_model']):
     print("Start fitting procedure, Inch'Allah...")            
@@ -594,7 +678,29 @@ if (params['fit_model']):
     
     df = LaunchFit(paramsToFit, params, G)
 
-LaunchModel(params, G)
+if ("PlotResults" in params['plot_options']):
+    if (params["model_name"] == "RealSEIRLDOnGraphInitTEST"):
+        _dir=params['outputs_dir']
+        fname=_dir+'/outputs.txt'
+        s = open(fname, 'r').read()
+        outputs = list(eval(s))
+        
+        fname=_dir+'/params.txt'
+        s = open(fname, 'r').read()                
+        params = dict(eval(s))
+        # print("params = " , params)
+        # print("outputs = " , outputs)
+        
+        # outputs, G = SolveOnGraph(params, graph)
+        dates_to_plot = []
+        # copy list otherwize references are copied... and it messes up
+        # with params['dates_for_fit'] list later on (e.g. on the fit function)
+        dates_to_plot = params['dates_for_fit'].copy()
+        dates_to_plot.insert(0, params['time_start_day'])        
+        plotDataAndSEIRLDOnGraphResults(params, G, outputs, dates_to_plot)
+# else:
+    # LaunchModel(params, G)
+
 
 t1 = time.time()
 print("Code ran for: ", t1 - t0, " seconds")
