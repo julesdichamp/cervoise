@@ -44,7 +44,7 @@ from distutils.util import strtobool
 
 # contains functions to perform fit of the model
 import lmfit
-from fit import InitFit, LaunchFit, InitFitSIRLD, FitFuncSIRLDOneComp
+from fit import InitFit, LaunchFit
 
 
 print(
@@ -327,7 +327,8 @@ def InitParams(config_name):
     
     # load fit infos
     # to know if we fit or not
-    params["fit_model"] = strtobool(config.get("fit", "fit_model"))  
+    params["fit_model"] = strtobool(config.get("fit", "fit_model"))
+    params["fit_with_ODEs"] = strtobool(config.get("fit", "with_ODEs"))
     dates_for_fit = config.get("fit", "dates_for_fit")        
     params["dates_for_fit"] = [p.replace(" ", "").replace('\n','') for p in
                               dates_for_fit.split(",")]
@@ -535,15 +536,13 @@ def InitGraph(params):
     # print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
     # print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
     # ### --- plot graph
-    fig, ax = plt.subplots()
-    dic_pos = nx.get_node_attributes(G, 'positions')
-    dic_labels = nx.get_node_attributes(G, 'names')
-    # nx.draw(G, with_labels=True, font_weight='bold', pos=dic_pos, labels=dic_labels )
-    nx.draw_networkx_edges(G, font_weight='bold', pos=dic_pos, alpha = 0.5 )
-    nx.draw_networkx_nodes(G, font_weight='bold', pos=dic_pos, alpha = 0.5, node_size = 500)
-    nx.draw_networkx_labels(G, font_weight='bold', pos=dic_pos, labels=dic_labels, font_size=15)
-    plt.show()
-    exit(0)
+    # fig, ax = plt.subplots()
+    # dic_pos = nx.get_node_attributes(G, 'positions')
+    # dic_labels = nx.get_node_attributes(G, 'names')    
+    # nx.draw_networkx_edges(G, font_weight='bold', pos=dic_pos, alpha = 0.5 )
+    # nx.draw_networkx_nodes(G, font_weight='bold', pos=dic_pos, alpha = 0.5, node_size = 500)
+    # nx.draw_networkx_labels(G, font_weight='bold', pos=dic_pos, labels=dic_labels, font_size=15)
+    # plt.show()    
     return G
 
 
@@ -637,7 +636,6 @@ def LaunchModel(params, graph):
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)
 
-
 # =============================================================================
 # LAUNCH WORKFLOW
 # =============================================================================
@@ -672,12 +670,11 @@ if ("PlotData" in params['plot_options']):
     # plotDataFrance(params, G, dates_to_plot)    
     
 if (params['fit_model']):
-    print("Start fitting procedure, Inch'Allah...")            
-    paramsToFit = InitFitSIRLD()
-    params['num_iter_fit'] = 0
+    print("Start fitting procedure, Inch'Allah...")
+    paramsToFit = InitFit(params)     
+    params['num_iter_fit'] = 0 # intialize number of iteration
+    df = LaunchFit(paramsToFit, params, G)    
     
-    df = LaunchFit(paramsToFit, params, G)
-
 if ("PlotResults" in params['plot_options']):
     if (params["model_name"] == "RealSEIRLDOnGraphInitTEST"):
         _dir=params['outputs_dir']
@@ -688,8 +685,6 @@ if ("PlotResults" in params['plot_options']):
         fname=_dir+'/params.txt'
         s = open(fname, 'r').read()                
         params = dict(eval(s))
-        # print("params = " , params)
-        # print("outputs = " , outputs)
         
         # outputs, G = SolveOnGraph(params, graph)
         dates_to_plot = []
@@ -698,9 +693,8 @@ if ("PlotResults" in params['plot_options']):
         dates_to_plot = params['dates_for_fit'].copy()
         dates_to_plot.insert(0, params['time_start_day'])        
         plotDataAndSEIRLDOnGraphResults(params, G, outputs, dates_to_plot)
-# else:
-    # LaunchModel(params, G)
-
+else:
+    LaunchModel(params, G)
 
 t1 = time.time()
 print("Code ran for: ", t1 - t0, " seconds")
