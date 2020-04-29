@@ -667,7 +667,7 @@ if ("PlotData" in params['plot_options']):
     print("data at start ", params['time_start_day'] , ' = ' , params['total_covid_data'][params['time_start_day']])
     for _date in params['dates_for_fit']:
         print ('data at ' , _date , ' = ' , params['total_covid_data'][_date])
-    # plotDataFrance(params, G, dates_to_plot)    
+    plotDataFrance(params, G, dates_to_plot)    
     
 if (params['fit_model']):
     print("Start fitting procedure, Inch'Allah...")

@@ -1423,9 +1423,9 @@ def InitModels(params, G):
         params['M_matrix'] = M
         params['R_matrix'] = R
         
-        print("N_matrix = \n" , N)
-        print("M_matrix = \n" , M)
-        print("R_matrix = \n" , R)
+        # print("N_matrix = \n" , N)
+        # print("M_matrix = \n" , M)
+        # print("R_matrix = \n" , R)
         
         dic_data_covid = nx.get_node_attributes(G, name='data_covid')
         dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
@@ -1434,25 +1434,22 @@ def InitModels(params, G):
         S = 0 ; E = 0 ; I = 0 ; R_pop = 0 ; D = 0; N_pop = 0;
         # get data for entire france
         for n in G.nodes():
-            # I_confirmed = alpha * I, thus I = 1/alpha * I_confirmed
-            # I += dic_simu_data_covid[n][params["time_start_day"]]['Confirmed']
-            # get fraction of deaths
             D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
             R_pop += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
             dic_simu_total_pop[n]
 
             N_pop += dic_simu_total_pop[n]
-
+        
+        params['total_population'] = N_pop # sueful as some point for rescale and stuff
         E = params['E_ini']
         I = params['I_ini']        
         R_pop =  np.floor((1/params['alpha']) * R_pop) # real "recovered people"
         L = params['L_ini'] # people who are isolated and will die or recover
         S = N_pop -E - I - D - R_pop - L
-        print("N_pop = " , N_pop)
         # adjust k_SI to each node population
         k_plus = np.array([k_SE / N_pop, k_EI, k_IR, k_IL, k_LR, k_LD])
         x_ini = np.array([S, E, I, R_pop, L, D])
-        print("k_plus = ", k_plus)
+        # print("k_plus = ", k_plus)
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
 
