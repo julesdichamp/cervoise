@@ -158,7 +158,7 @@ def getFranceGeomDpts(params):
     for i in range(0, len(nums)):
         dic_dptname_to_num[names[i]] = nums[i]
         dic_dptnum_to_name[nums[i]] = names[i]
-
+    
         # %% create dict
     franceGeom = {}
     dptID = 0
@@ -166,22 +166,28 @@ def getFranceGeomDpts(params):
         # dptID+=1
         dptGeom = shapefile["geometry"][dpt]
         dptname = shapefile["nom"][dpt]
+        
         if type(dptname) == bytes:
             dptname = dptname.decode("latin-1", "replace")
         else:
             dptname = dptname
+            
+        # if (dptname == 'Métropole de Lyon'):
+            # print("change name of 'Métropole de Lyon' for 'Rhône'")
+            # dptname = 'Rhône'
+            
         if not (dptname in dic_dptname_to_num):
             print("[ERROR]: we didn't find ", dptname, "in dic_dptname_to_num. Exit here.")
-            exit(0)
+            # exit(0)
         else:
-            dptID = dic_dptname_to_num[dptname]
-        # print(dpt, dptID, dptname)
-
+            dptID = dic_dptname_to_num[dptname]        
+        
         franceGeom[dptname] = {}
         franceGeom[dptname]["agesSex"] = ages.loc[dpt].to_dict()  # added to_dict() so it can be read easily from files
         franceGeom[dptname]["freqGare"] = freqGares[dpt]
         franceGeom[dptname]["neighbours"] = {}
-        franceGeom[dptname]["length"] = {}                
+        franceGeom[dptname]["length"] = {}          
+        franceGeom[dptname]["area"] = dptGeom.area
         
         if (not(dptname in dic_data_covid)):
             print("[ERROR]: ", dptname , "not find in dic_data_covid. Exit here")
@@ -225,7 +231,7 @@ def getFranceGeomDpts(params):
 
         franceGeom[dptname]["neighbours"] = neighList
         franceGeom[dptname]["length"] = lenList
-
+    
     # add an ID that will be used in node
     # IT IS NOT RELATED TO THE DEPARTMENT NUMBER
     # BECAUSE IT STARTS FROM 0
@@ -365,6 +371,8 @@ def getFranceGeomRegions(params):
         franceGeomRegions[regName]["freqGare"] = 0.
         franceGeomRegions[regName]["agesSex"] = {}
         franceGeomRegions[regName]["airways"] = []
+        franceGeomRegions[regName]["area"] = 0.        
+
         franceGeomRegions[regName]["data_covid"] = dic_data_covid[regName]
         
         # loop over all departments that are part of the region
@@ -388,6 +396,9 @@ def getFranceGeomRegions(params):
                     # franceGeomDpts[dptName]["data_covid"][_date]['Deaths']
                 # franceGeomRegions[regName]["data_covid"][_date]['Recovered'] += \
                     # franceGeomDpts[dptName]["data_covid"][_date]['Recovered']            
+            
+            # sum surfaces of departments which are in current region
+            franceGeomRegions[regName]["area"] += franceGeomDpts[dptName]["area"]
             
             # add train stations frequentations = sum over all train frequentations
             # in departments

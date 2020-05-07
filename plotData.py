@@ -161,15 +161,7 @@ def plotDataAndSEIRLDResults(params, G, outputs, days_to_plot):
     for _date in days_to_plot:
         total_Deaths.append(params['total_covid_data'][_date]['Deaths'])
         total_Recovered.append(params['total_covid_data'][_date]['Recovered'])
-        total_Confirmed.append(params['total_covid_data'][_date]['Confirmed'])    
-    # plot data
-    # plt.figure('Deaths', figsize=(16, 10))
-    # p_deaths = plt.plot(days_to_plot, total_Deaths, linestyle=None, marker='o', label='data')
-    # plt.figure('Recovered', figsize=(16, 10))
-    # p_recovered = plt.plot(days_to_plot, total_Recovered, linestyle=None, marker='o', label='data')
-    # plt.figure('Confirmed', figsize=(16, 10))
-    # p_confirmed = plt.plot(days_to_plot, total_Confirmed, linestyle=None, marker='o', label='data')    
-    # plt.show()
+        total_Confirmed.append(params['total_covid_data'][_date]['Confirmed'])
     
     # get total population for rescale of k_SEs
     dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
@@ -199,32 +191,42 @@ def plotDataAndSEIRLDResults(params, G, outputs, days_to_plot):
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')    
     plt.show()
     
-    # W_c  += params['total_covid_data'][params['time_start_day']]['Confirmed']
-    # print('final x = ' , x[-1,:])
-    # plt.figure('Deaths', figsize=(16, 10))
-    # p_deaths = plt.plot(_time, x[:,5], linestyle=None, label='model')
-    # plt.figure('Recovered', figsize=(16, 10))
-    # p_recovered = plt.plot(_time, params['alpha'] * x[:,3], linestyle=None, label='model')
-    # plt.figure('Confirmed', figsize=(16, 10))  
-    # p_confirmed = plt.plot(_time, W_c, linestyle=None, label='model')
+    W_c  += params['total_covid_data'][params['time_start_day']]['Confirmed']
     
-    # # save
-    # plt.figure('Confirmed', figsize=(16, 10))
-    # plt.title('France Confirmed cases model vs data')
-    # plt.legend()
-    # string_for_savefig = 'Confirmed'
-    # plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-    # plt.figure('Deaths', figsize=(16, 10))
-    # plt.title('France Deaths cases model vs data')
-    # plt.legend()
-    # string_for_savefig = 'Deaths'
-    # plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')    
-    # plt.figure('Recovered', figsize=(16, 10))
-    # plt.title('France Recovered cases model vs data')
-    # plt.legend()
-    # string_for_savefig = 'Recovered'
-    # plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')    
-    # plt.show()
+    # plot data
+    plt.figure('Deaths', figsize=(16, 10))
+    p_deaths = plt.plot(days_to_plot, total_Deaths, linestyle=None, marker='o', label='data')
+    plt.figure('Recovered', figsize=(16, 10))
+    p_recovered = plt.plot(days_to_plot, total_Recovered, linestyle=None, marker='o', label='data')
+    plt.figure('Confirmed', figsize=(16, 10))
+    p_confirmed = plt.plot(days_to_plot, total_Confirmed, linestyle=None, marker='o', label='data')        
+    
+        
+    print('final x = ' , x[-1,:])
+    plt.figure('Deaths', figsize=(16, 10))
+    p_deaths = plt.plot(_time, x[:,5], linestyle=None, label='model')
+    plt.figure('Recovered', figsize=(16, 10))
+    p_recovered = plt.plot(_time, params['alpha'] * x[:,3], linestyle=None, label='model')
+    plt.figure('Confirmed', figsize=(16, 10))  
+    p_confirmed = plt.plot(_time, W_c, linestyle=None, label='model')
+    
+    # save
+    plt.figure('Confirmed', figsize=(16, 10))
+    plt.title('France Confirmed cases model vs data')
+    plt.legend()
+    string_for_savefig = 'Confirmed'
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.figure('Deaths', figsize=(16, 10))
+    plt.title('France Deaths cases model vs data')
+    plt.legend()
+    string_for_savefig = 'Deaths'
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')    
+    plt.figure('Recovered', figsize=(16, 10))
+    plt.title('France Recovered cases model vs data')
+    plt.legend()
+    string_for_savefig = 'Recovered'
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')    
+    plt.show()
 
 
 def plotDataAndSIRLDResults(params, G, outputs, days_to_plot):

@@ -41,8 +41,6 @@ def modelODEs_SIRLDmodified(z, t, params):
     dxdt = [dSdt, dIdt, dRdt, dLdt, dDdt]
     return dxdt
 
-
-
 def modelODEs_SIR(z, t, params):
     # order of states x = S, I, R
     k_SI_rescaled = params['k_SI'] / params['S_ini']
@@ -52,6 +50,18 @@ def modelODEs_SIR(z, t, params):
     dxdt = [dSdt, dIdt, dRdt]
     return dxdt
 
+def modelODEs_SEIsIasHoQRD(z, t, params):
+    # order of states x = S, E, Is, I_as, Ho, Q, R, D
+    k_SE_rescaled = params['k_SE'] / params['total_population']
+    dSdt = - k_SE_rescaled * z[0] * (z[2] + z[3])
+    dEdt =   k_SE_rescaled * z[0] * (z[2] + z[3]) - params['k_EIs'] * z[1] - params['k_EIas'] * z[2]
+    dIasdt =   params['k_EIs'] * z[1] - params['k_IR'] * z[2] - params['k_IL'] * z[2]
+    dIsdt =   params['k_EIs'] * z[1] - params['k_IR'] * z[2] - params['k_IL'] * z[2]
+    dRdt =   params['k_IR'] * z[2] + params['k_LR'] * z[4]
+    dLdt =   params['k_IL'] * z[2] - params['k_LR'] * z[4] - params['k_LD'] * z[4]
+    dDdt =   params['k_LD'] * z[4]
+    dxdt = [dSdt, dEdt, dIdt, dRdt, dLdt, dDdt]
+    return dxdt
 
 def InitModelODEs(params, G):    
     params, G = InitModels(params, G)     

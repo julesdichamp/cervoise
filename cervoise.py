@@ -118,9 +118,9 @@ def InitParams(config_name):
     # JD: it fails for me otherwise...
     params["genAndQuit"] = strtobool(config.get("graph", "genAndQuit"))  # quit after graph is generated and saved
     params["location"] = config.get("graph", "location")
-    if params["location"] != "metropole":
-        print('[ERROR]: location can only be metropole for now. Exit here.')
-        exit(0)
+    # if params["location"] != "metropole":
+        # print('[ERROR]: location can only be metropole for now. Exit here.')
+        # exit(0)
 
     params["graph_type"] = config.get("graph", "graph_type")  # what type of graph is is
 
@@ -402,6 +402,7 @@ def InitGraph(params):
         dic_data_covid = {}
         dic_positions = {}
         dic_names = {}
+        dic_areas = {}        
         # add nodes to the graph
         for key in franceGeom.keys():
             id_node = franceGeom[key]["id"]  # get ID attributed from readFranceGeom(params)
@@ -415,12 +416,14 @@ def InitGraph(params):
                     # - Confirmed cases
                     # - Deaths
                     # - Position
+                    # - Area
                     dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
                     dic_data_covid[id_node] = franceGeom[key]['data_covid']
 
                     centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
-                    dic_positions[id_node] = centroid
+                    dic_positions[id_node] = centroid                    
                     dic_names[id_node] = key
+                    dic_areas[id_node] = franceGeom[key]['area']                    
                     # print("id_node, dic_names[id_node] = " , id_node, dic_names[id_node])
                     params['total_pop'] += dic_total_population[id_node]
                     for _date in dic_data_covid[id_node].keys():
@@ -434,17 +437,20 @@ def InitGraph(params):
                         params['total_covid_data'][_date]['Recovered'] += dic_data_covid[id_node][_date]['Recovered']
             else:
                 G.add_node(id_node)
-                # add data on node_attributes, for now:
+                # add data on node_attributes, for now:                
                 # - Total population
                 # - Confirmed cases
                 # - Deaths
                 # - Position
+                # - Area
                 dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
                 dic_data_covid[id_node] = franceGeom[key]['data_covid']
 
                 centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
                 dic_positions[id_node] = centroid
                 dic_names[id_node] = key
+                dic_areas[id_node] = franceGeom[key]['area']
+                
                 # print("id_node, dic_names[id_node] = " , id_node, dic_names[id_node])
                 params['total_pop'] += dic_total_population[id_node]
                 for _date in dic_data_covid[id_node].keys():
@@ -462,6 +468,7 @@ def InitGraph(params):
         nx.set_node_attributes(G, name='names', values=dic_names)
         nx.set_node_attributes(G, name='total_pop', values=dic_total_population)
         nx.set_node_attributes(G, name='data_covid', values=dic_data_covid)
+        nx.set_node_attributes(G, name='areas', values=dic_areas)        
         
         if (params['location'] == 'metropole'):
             # add edges to the graph
@@ -531,11 +538,14 @@ def InitGraph(params):
             # - Confirmed cases
             # - Deaths
             # - Position
+            # - Area
             dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
             dic_data_covid[id_node] = franceGeom[key]['data_covid']
             centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
             dic_positions[id_node] = centroid
             dic_names[id_node] = key
+            dic_areas[id_node] = franceGeom[key]['area']
+            
             params['total_pop'] += dic_total_population[id_node]
             for _date in dic_data_covid[id_node].keys():
                 if not(_date in params['total_covid_data']):
@@ -552,6 +562,7 @@ def InitGraph(params):
         nx.set_node_attributes(G, name='names', values=dic_names)
         nx.set_node_attributes(G, name='total_pop', values=dic_total_population)
         nx.set_node_attributes(G, name='data_covid', values=dic_data_covid)
+        nx.set_node_attributes(G, name='areas', values=dic_areas)
 
         # add edges of graph: all regions are connected to every other region
         for n1 in G.nodes():
@@ -560,11 +571,32 @@ def InitGraph(params):
                     edge = (n1, n2)
                     G.add_edge(*edge)  # unpack edge tuple*
 
+
+    # add  densities as  node_attribute so we don't have to compute it 
+    # every time we need it
+    dic_densities = {}
+    dic_areas = nx.get_node_attributes(G, 'areas')    
+    dic_total_pop = nx.get_node_attributes(G, 'total_pop')   
+    for id_node in G.nodes():
+        dic_densities[id_node] = dic_total_population[id_node] / dic_areas[id_node]
+        
+    nx.set_node_attributes(G, name='densities', values=dic_densities)
     print("num_edges = ", G.number_of_edges())
     print("num_nodes = ", G.number_of_nodes())
 
-    # print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
-    # print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
+    print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
+    print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
+    # dic_areas = nx.get_node_attributes(G, 'areas')    
+    # dic_total_pop = nx.get_node_attributes(G, 'total_pop')    
+    # total_area = 0.
+    # total_pop = 0
+    # for k in dic_areas.keys():
+        # total_area += dic_areas[k]
+        # total_pop += dic_total_pop[k]
+        # print(k, dic_areas[k])
+        
+    # print('\ntotal_pop, total_area, density = ' , total_pop, total_area, total_pop / total_area)
+    # exit(0)
     # ### --- plot graph
     # fig, ax = plt.subplots()
     # dic_pos = nx.get_node_attributes(G, 'positions')
@@ -573,6 +605,7 @@ def InitGraph(params):
     # nx.draw_networkx_nodes(G, font_weight='bold', pos=dic_pos, alpha = 0.5, node_size = 500)
     # nx.draw_networkx_labels(G, font_weight='bold', pos=dic_pos, labels=dic_labels, font_size=15)
     # plt.show()    
+    
     return G
 
 
@@ -712,7 +745,7 @@ if (params['fit_model']):
     paramsToFit = InitFit(params)     
     params['num_iter_fit'] = 0 # intialize number of iteration
     df = LaunchFit(paramsToFit, params, G)    
-
+    
 # either read from results outputs.txt
 if ("PlotResults" in params['plot_options']):
     if (params["model_name"] == "RealSEIRLDOnGraphInitTEST"):

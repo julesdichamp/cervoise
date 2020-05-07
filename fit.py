@@ -469,28 +469,33 @@ def InitFitSEIRLD():
     # set parameters that need to be fitted
     # kinetic parameters  
     # we actually set k_SE_tilde = k_SE * N. in InitModels k_SE is divided by N
-    paramsToFit.add("k_SE", value=0.67063703, min=0.1, max=1, vary=True)
+    # paramsToFit.add("k_SE", value=0.67063703, min=0.1, max=1, vary=True)
+    paramsToFit.add("k_SE", value=0.67063703, min=0.011, max=10, vary=True)
     paramsToFit.add("k_EI", value=0.333333, min=0.25, max=1, vary=True)    
     # reference value is k_IR = 1/14.
     # the bounds values are 0.1 * k_IR and 0.9 * k_IR 
     # (assuming the fraction of astymptomatic min/max is 0.1/0.9)
     # start from 0.5 * k_LR
-    paramsToFit.add("k_IR", value=0.03571428571428571, min=0.0071428571428571435, max=0.0642857142857143, vary=True)
+    # paramsToFit.add("k_IR", value=0.03571428571428571, min=0.0071428571428571435, max=0.0642857142857143, vary=True)
+    paramsToFit.add("k_IR", value=0.03571428571428571, min=0.00071428571428571435, max=0.642857142857143, vary=True)
     # reference value is k_IL = 1/3 (3 days to get isolated)
     # # the bounds values are 0.1 * k_IL and 0.9 * k_IL 
     # (assuming the fraction of astymptomatic min/max is 0.1/0.9)
     # start from (1-0.5) * k_IL
-    paramsToFit.add("k_IL", value=0.16666666666666666, min=0.033333, max=0.3, vary=True)
+    # paramsToFit.add("k_IL", value=0.16666666666666666, min=0.033333, max=0.3, vary=True)
+    paramsToFit.add("k_IL", value=0.16666666666666666, min=0.0033333, max=3, vary=True)
     # we should have 1/k_IR = (1 / k_IL) + (1 / k_LR) so that 
     # k_LR = 1 / 11.
     # we might not vary this value but add a bit of variability with bounds between 1/9 and 1/13
-    paramsToFit.add("k_LR", value=0.09090909090909091, min=0.07692307692307693, max=0.1111111111111111, vary=True)
+    # paramsToFit.add("k_LR", value=0.09090909090909091, min=0.07692307692307693, max=0.1111111111111111, vary=True)
+    paramsToFit.add("k_LR", value=0.09090909090909091, min=0.007692307692307693, max=1.111111111111111, vary=True)
     # I'm not sure what sense does it make for a rate of death
     # we should have k_LD * f_d and k_LR * (1 - f_d)
     # we assume fraction of death to rangebetween fd = 0.005 and 0.05
     # and take k_LD = k_LR
     # start from k_LD * 0.1
-    paramsToFit.add("k_LD", value=0.0009090909090909091, min=0.00045454545454545455, max=0.004545454545454546, vary=True)
+    # paramsToFit.add("k_LD", value=0.0009090909090909091, min=0.00045454545454545455, max=0.004545454545454546, vary=True)
+    paramsToFit.add("k_LD", value=0.0009090909090909091, min=0.00045454545454545455, max=0.4545454545454546, vary=True)
     # fraction of infected in population I_c = alpha * I 
     paramsToFit.add("alpha", value=0.1, min=0.01, max=1, vary=True)
     # fraction of asymptomatics f_as. Rate k_IR is multiplied by f_ar
@@ -532,12 +537,12 @@ def LaunchFit(paramsToFit, params, G):
         print('[ERROR] : unknown model name: ',params["model_name"] ,' in LaunchFit function model ')
     
     results = mini.minimize(method=str(params['method'])) #  plein de methods, least-square par default
-    results.paramsToFit.pretty_print() #  nice display of fit results
-    bic = results.bic #  example of info in results
-    residuals = results.residuals #  example of info in results
+    results.params.pretty_print() #  nice display of fit results
+    # bic = results.bic #  example of info in results
+    # residuals = results.residuals #  example of info in results
 
     df = pd.DataFrame()  #  dataframe init
-    df = df.append(results.paramsToFit.valuesdict(), ignore_index=True) #  tout le monde il est bien range
+    df = df.append(results.params.valuesdict(), ignore_index=True) #  tout le monde il est bien range
     
     return df , params
     
