@@ -39,6 +39,8 @@ import getFranceGeom
 from models import *
 from plotModels import *
 from plotData import *
+from ODEs import *
+
 import distutils
 from distutils.util import strtobool
 
@@ -262,8 +264,24 @@ def InitParams(config_name):
         params["k_IR"]  = config.getfloat("model", "k_IR")        
         params["k_IL"]  = config.getfloat("model", "k_IL")
         params["k_LD"]  = config.getfloat("model", "k_LD")
-        params["alpha"] = config.getfloat("model", "alpha")
+        params["alpha"] = config.getfloat("model", "alpha")        
         params["time_start_day"] = config.get("model", "time_start_day")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["L_ini"] = config.getint("model", "L_ini")
+    
+    elif params["model_name"] == "RealSIRLDmodifiedWellMixed":  # load parameters needed for this model        
+        params["k_SI"]  = config.getfloat("model", "k_SI")
+        params["k_IR"]  = config.getfloat("model", "k_IR")        
+        params["k_IL"]  = config.getfloat("model", "k_IL")
+        params["k_LR"] = config.getfloat("model", "k_LR")
+        params["k_LD"]  = config.getfloat("model", "k_LD")
+        params["alpha"] = config.getfloat("model", "alpha")        
+        params["time_start_day"] = config.get("model", "time_start_day")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["L_ini"] = config.getint("model", "L_ini")
+    
     
     elif params["model_name"] == "RealSEIRLDWellMixed":  # load parameters needed for this model        
         params["time_start_day"] = config.get("model", "time_start_day")
@@ -272,13 +290,14 @@ def InitParams(config_name):
         params["k_IR"] = config.getfloat("model", "k_IR")
         params["k_IL"] = config.getfloat("model", "k_IL")
         params["k_LR"] = config.getfloat("model", "k_LR")
-        params["k_LD"] = config.getfloat("model", "k_LD")        
+        params["k_LD"] = config.getfloat("model", "k_LD")
         # fraction that relates confirmed and real infected
         # I_confirmed = alpha * I
         params["alpha"] = config.getfloat("model", "alpha")
         # initial number of population
         params["E_ini"] = config.getint("model", "E_ini")
         params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
         params["L_ini"] = config.getint("model", "L_ini")
     
     elif params["model_name"] == "RealSEIRLDOnGraphInitTEST":  # load parameters needed for this model        
@@ -314,9 +333,20 @@ def InitParams(config_name):
         params["S_ini"] = config.getint("model", "S_ini")
         params["L_ini"] = config.getint("model", "L_ini")
         params["I_ini"] = config.getint("model", "I_ini")
+        params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")    
+    elif params["model_name"] == "SIerlangModifiedWellMixedAgentBased":  # load parameters needed for this model        
+        params["k_SI"] = config.getfloat("model", "k_SI")        
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-        
-
+    elif params["model_name"] == "SIRerlangKrylovaWellMixedAgentBased":  # load parameters needed for this model
+        params["k_SI"] = config.getfloat("model", "k_SI")        
+        params["k_IR"] = config.getfloat("model", "k_IR")        
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
+    
     else:
         print("[ERROR]: model name: ",params['model_name']," not found. Exit here.")
         exit(0)        
@@ -391,7 +421,7 @@ def InitGraph(params):
                     centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
                     dic_positions[id_node] = centroid
                     dic_names[id_node] = key
-                    print("id_node, dic_names[id_node] = " , id_node, dic_names[id_node])
+                    # print("id_node, dic_names[id_node] = " , id_node, dic_names[id_node])
                     params['total_pop'] += dic_total_population[id_node]
                     for _date in dic_data_covid[id_node].keys():
                         if not(_date in params['total_covid_data']):
@@ -415,7 +445,7 @@ def InitGraph(params):
                 centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
                 dic_positions[id_node] = centroid
                 dic_names[id_node] = key
-                print("id_node, dic_names[id_node] = " , id_node, dic_names[id_node])
+                # print("id_node, dic_names[id_node] = " , id_node, dic_names[id_node])
                 params['total_pop'] += dic_total_population[id_node]
                 for _date in dic_data_covid[id_node].keys():
                     if not(_date in params['total_covid_data']):
@@ -631,6 +661,14 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIAndIntermediateErlangWellMixedAgentBased":
         outputs = SolveAgentBasedOneCompartment(params)
         plot_SIAndIntermediateErlangWellMixedAgentBased(params, outputs)
+    elif params["model_name"] == "SIerlangModifiedWellMixedAgentBased":
+        outputs, waiting_times = SolveAgentBasedOneCompartment(params)
+        plot_SIerlangModifiedWellMixedAgentBased(params, outputs, waiting_times)
+    elif params["model_name"] == "SIRerlangKrylovaWellMixedAgentBased":
+        outputs = SolveAgentBasedOneCompartment(params)
+        plot_SIRerlangKrylovaWellMixedAgentBased(params, outputs)
+        
+    
     
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
@@ -674,7 +712,8 @@ if (params['fit_model']):
     paramsToFit = InitFit(params)     
     params['num_iter_fit'] = 0 # intialize number of iteration
     df = LaunchFit(paramsToFit, params, G)    
-    
+
+# either read from results outputs.txt
 if ("PlotResults" in params['plot_options']):
     if (params["model_name"] == "RealSEIRLDOnGraphInitTEST"):
         _dir=params['outputs_dir']
@@ -692,9 +731,49 @@ if ("PlotResults" in params['plot_options']):
         # with params['dates_for_fit'] list later on (e.g. on the fit function)
         dates_to_plot = params['dates_for_fit'].copy()
         dates_to_plot.insert(0, params['time_start_day'])        
-        plotDataAndSEIRLDOnGraphResults(params, G, outputs, dates_to_plot)
+    else:
+        print('[ERROR]: can not plot model ' , params["model_name"],  ' yet. Exit here')
+        exit(0)
 else:
-    LaunchModel(params, G)
+    if (params['fit_with_ODEs']):
+        params , G = InitModelODEs(params, G)
+        outputs = LaunchModelODEs(params)
+        if params["model_name"] == "RealSEIRLDWellMixed":      
+            R0 = params['k_SE'] / (params['k_IR'] + params['k_IL'])
+            print('R0 = ' , R0)
+            dates_to_plot = []
+            # copy list otherwize references are copied... and it messes up
+            # with params['dates_for_fit'] list later on (e.g. on the fit function)
+            dates_to_plot = params['dates_for_fit'].copy()
+            dates_to_plot.insert(0, params['time_start_day'])
+            plotDataAndSEIRLDResults(params, G,outputs, dates_to_plot)  
+        elif params["model_name"] == "RealSIRLDWellMixed":      
+            R0 = params['k_SI'] / (params['k_IR'] + params['k_IL'])
+            print('R0 = ' , R0)
+            dates_to_plot = []
+            # copy list otherwize references are copied... and it messes up
+            # with params['dates_for_fit'] list later on (e.g. on the fit function)
+            dates_to_plot = params['dates_for_fit'].copy()
+            dates_to_plot.insert(0, params['time_start_day'])
+            plotDataAndSIRLDResults(params, G,outputs, dates_to_plot)  
+        elif params["model_name"] == "RealSIRLDmodifiedWellMixed":      
+            R0 = params['k_SI'] / (params['k_IR'] + params['k_IL'])
+            print('R0 = ' , R0)
+            dates_to_plot = []
+            # copy list otherwize references are copied... and it messes up
+            # with params['dates_for_fit'] list later on (e.g. on the fit function)
+            dates_to_plot = params['dates_for_fit'].copy()
+            dates_to_plot.insert(0, params['time_start_day'])
+            plotDataAndSIRLDmodidifedResults(params, G,outputs, dates_to_plot)  
+        elif params["model_name"] == "SIRWellMixed":
+            R0 = params['k_SI'] / (params['k_IR'])
+            print('R0 = ' , R0)
+            plot_SIRWellMixed(params,outputs)            
+        else:
+            print('[ERROR]: can not plot model ' , params["model_name"],  ' yet. Exit here')
+            exit(0)
+    else:
+        LaunchModel(params, G)
 
 t1 = time.time()
 print("Code ran for: ", t1 - t0, " seconds")

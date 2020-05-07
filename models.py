@@ -518,7 +518,7 @@ def InitModels(params, G):
         
         k_plus = np.zeros(nbReactions)
         k_plus[0] =   k_SI * (m)
-        k_plus[1:m] = k_SI * (m) 
+        k_plus[1:m] = k_SI * (m) #* S_ini
         # k_plus[0] = k_SI   * (m)
         # k_plus[1:m] = k_SI * (m)
         params['k_plus'] = k_plus
@@ -657,7 +657,7 @@ def InitModels(params, G):
         # second m reactions = Lambda_IR
         k_plus = np.zeros(nbReactions)
         k_plus[0:m] = k_SI * m
-        k_plus[m:nbReactions] = k_SI * m
+        k_plus[m:nbReactions] = k_SI * m * S_ini
         # k_plus[0:m] = k_SI * m
         # k_plus[m:nbReactions] = k_SI * m
         params['k_plus'] = k_plus
@@ -1266,20 +1266,20 @@ def InitModels(params, G):
         params['x_ini'] = x_ini
 
     """
-    model from marc lavielle
-    http://webpopix.org/covidix19.html
-    In our framework it becomes:
-    S + I --> 2I
-    I     --> R
-    I     --> L
-    L     --> D
+    model from Marc Lavielle: http://webpopix.org/covidix19.html
+    Model to test influence of exposed state to check we computed the right R0
+    SIRLD model: S: susceptible I: infectious, R: recovered, L: isolated, D: Deaths
+    I -> L means once individuals are infected they isolate
+    I -> R means that some individuals are infected and do not isolate 
+    but will not die however (because of low viral charge)
+    L -> D mean that once people are isolated they can die
     """
     if (params["model_name"] == "RealSIRLDWellMixed"):
         # load initial state, and reactions values
         k_SI = params["k_SI"]  # A = 0
         k_IR = params["k_IR"]  # A = 1
         k_IL = params["k_IL"]  # A = 2
-        k_LD = params["k_LD"]  # A = 3
+        k_LD = params["k_LD"]  # A = 3        
         # indices S = 0, I = 1, R = 2
         # N_ij = stoechiomatrix coefficients on left hand side of reactions
         # M_ij = stoechiomatrix coefficients on right hand side of reactions
@@ -1326,33 +1326,133 @@ def InitModels(params, G):
         dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
         dic_simu_total_pop = copy.deepcopy(dic_total_pop)
         dic_simu_data_covid = copy.deepcopy(dic_data_covid)
-        S = 0 ; I = 0 ; R = 0 ; D = 0; N = 0;
+        S = 0  ; I = 0 ; R_pop = 0 ; D = 0; N_pop = 0;
         # get data for entire france
         for n in G.nodes():
-            # I_confirmed = alpha * I, thus I = 1/alpha * I_confirmed
-            # I += dic_simu_data_covid[n][params["time_start_day"]]['Confirmed']
-            # get fraction of deaths
             D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
-            R += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
-            dic_simu_total_pop[n]
-
-            N += dic_simu_total_pop[n]
-
-        # get N = total population
-        L = params['L_ini'] # people who are isolated and will die
-        # I = np.floor((1/params['alpha']) * I)
+            # R_pop += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
+            N_pop += dic_simu_total_pop[n]
+        
+        params['total_population'] = N_pop # sueful as some point for rescale and stuff        
         I = params['I_ini']
-        R =  np.floor((1/params['alpha']) * R)
-        S = N - I - D - R - L
-
+        # this is not clear how intial number of recovered is related to the real
+        # fraction of recovered people. Make it a fit parameter for now
+        # R_pop =  np.floor((1/params['alpha']) * R_pop) # real "recovered people"
+        R =  params['R_ini']
+        L = params['L_ini'] # people who are isolated and will die or recover
+        S = N_pop - I - D - R - L
         # adjust k_SI to each node population
-        k_plus = np.array([k_SI, k_IR, k_IL, k_LD])
+        k_plus = np.array([k_SI / N_pop, k_IR, k_IL, k_LD])
         x_ini = np.array([S, I, R, L, D])
+        # print("k_plus = ", k_plus)
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
 
     """
-    TODO
+    model from Marc Lavielle: http://webpopix.org/covidix19.html
+    we modify it so that once pepole are isolated S -> 
+    Model to test influence of exposed state to check we computed the right R0
+    SIRLD model: S: susceptible I: infectious, R: recovered, L: isolated, D: Deaths
+    I -> L means once individuals are infected they isolate
+    I -> R means that some individuals are infected and do not isolate 
+    but will not die however (because of low viral charge)
+    L -> D mean that once people are isolated they can die
+    """
+    if (params["model_name"] == "RealSIRLDmodifiedWellMixed"):
+        # load initial state, and reactions values
+        k_SI = params["k_SI"]  # A = 0
+        k_IR = params["k_IR"]  # A = 2
+        k_IL = params["k_IL"]  # A = 3
+        k_LR = params["k_LR"]  # A = 4
+        k_LD = params["k_LD"]  # A = 5
+        
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 5
+        nbStates = 5
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # 1st reaction: S + I -> 2I
+        N[0][0] = 1 ; M[0][0] = 0
+        N[1][0] = 1 ; M[1][0] = 1
+        N[2][0] = 0 ; M[2][0] = 0
+        N[3][0] = 0 ; M[3][0] = 0
+        N[4][0] = 0 ; M[4][0] = 0        
+        #2nd reaction: I -> R
+        N[0][1] = 0 ; M[0][1] = 0
+        N[1][1] = 1 ; M[1][1] = 0
+        N[2][1] = 0 ; M[2][1] = 1
+        N[3][1] = 0 ; M[3][1] = 0
+        N[4][1] = 0 ; M[4][1] = 0
+        #3rd reaction: I -> L
+        N[0][2] = 0 ; M[0][2] = 0
+        N[1][2] = 1 ; M[1][2] = 0
+        N[2][2] = 0 ; M[2][2] = 0
+        N[3][2] = 0 ; M[3][2] = 1
+        N[4][2] = 0 ; M[4][2] = 0
+        # 4th reaction: L -> R
+        N[0][3] = 0 ; M[0][3] = 0
+        N[1][3] = 0 ; M[1][3] = 0
+        N[2][3] = 0 ; M[2][3] = 1
+        N[3][3] = 1 ; M[3][3] = 0
+        N[4][3] = 0 ; M[4][3] = 0
+        # 5th reaction: L -> D
+        N[0][4] = 0 ; M[0][4] = 0
+        N[1][4] = 0 ; M[1][4] = 0
+        N[2][4] = 0 ; M[2][4] = 0
+        N[3][4] = 1 ; M[3][4] = 0
+        N[4][4] = 0 ; M[4][4] = 1    
+        
+        R = M - N
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        
+        # print("N_matrix = \n" , N)
+        # print("M_matrix = \n" , M)
+        # print("R_matrix = \n" , R)
+        
+        dic_data_covid = nx.get_node_attributes(G, name='data_covid')
+        dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+        dic_simu_total_pop = copy.deepcopy(dic_total_pop)
+        dic_simu_data_covid = copy.deepcopy(dic_data_covid)
+        S = 0 ;  I = 0 ; R_pop = 0 ; D = 0; N_pop = 0;
+        # get data for entire france
+        for n in G.nodes():
+            D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
+            # R_pop += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
+            N_pop += dic_simu_total_pop[n]
+        
+        params['total_population'] = N_pop # sueful as some point for rescale and stuff
+
+        I = params['I_ini']
+        # this is not clear how intial number of recovered is related to the real
+        # fraction of recovered people. Make it a fit parameter for now
+        # R_pop =  np.floor((1/params['alpha']) * R_pop) # real "recovered people"
+        R =  params['R_ini']
+        L = params['L_ini'] # people who are isolated and will die or recover
+        S = N_pop - I - D - R - L
+        # adjust k_SI to each node population
+        k_plus = np.array([k_SI / N_pop, k_IR, k_IL, k_LR, k_LD])
+        x_ini = np.array([S, I, R, L, D])
+        # print("k_plus = ", k_plus)
+        params['k_plus'] = k_plus
+        params['x_ini'] = x_ini
+
+
+    """
+    SEIRLD model: S: susceptible, E: exposed (was in contact with infectious 
+    but not yet infectious, I: infectious, R: recovered, L: isolated, D: Deaths
+    I -> L means once individuals are infected they isolate
+    I -> R means that some individuals are infected and do not isolate 
+    but will not die however (because of low viral charge)
+    L -> R and L -> mean that once people are isolated they can either die or recover
     """
     if (params["model_name"] == "RealSEIRLDWellMixed"):
         # load initial state, and reactions values
@@ -1435,20 +1535,21 @@ def InitModels(params, G):
         # get data for entire france
         for n in G.nodes():
             D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
-            R_pop += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
-            dic_simu_total_pop[n]
-
+            # R_pop += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
             N_pop += dic_simu_total_pop[n]
         
         params['total_population'] = N_pop # sueful as some point for rescale and stuff
         E = params['E_ini']
-        I = params['I_ini']        
-        R_pop =  np.floor((1/params['alpha']) * R_pop) # real "recovered people"
+        I = params['I_ini']
+        # this is not clear how intial number of recovered is related to the real
+        # fraction of recovered people. Make it a fit parameter for now
+        # R_pop =  np.floor((1/params['alpha']) * R_pop) # real "recovered people"
+        R =  params['R_ini']
         L = params['L_ini'] # people who are isolated and will die or recover
-        S = N_pop -E - I - D - R_pop - L
+        S = N_pop -E - I - D - R - L
         # adjust k_SI to each node population
         k_plus = np.array([k_SE / N_pop, k_EI, k_IR, k_IL, k_LR, k_LD])
-        x_ini = np.array([S, E, I, R_pop, L, D])
+        x_ini = np.array([S, E, I, R, L, D])
         # print("k_plus = ", k_plus)
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
@@ -1803,6 +1904,159 @@ def InitModels(params, G):
         print("k_plus = ", k_plus) 
         print("x_ini = ", x_ini)             
 
+    """
+    SI model with well mixed hypothesis and erlang waiting time
+    we remove individuals that reach the state I right after so that 
+    the number of individual in I stazte is constant    
+    agent based approach
+    """
+    if (params["model_name"] == "SIerlangModifiedWellMixedAgentBased"):
+        k_SI = params["k_SI"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        m = params["nb_intermediate_states"]
+
+        Lambda_SI = k_SI * m # recovery after 1 event        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 1
+
+        # initialize population with known values
+        # declare indices of every state
+        # intialize list
+        x_ini = [[]] # declare list for S
+        for k in range(0,m):
+            x_ini.append([]) # declare list for all m other states (infected)
+        for i in range(0, S_ini):
+            x_ini[0].append(i)
+        for i in range(S_ini, S_ini+I_ini):
+            # x_ini[1].append(i)
+            x_ini[nbStates-1].append(i)        
+        
+        params['x_ini'] = copy.deepcopy(x_ini)
+
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        k_plus[0] = k_SI * m 
+        k_plus[1:m] = k_SI *(m)        
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> I + I1 (and all intermediate reactions)
+        N[0][0] = 1 ; M[1][0] = 1
+        N[m][0] = 1 ; M[m][0] += 1 # add 1 in case m = 1 and we need to have 2 on the right hand side
+        # reactions I_1 -> I_2
+        #           I_2 -> I_3
+        #               ...
+        #       I_{m-1} -> I_m = I
+        # i ranges from 1 to m-1
+        for i in range(1,m):
+            # state indice is one more in right hand side than in left hand side
+            N[i][i] = 1 #diagonal matrix
+            M[i+1][i] = 1        
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus) 
+        print("x_ini = ", x_ini) 
+    
+    """
+    SIR model with well mixed hypothesis and another type of
+    erlang waiting time (same as in krylova paper)    
+    m is the number of intermediate states
+    with agent based approach
+    """
+    if (params["model_name"] == "SIRerlangKrylovaWellMixedAgentBased"):
+        
+        k_SI = params["k_SI"]
+        k_IR = params["k_IR"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+        m = params["nb_intermediate_states"]        
+
+        # indices S = 0, I_1 = 1, I_2 = 2... I (=I_m) = m
+        # R = indice m +1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions =  m + m-1 + 1
+        # S, m * I_{i=1:m}, 1*R        
+        nbStates = m + 1 + 1
+
+        # initialize population with known values
+        # declare indices of every state
+        # intialize list
+        x_ini = [[], []] # declare list for S and R
+        for k in range(0,m):
+            x_ini.append([]) # declare list for all m other states (infected)
+        for i in range(0, S_ini):
+            x_ini[0].append(i)        
+        for i in range(S_ini, S_ini+I_ini):
+            # x_ini[1].append(i) # initialiy all infected are in I_1
+            x_ini[nbStates-2].append(i)        
+        
+        params['x_ini'] = copy.deepcopy(x_ini)
+
+        
+        # first m reactions  = Lambda_SI
+        # second m reactions = Lambda_IR
+        k_plus = np.zeros(nbReactions)
+        k_plus[0:m] = k_SI
+        k_plus[m:nbReactions] = k_IR * m
+        # k_plus[0:m] = k_SI * m
+        # k_plus[m:nbReactions] = k_SI * m
+        params['k_plus'] = k_plus
+
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+        
+        # reactions S + I_[k} -> I_1 + I_k
+        # there are m of them
+        for i in range(0,m):
+            # state indice is one more in right hand side than in left hand side
+            N[0][i] = 1 # for S specie, appears on lhs of every first m reactions
+            N[i+1][i] = 1 # diagonal
+            M[1][i] = 1 # for I_1 specie, appears on lhs of every first m reactions
+            M[i+1][i] += 1 # diagonal + 1 to account for case of M[1][1] where we need 2
+        # reactions I_{k-1} -> I_k
+        # there are m-1 of them
+        for i in range(0,m-1):
+            N[1+i][m+i] = 1
+            M[1+1+i][m+i] = 1
+        
+        # last reaction: I_m --> R
+        N[nbStates-2][nbReactions-1] = 1
+        M[nbStates-1][nbReactions-1] = 1
+        
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        print('N = \n' , N)
+        print('M = \n' , M)
+        print('R = \n' , R)
+        print("k_plus = ", k_plus)
+        print("x_ini = ", x_ini)
+
     return params, G
 
 def SolveOneCompartment(params):
@@ -1943,6 +2197,9 @@ def SolveAgentBasedOneCompartment(params):
             if (abs(N[i,j]) > 0.00000001):  
                 indices_states_per_reaction[i,j] = 1
                 
+    if (params["model_name"] == "SIerlangModifiedWellMixedAgentBased"):
+        waiting_times = []
+                
     x = copy.deepcopy(x_ini)
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
@@ -2072,7 +2329,7 @@ def SolveAgentBasedOneCompartment(params):
                 x[state_to_remove].pop(indice_sub_event_state_to_remove)
                 # add individual to state to add
                 x[state_to_add].append(id_individual_state_to_remove)
-                
+                        
             if (nbStatesInReaction == 2):
                 # assume sub-reactions are ordered as follow: with 
                 # state1 = state_to_remove and state2 = state_to_add
@@ -2085,20 +2342,13 @@ def SolveAgentBasedOneCompartment(params):
                 # x[state2][1]
                 # 0 0, 1 0, 2 0, 0 1, 1 1, 2 1
                 # found_first_state = False
-                for ii in range(0,nbStates):
-                    # if state ii is involved in reaction to trigger
-                    # if (abs(R[ii, id_reaction]) > 0.00000001) and not(found_first_state)
-                        # found_first_state = True
-                        # state1 = ii
-                    # elif (abs(R[ii, id_reaction]) > 0.00000001) and (found_first_state)
-                        # state2 = ii                        
+                for ii in range(0,nbStates):                  
                     if ((R[ii, id_reaction]) == -1):
                         state_to_remove = ii
                     elif ((R[ii, id_reaction]) == 1):
                         state_to_add = ii
-                        
-                # print("indice, state_to_remove, len(x[state_to_remove]) = " , indice, state_to_remove, len(x[state_to_remove]))
                 
+                # get indice of the sub event
                 indice_sub_event_state_to_remove = indice % len(x[state_to_remove])
                                 
                 # get id of individual we will remove
@@ -2108,6 +2358,18 @@ def SolveAgentBasedOneCompartment(params):
                 # add individual to state to add
                 x[state_to_add].append(id_individual_state_to_remove)
             
+            # in the case of erlang modified we remove individuals 
+            # that reached infected state right after they did and 
+            # register the corresponding waiting time
+            if (params["model_name"] == "SIerlangModifiedWellMixedAgentBased"):
+                # if we triggered the last reaction, meaning I_m was increased by 1
+                # we register the time at which it happened and remove it right away
+                if (id_reaction == nbReactions-1) :
+                    waiting_times.append(t)
+                    # remove individual that we just added to the new state
+                    # print("id_reaction, id_individual_state_to_remove = " , id_reaction, id_individual_state_to_remove)
+                    x[state_to_add].remove(id_individual_state_to_remove)
+                    
             # print('moved ' , id_individual_state_to_remove , 'from' , state_to_remove, 'to ', state_to_add)
             # print(count_loops, t, x, t_forward_plus, next_states, id_reaction)
             # print(count_loops, t, x, id_reaction)
@@ -2119,6 +2381,11 @@ def SolveAgentBasedOneCompartment(params):
     
     print(t,count_loops, x)
     
+    if (params["model_name"] == "SIerlangModifiedWellMixedAgentBased") :
+        return outputs , waiting_times
+    else:
+        return outputs
+         
             
     return outputs
 

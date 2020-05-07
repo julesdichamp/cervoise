@@ -6,6 +6,8 @@ from models import InitModels, SolveOnGraph, SolveOneCompartment
 # from datetime import date
 import datetime
 import networkx as nx
+from scipy.integrate import odeint
+from ODEs import InitModelODEs, LaunchModelODEs
 
 def FitFuncOnGraph(paramsToFit, params, G): 
     print('FitFuncOnGraph')  
@@ -229,7 +231,7 @@ def FitFuncSIRLDOneComp(paramsToFit, params, G):
     return fitness_L2_square
 
 def FitFuncSEIRLDOneComp(paramsToFit, params, G): 
-    print('FitFuncSEIRLDOneComp')  
+    print('FitFuncSEIRLDOneComp')
     # add parameters to fit into (that will be varied every call to the fitfunction)
     # to the dictionnary that contains all parameters
     params["k_SE"]  = float(paramsToFit["k_SE"])
@@ -330,9 +332,116 @@ def FitFuncSEIRLDOneComp(paramsToFit, params, G):
                 break;
             
     if not(_count == nbDates):
-        print("[ERROR] : we didn't find all dates in model to compute fitness function".)
+        print("[ERROR] : we didn't find all dates in model to compute fitness function.")
+        exit(0)
     # print('fitness = ' , fitness)
     params['num_iter_fit'] += 1    
+    fitness_L2_square = norm(fitness, ord=2) ** 2
+    print("num_iter_fit, fitness value = ", params['num_iter_fit'], fitness_L2_square)
+
+    return fitness_L2_square
+
+def FitFuncSEIRLDOneCompODEs(paramsToFit, params, G): 
+    print('FitFuncSEIRLDOneComp')
+    # add parameters to fit into (that will be varied every call to the fitfunction)
+    # to the dictionnary that contains all parameters
+    params["k_SE"]  = float(paramsToFit["k_SE"])
+    params["k_EI"]  = float(paramsToFit["k_EI"])
+    params["k_IR"]  = float(paramsToFit["k_IR"])
+    params["k_IL"]  = float(paramsToFit["k_IL"])
+    params["k_LD"]  = float(paramsToFit["k_LD"])
+    params["k_LR"]  = float(paramsToFit["k_LR"])
+    params["alpha"] = float(paramsToFit["alpha"])
+    params["E_ini"] = int(paramsToFit["E_ini"])
+    params["I_ini"] = int(paramsToFit["I_ini"])
+    params["L_ini"] = int(paramsToFit["L_ini"])
+    
+    print("k_SE = " , params['k_SE'] )
+    print("k_EI = " , params['k_EI'] )
+    print("k_IR = " , params['k_IR'] )
+    print("k_IL = " , params['k_IL'] )
+    print("k_LD = " , params['k_LD'] )
+    print("k_LR = " , params['k_LR'] )
+    print("alpha = " , params['alpha'])    
+    print("E_ini = " , params['E_ini'])    
+    print("I_ini = " , params['I_ini'])    
+    print("L_ini = " , params['L_ini'])    
+        
+    # transform to datetime format
+    dates = [datetime.datetime.strptime(ts, "%Y-%m-%d") for ts in params["dates_for_fit"]] 
+    time_start_date = datetime.datetime.strptime(params['time_start_day'], "%Y-%m-%d")        
+    nbDates=len(params["dates_for_fit"])    
+        
+    # fill vector with relative increase from one date to the other    
+    # dates[0] should NOT be the same than time_start_date otherwise 
+    # delta_days[0] = 0 and the first fit data point is the intial values...
+    # dates bmust be sorted in params['dates_for_fit']    
+    delta_days = []
+    delta_days.append((dates[0] - time_start_date).days) # transform to number of days
+    for i in range(1,nbDates):
+        delta_days.append((dates[i] - dates[i-1]).days) # transform to number of days
+    
+    # time_end must verify time_end = time_start + sum(delta_days)
+    if params['time_end'] != params['time_start'] + sum(delta_days):        
+        params['time_end'] = params['time_start'] + sum(delta_days)
+        print("new time_end = " , params['time_end'])
+    
+    # init model and solve
+    [params , G] = InitModelODEs(params, G)
+    outputs = LaunchModelODEs(params)
+    nbTimes = len(outputs)
+    fitness = np.zeros(3 * nbDates)
+    time_date_target = params['time_start'] + delta_days[0]    
+    # get all data we need    
+    dic_data_covid = nx.get_node_attributes(G, name='data_covid')    
+    dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+    
+    # get total population
+    N_pop = 0 
+    for n in G.nodes():
+        N_pop += dic_total_pop[n] 
+    
+    # loop over time steps to get simu results and compute fit function
+    x = np.zeros([nbTimes,params['nbStates']])
+    _time = np.zeros(nbTimes)
+    _count = 0
+    for i in range(0,nbTimes):        
+        mytime = outputs[i][0]        
+        _time[i] = mytime
+        x[i,:] = outputs[i][1]        
+        # not sure of what precision to take
+        W_c = 0.
+        if (abs(mytime - time_date_target) <= 0.01) :
+            # print('[TARGET FOUND]: mytime, date_target = ' , mytime, time_date_target)
+            total_confirmed = 0
+            total_recovered = 0
+            total_deaths    = 0            
+            for n in G.nodes():
+                # Infected       
+                total_confirmed += dic_data_covid[n][params["dates_for_fit"][_count]]['Confirmed']
+                total_recovered += dic_data_covid[n][params["dates_for_fit"][_count]]['Recovered']
+                total_deaths    += dic_data_covid[n][params["dates_for_fit"][_count]]['Deaths']                            
+            
+            tmp_func = params['alpha'] * params["k_SE"] * x[0:i+1,0] * x[0:i+1,2] / N_pop
+            W_c = np.trapz(tmp_func, _time[0:i+1] ) # integral over time of I until _time[i]  
+            # add integral from 0 to t_0 from data so we can compare
+            W_c += params['total_covid_data'][params['time_start_day']]['Confirmed']
+            fitness[_count + 0] = (total_confirmed - W_c)
+            # recovered in model is a fraction of recovered measured
+            fitness[_count + 1] = (total_recovered - params['alpha'] * x[i,3])
+            fitness[_count + 2] = (total_deaths    - x[i,5])
+            
+            # get new date to target
+            time_date_target = time_date_target + delta_days[_count]
+            _count += 1
+            # exist loop if we got all data we need
+            if (_count == nbDates):
+                break;
+            
+    if not(_count == nbDates):
+        print("[ERROR] : we didn't find all dates in model to compute fitness function.")
+        exit(0)
+    params['num_iter_fit'] += 1
     fitness_L2_square = norm(fitness, ord=2) ** 2
     print("num_iter_fit, fitness value = ", params['num_iter_fit'], fitness_L2_square)
 
@@ -361,17 +470,37 @@ def InitFitSEIRLD():
     # kinetic parameters  
     # we actually set k_SE_tilde = k_SE * N. in InitModels k_SE is divided by N
     paramsToFit.add("k_SE", value=0.67063703, min=0.1, max=1, vary=True)
-    paramsToFit.add("k_EI", value=0.0666, min=0.0001, max=0.1, vary=True)
-    paramsToFit.add("k_IR", value=0.01, min=0.0001, max=0.1, vary=True)
-    paramsToFit.add("k_IL", value=0.01, min=0.0001, max=0.1, vary=True)
-    paramsToFit.add("k_LD", value=400, min=100, max=1000, vary=True)
-    paramsToFit.add("k_LR", value=400, min=5000, max=200000, vary=True)
+    paramsToFit.add("k_EI", value=0.333333, min=0.25, max=1, vary=True)    
+    # reference value is k_IR = 1/14.
+    # the bounds values are 0.1 * k_IR and 0.9 * k_IR 
+    # (assuming the fraction of astymptomatic min/max is 0.1/0.9)
+    # start from 0.5 * k_LR
+    paramsToFit.add("k_IR", value=0.03571428571428571, min=0.0071428571428571435, max=0.0642857142857143, vary=True)
+    # reference value is k_IL = 1/3 (3 days to get isolated)
+    # # the bounds values are 0.1 * k_IL and 0.9 * k_IL 
+    # (assuming the fraction of astymptomatic min/max is 0.1/0.9)
+    # start from (1-0.5) * k_IL
+    paramsToFit.add("k_IL", value=0.16666666666666666, min=0.033333, max=0.3, vary=True)
+    # we should have 1/k_IR = (1 / k_IL) + (1 / k_LR) so that 
+    # k_LR = 1 / 11.
+    # we might not vary this value but add a bit of variability with bounds between 1/9 and 1/13
+    paramsToFit.add("k_LR", value=0.09090909090909091, min=0.07692307692307693, max=0.1111111111111111, vary=True)
+    # I'm not sure what sense does it make for a rate of death
+    # we should have k_LD * f_d and k_LR * (1 - f_d)
+    # we assume fraction of death to rangebetween fd = 0.005 and 0.05
+    # and take k_LD = k_LR
+    # start from k_LD * 0.1
+    paramsToFit.add("k_LD", value=0.0009090909090909091, min=0.00045454545454545455, max=0.004545454545454546, vary=True)
     # fraction of infected in population I_c = alpha * I 
     paramsToFit.add("alpha", value=0.1, min=0.01, max=1, vary=True)
+    # fraction of asymptomatics f_as. Rate k_IR is multiplied by f_ar
+    # rate k_IL is multiplied by (1-f_as). 
+    # paramsToFit.add("f_as", value=0.1, min=0.01, max=1, vary=True)
+
     # initial values
-    paramsToFit.add("E_ini", value=400, min=1, max=4000, vary=True)
-    paramsToFit.add("I_ini", value=400, min=1, max=2000, vary=True)
-    paramsToFit.add("L_ini", value=400, min=1, max=1000, vary=True)
+    paramsToFit.add("E_ini", value=40, min=1, max=400, vary=True)
+    paramsToFit.add("I_ini", value=20, min=1, max=200, vary=True)
+    paramsToFit.add("L_ini", value=10, min=0, max=100, vary=True)
     
     return paramsToFit
 
@@ -393,9 +522,12 @@ def LaunchFit(paramsToFit, params, G):
     if (params["model_name"] == "RealSIRLDWellMixed"):
         mini = lmfit.Minimizer(
         FitFuncSIRLDOneComp, paramsToFit, fcn_args=(params, G))
-    elif (params["model_name"] == "RealSEIRLDWellMixed"):
+    elif (params["model_name"] == "RealSEIRLDWellMixed") and not(params['fit_with_ODEs']):
         mini = lmfit.Minimizer(
         FitFuncSEIRLDOneComp, paramsToFit, fcn_args=(params, G))    
+    elif (params["model_name"] == "RealSEIRLDWellMixed") and (params['fit_with_ODEs']):
+        mini = lmfit.Minimizer(
+        FitFuncSEIRLDOneCompODEs, paramsToFit, fcn_args=(params, G))    
     else: 
         print('[ERROR] : unknown model name: ',params["model_name"] ,' in LaunchFit function model ')
     
