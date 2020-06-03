@@ -50,17 +50,18 @@ def modelODEs_SIR(z, t, params):
     dxdt = [dSdt, dIdt, dRdt]
     return dxdt
 
-def modelODEs_SEIsIasHoQRD(z, t, params):
-    # order of states x = S, E, Is, I_as, Ho, Q, R, D
+def modelODEs_SEIsIasHoRadRD(z, t, params):
+    # order of states x = S, E, Is, I_as, Ho, R, Rad, D
     k_SE_rescaled = params['k_SE'] / params['total_population']
-    dSdt = - k_SE_rescaled * z[0] * (z[2] + z[3])
-    dEdt =   k_SE_rescaled * z[0] * (z[2] + z[3]) - params['k_EIs'] * z[1] - params['k_EIas'] * z[2]
-    dIasdt =   params['k_EIs'] * z[1] - params['k_IR'] * z[2] - params['k_IL'] * z[2]
-    dIsdt =   params['k_EIs'] * z[1] - params['k_IR'] * z[2] - params['k_IL'] * z[2]
-    dRdt =   params['k_IR'] * z[2] + params['k_LR'] * z[4]
-    dLdt =   params['k_IL'] * z[2] - params['k_LR'] * z[4] - params['k_LD'] * z[4]
-    dDdt =   params['k_LD'] * z[4]
-    dxdt = [dSdt, dEdt, dIdt, dRdt, dLdt, dDdt]
+    dSdt   = - k_SE_rescaled * z[0] * (z[2] + z[3])
+    dEdt   =   k_SE_rescaled * z[0] * (z[2] + z[3]) - params['k_EIs'] * z[1] - params['k_EIas'] * z[1]
+    dIsdt  =   params['k_EIs'] * z[1]  - params['k_IsR'] * z[2] - params['k_IsHo'] * z[2]
+    dIasdt =   params['k_EIas'] * z[1] - params['k_IasR'] * z[3]
+    dHodt  =   params['k_IsHo'] * z[2] - params['k_HoD'] * z[4] - params['k_HoRad'] * z[4]
+    dRdt   =   params['k_IsR'] * z[2] + params['k_IasR'] * z[3]
+    dRaddt =   params['k_HoRad'] * z[4]
+    dDdt   =   params['k_HoD'] * z[4]
+    dxdt   = [dSdt, dEdt, dIsdt, dIasdt, dHodt, dRdt, dRadt, dDdt]
     return dxdt
 
 def InitModelODEs(params, G):    
@@ -78,7 +79,10 @@ def LaunchModelODEs(params):
     elif (params["model_name"] == "RealSIRLDmodifiedWellMixed"):
         x = odeint(modelODEs_SIRLDmodified, params['x_ini'], params['time_ODEs'], args=(params,))
     elif (params["model_name"] == "SIRWellMixed"):
-        x = odeint(modelODEs_SIR, params['x_ini'], params['time_ODEs'], args=(params,))  
+        x = odeint(modelODEs_SIR, params['x_ini'], params['time_ODEs'], args=(params,))
+    elif (params["model_name"] == "RealSEIsIasHoRadRDWellMixed"):
+        x = odeint(modelODEs_SEIsIasHoRadRD, params['x_ini'], params['time_ODEs'], args=(params,))
+        
     # write as outputs from Master equation framework in models.py
     outputs = []
     for i in range(0,len(params['time_ODEs'])):
