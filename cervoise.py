@@ -76,7 +76,6 @@ def LoadRoads(road_names):
     ax.set_axis_off()
     plt.show()
 
-
 def InitParams(config_name):
     """
     in: config file name
@@ -131,8 +130,7 @@ def InitParams(config_name):
         params["k_IR"] = config.getfloat("model", "k_IR")
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
-        params["R_ini"] = config.getint("model", "R_ini")
-    
+        params["R_ini"] = config.getint("model", "R_ini")    
     elif params["model_name"] == "SIROnGraph":  # load parameters needed for this model
         # For now all parameters are the same wherever the region
         params["k_SI"] = config.getfloat("model", "k_SI")
@@ -140,7 +138,6 @@ def InitParams(config_name):
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
-    
     elif params["model_name"] == "SIRDWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
@@ -149,7 +146,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["D_ini"] = config.getint("model", "D_ini")
-    
     elif params["model_name"] == "SIRDOnGraph":  # load parameters needed for this model
         # For now all parameters are the same wherever the region
         params["k_SI"] = config.getfloat("model", "k_SI")
@@ -159,7 +155,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["D_ini"] = config.getint("model", "D_ini")
-    
     elif params["model_name"] == "SIRerlangWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
@@ -167,7 +162,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    
     elif params["model_name"] == "SIRerlang1WellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
@@ -175,7 +169,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")        
-    
     elif params["model_name"] == "SIRerlang2WellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
@@ -183,30 +176,25 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    
     elif params["model_name"] == "SIWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")        
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
-    
     elif params["model_name"] == "SIerlangWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")        
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    
     elif params["model_name"] == "SIerlangWellMixedModified":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")        
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    
     elif params["model_name"] == "SIerlangOtherWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")        
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    
     elif params["model_name"] == "SIAndIntermediateErlangWellMixed":  # load parameters needed for this model
         params["k_SL"] = config.getfloat("model", "k_SL")
         params["k_LI"] = config.getfloat("model", "k_LI")
@@ -214,7 +202,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["L_ini"] = config.getint("model", "L_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    
     elif params["model_name"] == "SIAndIntermediateErlangWellMixedModified":  # load parameters needed for this model
         params["k_SL"] = config.getfloat("model", "k_SL")
         params["k_LI"] = config.getfloat("model", "k_LI")
@@ -222,19 +209,16 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["L_ini"] = config.getint("model", "L_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-        
     elif params["model_name"] == "SIerlangFixSWellMixed":  # load parameters needed for this model    
         params["k_SI"] = config.getfloat("model", "k_SI")        
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    
     elif params["model_name"] == "SILinearErlangWellMixed":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")        
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")    
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")        
-    
     elif params["model_name"] == "SIRerlangOnGraph":  # load parameters needed for this model
         # For now all parameters are the same wherever the region
         params["k_SI"] = config.getfloat("model", "k_SI")
@@ -243,14 +227,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    elif params["model_name"] == "RealSIRDOnGraph":  # load parameters needed for this model
-        # For now all parameters are the same wherever the region: 
-        # fix R_0 per region and addapt k_IS accordingly to population
-        params["R_0"] = config.getfloat("model", "R_0")
-        params["k_IR"] = config.getfloat("model", "k_IR")        
-        params["k_ID"] = config.getfloat("model", "k_ID")
-        params["time_start_day"] = config.get("model", "time_start_day")
-    
     elif params["model_name"] == "RealSIRDWellMixed":  # load parameters needed for this model        
         # For now all parameters are the same wherever the region: 
         # fix R_0 per region and addapt k_IS accordingly to population
@@ -258,7 +234,6 @@ def InitParams(config_name):
         params["k_IR"] = config.getfloat("model", "k_IR")        
         params["k_ID"] = config.getfloat("model", "k_ID")
         params["time_start_day"] = config.get("model", "time_start_day")
-    
     elif params["model_name"] == "RealSIRLDWellMixed":  # load parameters needed for this model        
         params["k_SI"]  = config.getfloat("model", "k_SI")
         params["k_IR"]  = config.getfloat("model", "k_IR")        
@@ -269,7 +244,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["L_ini"] = config.getint("model", "L_ini")
-    
     elif params["model_name"] == "RealSIRLDmodifiedWellMixed":  # load parameters needed for this model        
         params["k_SI"]  = config.getfloat("model", "k_SI")
         params["k_IR"]  = config.getfloat("model", "k_IR")        
@@ -281,8 +255,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["L_ini"] = config.getint("model", "L_ini")
-    
-    
     elif params["model_name"] == "RealSEIRLDWellMixed":  # load parameters needed for this model        
         params["time_start_day"] = config.get("model", "time_start_day")
         params["k_SE"] = config.getfloat("model", "k_SE")
@@ -299,7 +271,58 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["L_ini"] = config.getint("model", "L_ini")
-    
+    elif params["model_name"] == "RealSEIRLDWellMixed":  # load parameters needed for this model        
+        params["time_start_day"] = config.get("model", "time_start_day")
+        params["k_SE"] = config.getfloat("model", "k_SE")
+        params["k_EI"] = config.getfloat("model", "k_EI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["k_IL"] = config.getfloat("model", "k_IL")
+        params["k_LR"] = config.getfloat("model", "k_LR")
+        params["k_LD"] = config.getfloat("model", "k_LD")
+        # fraction that relates confirmed and real infected
+        # I_confirmed = alpha * I
+        params["alpha"] = config.getfloat("model", "alpha")
+        # initial number of population
+        params["E_ini"] = config.getint("model", "E_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["L_ini"] = config.getint("model", "L_ini")
+    elif params["model_name"] == "RealSEIsIasHoRadRDWellMixed":  # load parameters needed for this model        
+        params["time_start_day"] = config.get("model", "time_start_day")
+        params["k_SE"] = config.getfloat("model", "k_SE")
+        params["k_EI"] = config.getfloat("model", "k_EI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["k_IL"] = config.getfloat("model", "k_IL")
+        params["k_LR"] = config.getfloat("model", "k_LR")
+        params["k_LD"] = config.getfloat("model", "k_LD")
+        params["k_LD"] = config.getfloat("model", "k_LD")
+        params["k_LD"] = config.getfloat("model", "k_LD")
+        params["k_LD"] = config.getfloat("model", "k_LD")
+        params["k_SE"]    = config.getfloat("model", "k_SE")
+        params["k_EIs"]   = config.getfloat("model", "k_EIs") 
+        params["k_EIas"]  = config.getfloat("model", "k_EIas") 
+        params["k_IsR"]   = config.getfloat("model", "k_IsR") 
+        params["k_IsHo"]  = config.getfloat("model", "k_IsHo") 
+        params["k_IasR"]  = config.getfloat("model", "k_IasR") 
+        params["k_HoRad"] = config.getfloat("model", "k_HoRad") 
+        params["k_HoD"]   = config.getfloat("model", "k_HoD") 
+
+        # initial number of population
+        params["S_ini"]   = config.getint("model", "S_ini")
+        params["E_ini"]   = config.getint("model", "E_ini")
+        params["Is_ini"]  = config.getint("model", "Is_ini")
+        params["Ias_ini"] = config.getint("model", "Ias_ini")
+        params["Ho_ini"]  = config.getint("model", "Ho_ini")
+        params["R_ini"]   = config.getint("model", "R_ini")
+        params["Rad_ini"] = config.getint("model", "Rad_ini")
+        params["D_ini"]   = config.getint("model", "D_ini")
+    elif params["model_name"] == "RealSIRDOnGraph":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region: 
+        # fix R_0 per region and addapt k_IS accordingly to population
+        params["R_0"] = config.getfloat("model", "R_0")
+        params["k_IR"] = config.getfloat("model", "k_IR")        
+        params["k_ID"] = config.getfloat("model", "k_ID")
+        params["time_start_day"] = config.get("model", "time_start_day")    
     elif params["model_name"] == "RealSEIRLDOnGraphInitTEST":  # load parameters needed for this model        
         params["time_start_day"] = config.get("model", "time_start_day")
         params["k_SE"] = config.getfloat("model", "k_SE")
@@ -315,7 +338,6 @@ def InitParams(config_name):
         params["E_ini"] = config.getint("model", "E_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["L_ini"] = config.getint("model", "L_ini")
-    
     elif params["model_name"] == "SIRWellMixedAgentBased":  # load parameters needed for this model
         params["k_SI"] = config.getfloat("model", "k_SI")
         params["k_IR"] = config.getfloat("model", "k_IR")
@@ -346,7 +368,6 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")
-    
     else:
         print("[ERROR]: model name: ",params['model_name']," not found. Exit here.")
         exit(0)        
@@ -378,7 +399,6 @@ def InitParams(config_name):
     params["save_frequency"] = config.getint("outputs", "save_frequency")
 
     return params
-
 
 def InitGraph(params):
     print("InitGraph")
@@ -607,7 +627,6 @@ def InitGraph(params):
     # plt.show()    
     
     return G
-
 
 def LaunchModel(params, graph):
     """
