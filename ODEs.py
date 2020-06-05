@@ -54,14 +54,14 @@ def modelODEs_SEIsIasHoRadRD(z, t, params):
     # order of states x = S, E, Is, I_as, Ho, R, Rad, D
     k_SE_rescaled = params['k_SE'] / params['total_population']
     dSdt   = - k_SE_rescaled * z[0] * (z[2] + z[3])
-    dEdt   =   k_SE_rescaled * z[0] * (z[2] + z[3]) - params['k_EIs'] * z[1] - params['k_EIas'] * z[1]
-    dIsdt  =   params['k_EIs'] * z[1]  - params['k_IsR'] * z[2] - params['k_IsHo'] * z[2]
-    dIasdt =   params['k_EIas'] * z[1] - params['k_IasR'] * z[3]
-    dHodt  =   params['k_IsHo'] * z[2] - params['k_HoD'] * z[4] - params['k_HoRad'] * z[4]
-    dRdt   =   params['k_IsR'] * z[2] + params['k_IasR'] * z[3]
+    dEdt   =   k_SE_rescaled * z[0] * (z[2] + z[3]) - params['k_EIas'] * z[1] - params['k_EIs'] * z[1]
+    dIasdt =   params['k_EIas'] * z[1] - params['k_IasR'] * z[2]
+    dIsdt  =   params['k_EIs'] * z[1]  - params['k_IsR'] * z[3] - params['k_IsHo'] * z[3]
+    dHodt  =   params['k_IsHo'] * z[3] - params['k_HoD'] * z[4] - params['k_HoRad'] * z[4]
+    dRdt   =   params['k_IsR'] * z[3] + params['k_IasR'] * z[2]
     dRaddt =   params['k_HoRad'] * z[4]
     dDdt   =   params['k_HoD'] * z[4]
-    dxdt   = [dSdt, dEdt, dIsdt, dIasdt, dHodt, dRdt, dRadt, dDdt]
+    dxdt   = [dSdt, dEdt, dIasdt, dIsdt, dHodt, dRdt, dRaddt, dDdt]
     return dxdt
 
 def InitModelODEs(params, G):    

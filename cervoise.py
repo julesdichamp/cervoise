@@ -288,16 +288,7 @@ def InitParams(config_name):
         params["R_ini"] = config.getint("model", "R_ini")
         params["L_ini"] = config.getint("model", "L_ini")
     elif params["model_name"] == "RealSEIsIasHoRadRDWellMixed":  # load parameters needed for this model        
-        params["time_start_day"] = config.get("model", "time_start_day")
-        params["k_SE"] = config.getfloat("model", "k_SE")
-        params["k_EI"] = config.getfloat("model", "k_EI")
-        params["k_IR"] = config.getfloat("model", "k_IR")
-        params["k_IL"] = config.getfloat("model", "k_IL")
-        params["k_LR"] = config.getfloat("model", "k_LR")
-        params["k_LD"] = config.getfloat("model", "k_LD")
-        params["k_LD"] = config.getfloat("model", "k_LD")
-        params["k_LD"] = config.getfloat("model", "k_LD")
-        params["k_LD"] = config.getfloat("model", "k_LD")
+        params["time_start_day"] = config.get("model", "time_start_day")       
         params["k_SE"]    = config.getfloat("model", "k_SE")
         params["k_EIs"]   = config.getfloat("model", "k_EIs") 
         params["k_EIas"]  = config.getfloat("model", "k_EIas") 
@@ -306,7 +297,6 @@ def InitParams(config_name):
         params["k_IasR"]  = config.getfloat("model", "k_IasR") 
         params["k_HoRad"] = config.getfloat("model", "k_HoRad") 
         params["k_HoD"]   = config.getfloat("model", "k_HoD") 
-
         # initial number of population
         params["S_ini"]   = config.getint("model", "S_ini")
         params["E_ini"]   = config.getint("model", "E_ini")
@@ -684,6 +674,14 @@ def LaunchModel(params, graph):
         dates_to_plot = params['dates_for_fit'].copy()
         dates_to_plot.insert(0, params['time_start_day'])
         plotDataAndSEIRLDResults(params, graph,outputs, dates_to_plot)    
+    elif params["model_name"] == "RealSEIsIasHoRadRDWellMixed":
+        outputs = SolveOneCompartment(params)
+        dates_to_plot = []
+        # copy list otherwize references are copied... and it messes up
+        # with params['dates_for_fit'] list later on (e.g. on the fit function)
+        dates_to_plot = params['dates_for_fit'].copy()
+        dates_to_plot.insert(0, params['time_start_day'])
+        plotDataAndRealSEIsIasHoRadRDWellMixedResults(params, graph,outputs, dates_to_plot)        
     elif params["model_name"] == "SIROnGraph":
         outputs, graph = SolveOnGraph(params, graph)
         plot_SIROnGraph(params, outputs, graph)
@@ -748,6 +746,9 @@ else:
         params["franceFileExist"] = True
         G = InitGraph(params)
 
+# plot france data 
+#TODO: kind of useless now or it should be adapted later
+# to deal with new data
 if ("PlotData" in params['plot_options']):
     dates_to_plot = []
     # copy list otherwize references are copied... and it messes up
@@ -758,14 +759,18 @@ if ("PlotData" in params['plot_options']):
     for _date in params['dates_for_fit']:
         print ('data at ' , _date , ' = ' , params['total_covid_data'][_date])
     plotDataFrance(params, G, dates_to_plot)    
-    
+
+# launch fit procedure 
+# TODO: save df to some format or do something with it later on
 if (params['fit_model']):
     print("Start fitting procedure, Inch'Allah...")
     paramsToFit = InitFit(params)     
     params['num_iter_fit'] = 0 # intialize number of iteration
     df = LaunchFit(paramsToFit, params, G)    
     
-# either read from results outputs.txt
+# reads params and outputs from previously generated files
+# params.txt and outputs.txt located in direcotry params['outputs_dir']
+# so far only work for specific models
 if ("PlotResults" in params['plot_options']):
     if (params["model_name"] == "RealSEIRLDOnGraphInitTEST"):
         _dir=params['outputs_dir']
@@ -786,6 +791,9 @@ if ("PlotResults" in params['plot_options']):
     else:
         print('[ERROR]: can not plot model ' , params["model_name"],  ' yet. Exit here')
         exit(0)
+# launch model either with odes or not
+# in case of ODEs only specific models are available
+# for old tests with R0 dynamic
 else:
     if (params['fit_with_ODEs']):
         params , G = InitModelODEs(params, G)

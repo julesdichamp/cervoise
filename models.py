@@ -1445,7 +1445,6 @@ def InitModels(params, G):
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
 
-
     """
     SEIRLD model: S: susceptible, E: exposed (was in contact with infectious 
     but not yet infectious, I: infectious, R: recovered, L: isolated, D: Deaths
@@ -1551,6 +1550,102 @@ def InitModels(params, G):
         k_plus = np.array([k_SE / N_pop, k_EI, k_IR, k_IL, k_LR, k_LD])
         x_ini = np.array([S, E, I, R, L, D])
         # print("k_plus = ", k_plus)
+        params['k_plus'] = k_plus
+        params['x_ini'] = x_ini
+
+    """
+    RealSEIsIasHoRadRDWellMixed model: S: susceptible, E: exposed (was in contact with infectious 
+    but not yet infectious, Is: infectious symptomatic, Ias: infectious asymptomatic, Ho: hospitalized
+    R: recovered, Rad: back to home (after hospitalization), D: Deaths
+    Reactions are:
+    S + Ias --> E + Ias
+    S + Is --> E + Is
+    E --> Ias
+    E --> Is
+    Ias --> R
+    Is --> R
+    Is --> Ho
+    Ho --> Rad
+    Ho --> D
+    """
+    if (params["model_name"] == "RealSEIsIasHoRadRDWellMixed"):
+        # load initial state, and reactions values
+        k_SE    = params["k_SE"]
+        k_EIs   = params["k_EIs"]
+        k_EIas  = params["k_EIas"]
+        k_IsR   = params["k_IsR"]
+        k_IsHo  = params["k_IsHo"]
+        k_IasR  = params["k_IasR"]
+        k_HoRad = params["k_HoRad"]
+        k_HoD   = params["k_HoD"]
+        
+        # indices S = 0, E = 1, I_as = 2, I_s = 3, Ho = 4, R = 5, Rad = 6, D = 7
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 9
+        nbStates = 8
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # 1st reaction: S + Ias --> E + Ias
+        N[0,0] = 1 ; M[1,0] = 1
+        N[2,0] = 1 ; M[2,0] = 1
+        # 2nd reaction: S + Is --> E + Is
+        N[0,1] = 1 ; M[1,1] = 1
+        N[3,1] = 1 ; M[3,1] = 1
+        # 3rd reaction: E --> Ias
+        N[1,2] = 1 ; M[2,2] = 1        
+        # 4th reaction: E --> Is
+        N[1,3] = 1 ; M[3,3] = 1        
+        # 5th reaction: Ias --> R
+        N[2,4] = 1 ; M[5,4] = 1
+        # 6th reaction: Is --> R
+        N[3,5] = 1 ; M[5,5] = 1
+        # 7th reaction: Is --> Ho
+        N[3,6] = 1 ; M[4,6] = 1
+        # 8th reaction: Ho --> Rad
+        N[4,7] = 1 ; M[6,7] = 1
+        # 9th reaction: Ho --> D
+        N[4,8] = 1 ; M[7,8] = 1
+        R = M - N
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+        
+        print("N_matrix = \n" , N)
+        print("M_matrix = \n" , M)
+        print("R_matrix = \n" , R)
+        
+        dic_data_covid = nx.get_node_attributes(G, name='data_covid')
+        dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+        dic_simu_total_pop = copy.deepcopy(dic_total_pop)
+        dic_simu_data_covid = copy.deepcopy(dic_data_covid)
+        S = 0 ; E = 0 ; Ias = 0 ; Is = 0 ; Ho = 0; R = 0; Rad = 0; D = 0;
+        N_pop = 0
+        # get data for entire france
+        for n in G.nodes():
+            D += dic_simu_data_covid[n][params["time_start_day"]]['Deaths']
+            # R_pop += dic_simu_data_covid[n][params["time_start_day"]]['Recovered']
+            N_pop += dic_simu_total_pop[n]
+            
+            #TODO: add data from hospital 
+            Ho = 1
+            Rad = 2
+            D = 3
+        params['total_population'] = N_pop # sueful as some point for rescale and stuff
+        E = params['E_ini']
+        Ias = params['Ias_ini']
+        Is = params['Is_ini']        
+        R = params['R_ini']
+        S = N_pop - E - Ias - Is - Ho - R - Rad - D
+                
+        k_plus = np.array([k_SE / N_pop, k_SE / N_pop, k_EIas, k_EIs, k_IasR, k_IsR, k_IsHo, k_HoRad, k_HoD])
+        x_ini = np.array([S, E, Ias, Is, Ho, R, Rad, D])
+        
         params['k_plus'] = k_plus
         params['x_ini'] = x_ini
 
