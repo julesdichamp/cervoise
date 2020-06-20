@@ -410,6 +410,7 @@ def InitGraph(params):
     if (params['graph_type'] == 'regions') or (params['graph_type'] == 'departments'):
         dic_total_population = {}
         dic_data_covid = {}
+        dic_data_hosp = {}
         dic_positions = {}
         dic_names = {}
         dic_areas = {}        
@@ -423,13 +424,16 @@ def InitGraph(params):
                     G.add_node(id_node)                    
                     # add data on node_attributes, for now:
                     # - Total population
-                    # - Confirmed cases
-                    # - Deaths
-                    # - Position
+                    # - Confirmed cases (old source)
+                    # - Deaths (old source)
+                    # - Recovered (old source)
+                    # - Hospital data
+                    # - Position 
                     # - Area
                     dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
                     dic_data_covid[id_node] = franceGeom[key]['data_covid']
-
+                    dic_data_hosp[id_node] = franceGeom[key]['data_hosp']
+                    print(id_node, key, dic_data_hosp[id_node])
                     centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
                     dic_positions[id_node] = centroid                    
                     dic_names[id_node] = key
@@ -455,7 +459,8 @@ def InitGraph(params):
                 # - Area
                 dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
                 dic_data_covid[id_node] = franceGeom[key]['data_covid']
-
+                dic_data_hosp[id_node] = franceGeom[key]['data_hosp']
+                
                 centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
                 dic_positions[id_node] = centroid
                 dic_names[id_node] = key
@@ -478,6 +483,7 @@ def InitGraph(params):
         nx.set_node_attributes(G, name='names', values=dic_names)
         nx.set_node_attributes(G, name='total_pop', values=dic_total_population)
         nx.set_node_attributes(G, name='data_covid', values=dic_data_covid)
+        nx.set_node_attributes(G, name='data_hosp', values=dic_data_hosp)
         nx.set_node_attributes(G, name='areas', values=dic_areas)        
         
         if (params['location'] == 'metropole'):
@@ -535,6 +541,7 @@ def InitGraph(params):
     elif (params['graph_type'] == 'fullConnectedRegions') or (params['graph_type'] == 'fullConnectedDepartments'):
         dic_total_population = {}
         dic_data_covid = {}
+        dic_data_hosp = {}        
         dic_positions = {}
         dic_names = {}
         # add nodes to the graph
@@ -551,6 +558,7 @@ def InitGraph(params):
             # - Area
             dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
             dic_data_covid[id_node] = franceGeom[key]['data_covid']
+            dic_data_hosp[id_node] = franceGeom[key]['dic_data_hosp']
             centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
             dic_positions[id_node] = centroid
             dic_names[id_node] = key
@@ -572,6 +580,7 @@ def InitGraph(params):
         nx.set_node_attributes(G, name='names', values=dic_names)
         nx.set_node_attributes(G, name='total_pop', values=dic_total_population)
         nx.set_node_attributes(G, name='data_covid', values=dic_data_covid)
+        nx.set_node_attributes(G, name='data_hosp', values=dic_data_hosp)
         nx.set_node_attributes(G, name='areas', values=dic_areas)
 
         # add edges of graph: all regions are connected to every other region
@@ -768,6 +777,16 @@ if (params['fit_model']):
     params['num_iter_fit'] = 0 # intialize number of iteration
     df = LaunchFit(paramsToFit, params, G)    
     
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+
 # reads params and outputs from previously generated files
 # params.txt and outputs.txt located in direcotry params['outputs_dir']
 # so far only work for specific models
@@ -791,6 +810,7 @@ if ("PlotResults" in params['plot_options']):
     else:
         print('[ERROR]: can not plot model ' , params["model_name"],  ' yet. Exit here')
         exit(0)
+
 # launch model either with odes or not
 # in case of ODEs only specific models are available
 # for old tests with R0 dynamic

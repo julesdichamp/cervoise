@@ -447,6 +447,120 @@ def FitFuncSEIRLDOneCompODEs(paramsToFit, params, G):
 
     return fitness_L2_square
 
+def FitFuncRealSEIsIasHoRadRDOneCompODEs(paramsToFit, params, G): 
+    """
+    Fit function for the model 'RealSEIsIasHoRadRDOneCompODEs'
+    that uses hospital data
+    TODO: use real measured data when it is added to the franceGeom.txt
+    """
+    
+    print('FitFuncRealSEIsIasHoRadRDOneCompODEs')
+    # add parameters to fit into (that will be varied every call to the fitfunction)
+    # to the dictionnary that contains all parameters        
+    params["k_SE"]    = float(paramsToFit["k_SE"])
+    params["k_EIs"]   = float(paramsToFit["k_EIs"])
+    params["k_EIas"]  = float(paramsToFit["k_EIas"])
+    params["k_IsR"]   = float(paramsToFit["k_IsR"])
+    params["k_IsHo"]  = float(paramsToFit["k_IsHo"])
+    params["k_IasR"]  = float(paramsToFit["k_IasR"])
+    params["k_HoRad"] = float(paramsToFit["k_HoRad"])
+    params["k_HoD"]   = float(paramsToFit["k_HoD"])
+    
+    params["E_ini"] = int(paramsToFit["E_ini"])
+    params["Ias_ini"] = int(paramsToFit["Ias_ini"])
+    params["Is_ini"] = int(paramsToFit["Is_ini"])
+    params["R_ini"] = int(paramsToFit["R_ini"])
+    
+    print("k_SE = " , params["k_SE"])
+    print("k_EIs = " , params["k_EIs"])
+    print("k_EIas = " , params["k_EIas"])
+    print("k_IsR = " , params["k_IsR"])
+    print("k_IsHo = " , params["k_IsHo"])
+    print("k_IasR = " , params["k_IasR"])
+    print("k_HoRad = " ,params["k_HoRad"])    
+    print("k_HoD = " ,params["k_HoD"])
+    print("E_ini = " , params['E_ini'])
+    print("Ias_ini = " , params['Ias_ini'])
+    print("Is_ini = " , params['Is_ini'])
+    print("R_ini = " , params['R_ini'])
+        
+    # transform to datetime format
+    dates = [datetime.datetime.strptime(ts, "%Y-%m-%d") for ts in params["dates_for_fit"]] 
+    time_start_date = datetime.datetime.strptime(params['time_start_day'], "%Y-%m-%d")        
+    nbDates=len(params["dates_for_fit"])    
+        
+    # fill vector with relative increase from one date to the other    
+    # dates[0] should NOT be the same than time_start_date otherwise 
+    # delta_days[0] = 0 and the first fit data point is the intial values...
+    # dates bmust be sorted in params['dates_for_fit']    
+    delta_days = []
+    delta_days.append((dates[0] - time_start_date).days) # transform to number of days
+    for i in range(1,nbDates):
+        delta_days.append((dates[i] - dates[i-1]).days) # transform to number of days
+    
+    # time_end must verify time_end = time_start + sum(delta_days)
+    if params['time_end'] != params['time_start'] + sum(delta_days):        
+        params['time_end'] = params['time_start'] + sum(delta_days)
+        print("new time_end = " , params['time_end'])
+    
+    # init model and solve
+    [params , G] = InitModelODEs(params, G)
+    outputs = LaunchModelODEs(params)
+    nbTimes = len(outputs)
+    fitness = np.zeros(3 * nbDates)
+    time_date_target = params['time_start'] + delta_days[0]    
+    # get all data we need    
+    dic_data_hosp = nx.get_node_attributes(G, name='data_hosp')    
+    dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+    
+    # get total population
+    N_pop = 0 
+    for n in G.nodes():
+        N_pop += dic_total_pop[n] 
+    
+    # loop over time steps to get simu results and compute fit function
+    x = np.zeros([nbTimes,params['nbStates']])
+    _time = np.zeros(nbTimes)
+    _count = 0
+    for i in range(0,nbTimes):        
+        mytime = outputs[i][0]        
+        _time[i] = mytime
+        x[i,:] = outputs[i][1]
+        Ho = x[i,4]
+        Rad = x[i,6]
+        D = x[i,7]
+        # not sure of what precision to take
+        if (abs(mytime - time_date_target) <= 0.01) :
+            # print('[TARGET FOUND]: mytime, date_target = ' , mytime, time_date_target)
+            total_hospitalized = 0
+            total_rad = 0
+            total_deaths    = 0            
+            for n in G.nodes():
+                # Infected       
+                total_hospitalized += dic_data_hosp[n]['data_covid'][params["dates_for_fit"][_count]]['Hosp']
+                total_rad += dic_data_hosp[n]['data_covid'][params["dates_for_fit"][_count]]['Rad']
+                total_deaths    += dic_data_hosp[n]['data_covid'][params["dates_for_fit"][_count]]['Deaths']                            
+                                    
+            fitness[_count + 0] = (total_hospitalized - Ho)            
+            fitness[_count + 1] = (total_rad          - Rad)
+            fitness[_count + 2] = (total_deaths       - D)
+            
+            # get new date to target
+            time_date_target = time_date_target + delta_days[_count]
+            _count += 1
+            # exist loop if we got all data we need
+            if (_count == nbDates):
+                break;
+            
+    if not(_count == nbDates):
+        print("[ERROR] : we didn't find all dates in model to compute fitness function.")
+        exit(0)
+    params['num_iter_fit'] += 1
+    fitness_L2_square = norm(fitness, ord=2) ** 2
+    print("num_iter_fit, fitness value = ", params['num_iter_fit'], fitness_L2_square)
+
+    return fitness_L2_square
+
 def InitFitSIRLD():
     print('InitFitSIRLD')
     paramsToFit = lmfit.Parameters()    
@@ -509,13 +623,37 @@ def InitFitSEIRLD():
     
     return paramsToFit
 
+def InitFitRealSEIsIasHoRadRDWellMixed():
+    print('InitFitRealSEIsIasHoRadRDWellMixed')
+    paramsToFit = lmfit.Parameters()    
+    # --- set parameters that need to be fitted
+    # --- kinetic parameters  
+    # we actually set k_SE_tilde = k_SE * N. in InitModels k_SE is divided by N    
+    paramsToFit.add("k_SE"   , value=0.67063703, min=0.011, max=10, vary=True)
+    paramsToFit.add("k_EIas" , value=0.33333333, min=0.01, max=1, vary=True)
+    paramsToFit.add("k_EIs"  , value=0.33333333, min=0.01, max=1, vary=True)
+    paramsToFit.add("k_IasR" , value=0.07      , min=0.001, max=1, vary=True)
+    paramsToFit.add("k_IsR"  , value=0.07      , min=0.0001, max=1, vary=True)
+    paramsToFit.add("k_IsHo" , value=0.07      , min=0.0001, max=1, vary=True)
+    paramsToFit.add("k_HoRad", value=0.07      , min=0.0001, max=1, vary=True)
+    paramsToFit.add("k_HoD"  , value=0.03      , min=0.0001, max=1, vary=True)
+    # --- initial values
+    paramsToFit.add("E_ini", value=40, min=1, max=400, vary=True)
+    paramsToFit.add("Ias_ini", value=20, min=1, max=200, vary=True)
+    paramsToFit.add("Is_ini", value=20, min=1, max=200, vary=True)
+    paramsToFit.add("R_ini", value=10, min=0, max=100, vary=True)    
+
+    return paramsToFit
+
 def InitFit(params):
     print('InitFit')
-    paramsToFit = lmfit.Parameters()    
+    paramsToFit = lmfit.Parameters()
     if (params["model_name"] == "RealSIRLDWellMixed"):
         paramsToFit = InitFitSIRLD()
     elif (params["model_name"] == "RealSEIRLDWellMixed"):
         paramsToFit = InitFitSEIRLD()
+    elif (params["model_name"] == "RealSEIsIasHoRadRDWellMixed"):
+        paramsToFit = InitFitRealSEIsIasHoRadRDWellMixed()
     else: 
         print('[ERROR] : unknown model name: ',params["model_name"] ,' in InitFit function model ')
     
@@ -533,6 +671,9 @@ def LaunchFit(paramsToFit, params, G):
     elif (params["model_name"] == "RealSEIRLDWellMixed") and (params['fit_with_ODEs']):
         mini = lmfit.Minimizer(
         FitFuncSEIRLDOneCompODEs, paramsToFit, fcn_args=(params, G))    
+    elif (params["model_name"] == "RealSEIsIasHoRadRDWellMixed") and (params['fit_with_ODEs']):
+        mini = lmfit.Minimizer(
+        FitFuncRealSEIsIasHoRadRDOneCompODEs, paramsToFit, fcn_args=(params, G))
     else: 
         print('[ERROR] : unknown model name: ',params["model_name"] ,' in LaunchFit function model ')
     
