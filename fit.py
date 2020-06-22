@@ -629,19 +629,19 @@ def InitFitRealSEIsIasHoRadRDWellMixed():
     # --- set parameters that need to be fitted
     # --- kinetic parameters  
     # we actually set k_SE_tilde = k_SE * N. in InitModels k_SE is divided by N    
-    paramsToFit.add("k_SE"   , value=0.67063703, min=0.011, max=10, vary=True)
-    paramsToFit.add("k_EIas" , value=0.33333333, min=0.01, max=1, vary=True)
-    paramsToFit.add("k_EIs"  , value=0.33333333, min=0.01, max=1, vary=True)
-    paramsToFit.add("k_IasR" , value=0.07      , min=0.001, max=1, vary=True)
-    paramsToFit.add("k_IsR"  , value=0.07      , min=0.0001, max=1, vary=True)
-    paramsToFit.add("k_IsHo" , value=0.07      , min=0.0001, max=1, vary=True)
-    paramsToFit.add("k_HoRad", value=0.07      , min=0.0001, max=1, vary=True)
-    paramsToFit.add("k_HoD"  , value=0.03      , min=0.0001, max=1, vary=True)
+    paramsToFit.add("k_SE"   , value=0.67063703, min=0.0001, max=10, vary=True)
+    paramsToFit.add("k_EIas" , value=0.33333333, min=0.0001, max=10, vary=True)
+    paramsToFit.add("k_EIs"  , value=0.33333333, min=0.0001, max=10, vary=True)
+    paramsToFit.add("k_IasR" , value=0.07      , min=0.0001, max=10, vary=True)
+    paramsToFit.add("k_IsR"  , value=0.07      , min=0.0001, max=10, vary=True)
+    paramsToFit.add("k_IsHo" , value=0.07      , min=0.0001, max=10, vary=True)
+    paramsToFit.add("k_HoRad", value=0.07      , min=0.0001, max=10, vary=True)
+    paramsToFit.add("k_HoD"  , value=0.03      , min=0.0001, max=10, vary=True)
     # --- initial values
-    paramsToFit.add("E_ini", value=40, min=1, max=400, vary=True)
-    paramsToFit.add("Ias_ini", value=20, min=1, max=200, vary=True)
-    paramsToFit.add("Is_ini", value=20, min=1, max=200, vary=True)
-    paramsToFit.add("R_ini", value=10, min=0, max=100, vary=True)    
+    paramsToFit.add("E_ini", value=40, min=1, max=100000, vary=True)
+    paramsToFit.add("Ias_ini", value=20, min=1, max=100000, vary=True)
+    paramsToFit.add("Is_ini", value=20, min=1, max=100000, vary=True)
+    paramsToFit.add("R_ini", value=10, min=1, max=100000, vary=True)    
 
     return paramsToFit
 

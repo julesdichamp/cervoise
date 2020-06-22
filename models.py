@@ -1634,10 +1634,6 @@ def InitModels(params, G):
             Rad += dic_simu_data_hosp[n]['data_covid'][params["time_start_day"]]['Rad']
             N_pop += dic_simu_total_pop[n]
             
-            #TODO: add data from hospital 
-            Ho = 1
-            Rad = 2
-            D = 3
         params['total_population'] = N_pop # sueful as some point for rescale and stuff
         E = params['E_ini']
         Ias = params['Ias_ini']

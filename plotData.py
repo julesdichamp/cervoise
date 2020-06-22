@@ -4,6 +4,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import pylab
 import networkx as nx
 from itertools import count
 import copy
@@ -313,6 +314,104 @@ def plotDataAndSIRLDmodidifedResults(params, G, outputs, days_to_plot):
     plt.show()
 
 
+def plotDataAndRealSEIsIasHoRadRDWellMixed(params, G, outputs, days_to_plot):
+    """
+    plot hospital data and model results
+    """    
+    dic_data_hosp = nx.get_node_attributes(G, name='data_hosp')
+    total_Deaths = []
+    total_Rad = []
+    total_Hosp = []
+    i=0
+    for _date in days_to_plot:
+        sum_deaths = 0
+        sum_hosp = 0
+        sum_rad = 0
+        
+        for n in G.nodes():
+            # print('dic_data_hosp.keys() = ' , dic_data_hosp[n]['data_covid'].keys())
+            sum_deaths += dic_data_hosp[n]['data_covid'][_date]['Deaths']
+            sum_hosp   += dic_data_hosp[n]['data_covid'][_date]['Hosp']
+            sum_rad    += dic_data_hosp[n]['data_covid'][_date]['Rad']
+        total_Deaths.append(sum_deaths)
+        total_Hosp.append(sum_hosp)
+        total_Rad.append(sum_rad)        
+        print('date, deaths = ' , _date, total_Deaths[i])
+        i+=1
+    
+    # plot data
+    x_pos = np.arange(0, len(days_to_plot))    
+    fig = plt.figure('Deaths', figsize=(16, 10))   
+    p_deaths = plt.plot(x_pos, total_Deaths, linestyle=None, marker='o', label='data')
+    plt.xticks(x_pos, days_to_plot, rotation='vertical')
+    fig.tight_layout()
+    fig = plt.figure('Rad', figsize=(16, 10))
+    p_rad= plt.plot(x_pos, total_Rad, linestyle=None, marker='o', label='data')
+    plt.xticks(x_pos, days_to_plot, rotation='vertical')
+    fig.tight_layout()
+    fig = plt.figure('Hosp', figsize=(16, 10))
+    p_hosp = plt.plot(x_pos, total_Hosp, linestyle=None, marker='o', label='data')
+    plt.xticks(x_pos, days_to_plot, rotation='vertical')
+    fig.tight_layout()
+    
+    # get total population for rescale of k_SEs
+    dic_total_pop  = nx.get_node_attributes(G, name='total_pop')
+    dic_simu_total_pop = copy.deepcopy(dic_total_pop)
+    N_pop = 0
+    for n in G.nodes():            
+        N_pop += dic_simu_total_pop[n]
+            
+    nbTimes = len(outputs)    
+    x = np.zeros([nbTimes,params['nbStates']])
+    _time = np.zeros(nbTimes)    
+    for i in range(0,nbTimes):
+        _time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]
+    
+    print(x[0,:])
+    print(x[-1,:])
+    # #x_ini = np.array([S, E, Ias, Is, Ho, R, Rad, D])
+    plt.figure('Deaths', figsize=(16, 10))
+    p_deaths = plt.plot(_time, x[:,7], linestyle='-', label='model')  
+    plt.ylabel('Deaths')  
+    plt.figure('Rad', figsize=(16, 10))
+    p_rad = plt.plot(_time, x[:,6], linestyle='-', label='model')
+    plt.ylabel('Rad')
+    plt.figure('Hosp', figsize=(16, 10))
+    p_hosp = plt.plot(_time, x[:,4], linestyle='-', label='model')    
+    plt.ylabel('Hospitalizations')
+    
+    plt.figure('AllStates', figsize=(16, 10))
+    states = ['Susceptible', 'Exposed', 'Infectious asymptomatic', 'Infectious symptomatic', 'Hospitalized', 'Recovered', 'Back to home', 'Dead']
+    for i in range(1,params['nbStates']): # do not plot susceptibles
+        _label = states[i]        
+        # if (i==2) or (i==3) or (i==4) or (i==6) or (i==7):
+            # p_all_states = plt.plot(_time, x[:,i], label=_label)
+        p_all_states = plt.plot(_time, x[:,i], label=_label)
+    
+    plt.xlabel('Time (days)')
+    plt.ylabel('Population numbers')
+    plt.yscale('log')
+    plt.legend()
+    # plt.show()
+    # exit(0)
+    # save
+    plt.figure('Deaths', figsize=(16, 10))
+    string_for_savefig = 'Deaths'
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    
+    plt.figure('Rad', figsize=(16, 10))
+    string_for_savefig = 'Rad'
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')    
+    
+    plt.figure('Hosp', figsize=(16, 10))
+    string_for_savefig = 'Hosp'
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    
+    plt.figure('AllStates', figsize=(16, 10))
+    string_for_savefig = 'All_states'
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    
 def plotDataAndSEIRLDOnGraphResults(params, G, outputs, days_to_plot):
     """
     plot W_c(t) = total number of confirmed at time t

@@ -298,14 +298,14 @@ def InitParams(config_name):
         params["k_HoRad"] = config.getfloat("model", "k_HoRad") 
         params["k_HoD"]   = config.getfloat("model", "k_HoD") 
         # initial number of population
-        params["S_ini"]   = config.getint("model", "S_ini")
+        # params["S_ini"]   = config.getint("model", "S_ini")
         params["E_ini"]   = config.getint("model", "E_ini")
         params["Is_ini"]  = config.getint("model", "Is_ini")
         params["Ias_ini"] = config.getint("model", "Ias_ini")
-        params["Ho_ini"]  = config.getint("model", "Ho_ini")
+        # params["Ho_ini"]  = config.getint("model", "Ho_ini")
         params["R_ini"]   = config.getint("model", "R_ini")
-        params["Rad_ini"] = config.getint("model", "Rad_ini")
-        params["D_ini"]   = config.getint("model", "D_ini")
+        # params["Rad_ini"] = config.getint("model", "Rad_ini")
+        # params["D_ini"]   = config.getint("model", "D_ini")
     elif params["model_name"] == "RealSIRDOnGraph":  # load parameters needed for this model
         # For now all parameters are the same wherever the region: 
         # fix R_0 per region and addapt k_IS accordingly to population
@@ -460,7 +460,8 @@ def InitGraph(params):
                 dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
                 dic_data_covid[id_node] = franceGeom[key]['data_covid']
                 dic_data_hosp[id_node] = franceGeom[key]['data_hosp']
-                
+                print(id_node, key, dic_data_hosp[id_node])
+
                 centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
                 dic_positions[id_node] = centroid
                 dic_names[id_node] = key
@@ -690,7 +691,7 @@ def LaunchModel(params, graph):
         # with params['dates_for_fit'] list later on (e.g. on the fit function)
         dates_to_plot = params['dates_for_fit'].copy()
         dates_to_plot.insert(0, params['time_start_day'])
-        plotDataAndRealSEIsIasHoRadRDWellMixedResults(params, graph,outputs, dates_to_plot)        
+        plotDataAndRealSEIsIasHoRadRDWellMixed(params, graph,outputs, dates_to_plot)        
     elif params["model_name"] == "SIROnGraph":
         outputs, graph = SolveOnGraph(params, graph)
         plot_SIROnGraph(params, outputs, graph)
@@ -777,15 +778,7 @@ if (params['fit_model']):
     params['num_iter_fit'] = 0 # intialize number of iteration
     df = LaunchFit(paramsToFit, params, G)    
     
-    # save outputs
-    f = open(params['outputs_dir']+'/outputs.txt',"w")
-    f.write(str(outputs))
-    f.close()
-    
-    # save params inputs
-    f = open(params['outputs_dir']+'/params.txt',"w")
-    f.write(str(params))
-    f.close()
+
 
 # reads params and outputs from previously generated files
 # params.txt and outputs.txt located in direcotry params['outputs_dir']
@@ -817,7 +810,18 @@ if ("PlotResults" in params['plot_options']):
 else:
     if (params['fit_with_ODEs']):
         params , G = InitModelODEs(params, G)
-        outputs = LaunchModelODEs(params)
+        outputs = LaunchModelODEs(params) 
+        
+        # save params inputs
+        f = open(params['outputs_dir']+'/params.txt',"w")
+        f.write(str(params))
+        f.close()       
+        
+        # save outputs
+        f = open(params['outputs_dir']+'/outputs.txt',"w")
+        f.write(str(outputs))
+        f.close()
+    
         if params["model_name"] == "RealSEIRLDWellMixed":      
             R0 = params['k_SE'] / (params['k_IR'] + params['k_IL'])
             print('R0 = ' , R0)
@@ -848,7 +852,13 @@ else:
         elif params["model_name"] == "SIRWellMixed":
             R0 = params['k_SI'] / (params['k_IR'])
             print('R0 = ' , R0)
-            plot_SIRWellMixed(params,outputs)            
+            plot_SIRWellMixed(params,outputs)
+        elif params["model_name"] == "RealSEIsIasHoRadRDWellMixed":
+            dates_to_plot = params['dates_for_fit'].copy()
+            dates_to_plot.insert(0, params['time_start_day'])   
+            
+            plotDataAndRealSEIsIasHoRadRDWellMixed(params,G, outputs, dates_to_plot) 
+            
         else:
             print('[ERROR]: can not plot model ' , params["model_name"],  ' yet. Exit here')
             exit(0)
