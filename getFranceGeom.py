@@ -60,9 +60,14 @@ def covidator(params, zone=""):
     listDpts = pd.read_csv(params['departments_name'])
     name_shapefile = params["shapefile_name"]
     shapefile = gpd.read_file(name_shapefile)
-
+    
+    count_dc_test=0
     for el in range(cov.shape[0]):
         daydata = cov.iloc[el]
+        if not(daydata['sexe'] == 0):
+            print('error daydata["sexe"] = ' , daydata["sexe"])
+            print (daydata)
+            exit(0)
         dataDpt = listDpts.loc[listDpts["NUM"] == daydata["dep"]]
         dateName = daydata.name
         dateName = str(dateName)[:10]
@@ -76,7 +81,8 @@ def covidator(params, zone=""):
             dptNum = int(dptNum) + 1
         elif int(dptNum) > 20:
             dptNum = int(dptNum)
-
+        
+        
         dptNum = int(dptNum)
         regionName = listDpts.loc[listDpts["NOM"] == dptName]
         regionName = list(regionName["REGION"])[0]
@@ -87,7 +93,7 @@ def covidator(params, zone=""):
         # else:
         #     centroid = (0, 0)  # random position if outside metropolitan france
 
-
+        # initialize entry for current department name
         if dptName not in dd:
             dd[dptName] = {}
             dd[dptName]["data_covid"] = {}
@@ -126,8 +132,7 @@ def covidator(params, zone=""):
         if dateName not in dd[dptName]["data_covid"]:
             dd[dptName]["data_covid"][dateName] = {}
         dd[dptName]["data_covid"][dateName]["Hosp"] = daydata["hosp"]
-        dd[dptName]["data_covid"][dateName]["Deaths"] = daydata["dc"]
-        # dd[dptName]["data_covid"][dateName]["Recovered"] = daydata["rad"]
+        dd[dptName]["data_covid"][dateName]["Deaths"] = daydata["dc"]        
         dd[dptName]["data_covid"][dateName]["Rad"] = daydata["rad"]
         dd[dptName]["data_covid"][dateName]["Rea"] = daydata["rea"]
 
@@ -146,19 +151,18 @@ def covidator(params, zone=""):
         # if "neighbours" not in reg[regionName]:
         #     reg[regionName]["neighbours"] = {}
 
-        if dateName not in reg[regionName]:
+        if dateName not in reg[regionName]['data_covid']:
             reg[regionName]["data_covid"][dateName] = {}
             reg[regionName]["data_covid"][dateName]["Hosp"] = daydata["hosp"]
-            reg[regionName]["data_covid"][dateName]["Deaths"] = daydata["dc"]
-            # reg[regionName]["data_covid"][dateName]["Recovered"] = daydata["rad"]
+            reg[regionName]["data_covid"][dateName]["Deaths"] = daydata["dc"]            
             reg[regionName]["data_covid"][dateName]["Rad"] = daydata["rad"]
             reg[regionName]["data_covid"][dateName]["Rea"] = daydata["rea"]
         else:
             reg[regionName]["data_covid"][dateName]["Hosp"] += daydata["hosp"]
-            reg[regionName]["data_covid"][dateName]["Deaths"] += daydata["dc"]
-            # reg[regionName]["data_covid"][dateName]["Recovered"] += daydata["rad"]
+            reg[regionName]["data_covid"][dateName]["Deaths"] += daydata["dc"]            
             reg[regionName]["data_covid"][dateName]["Rad"] += daydata["rad"]
-            reg[regionName]["data_covid"][dateName]["Rea"] += daydata["rea"]
+            reg[regionName]["data_covid"][dateName]["Rea"] += daydata["rea"]    
+                
         # print('\n\n', dptName)
         # print(ages.loc[ages["dptname"] == dptName.replace(" ", "-")].to_dict(orient="list"))
         # if "agesSex" not in reg[regionName]:
@@ -189,6 +193,8 @@ def covidator(params, zone=""):
     # if zone == "departement":
     #     return dd
     # else:
+    
+    
     return dd, reg
 
 
