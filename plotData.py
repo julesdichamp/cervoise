@@ -336,7 +336,7 @@ def plotDataAndRealSEIsIasHoRadRDWellMixed(params, G, outputs, days_to_plot):
         total_Deaths.append(sum_deaths)
         total_Hosp.append(sum_hosp)
         total_Rad.append(sum_rad)        
-        print('date, deaths = ' , _date, total_Deaths[i])
+        # print('date, deaths = ' , _date, total_Deaths[i])
         i+=1
     
     # plot data
@@ -368,18 +368,68 @@ def plotDataAndRealSEIsIasHoRadRDWellMixed(params, G, outputs, days_to_plot):
         _time[i] = outputs[i][0]
         x[i,:] = outputs[i][1]
     
-    print(x[0,:])
-    print(x[-1,:])
+    
+    W_c=np.zeros(nbTimes)
+    for i in range(0,nbTimes):
+        _time[i] = outputs[i][0]        
+        tmp_func = params["k_IsHo"] * x[0:i+1,3]
+        W_c[i] = np.trapz(tmp_func, _time[0:i+1] ) # integral over time of I until _time[i]  
+    
+    W_c  += total_Hosp[0]
+    delay_deaths = 15
+    delay_rad = 15
+    x_pos_delay_deaths = x_pos - delay_deaths
+    x_pos_delay_rad = x_pos - delay_rad
+    
+    sum_total_rad_deaths_with_delays = []
+    # total_Rad_delay = [0 for i in range(0,len(total_Rad))]
+    # total_Deaths_delay = [0 for i in range(0,len(total_Deaths))]
+    total_Rad_delay = copy.deepcopy(total_Rad)
+    total_Deaths_delay = copy.deepcopy(total_Deaths)
+    
+    for i in range(0,max(delay_rad, delay_deaths)): 
+        total_Rad_delay.insert(0,0)                
+        total_Deaths_delay.insert(0,0)        
+    for i in range(0,len(total_Rad)): 
+        total_Rad_delay[max(delay_rad, delay_deaths) - delay_rad + i] = total_Rad[i]
+    for i in range(0,len(total_Deaths)):
+        total_Deaths_delay[max(delay_rad, delay_deaths) - delay_deaths + i] = total_Deaths[i]
+
+    sum_rad_deaths_delays = []
+    for i in range(0, len(total_Rad_delay)):
+        sum_rad_deaths_delays.append(total_Deaths_delay[i] + total_Rad_delay[i])
+    
+    x_pos_extended = np.arange(-max(delay_rad,delay_deaths), len(days_to_plot))
+    # delay_total
+    plt.figure('TEST', figsize=(16, 10))
+    p_TEST = plt.plot(_time, W_c, linestyle='-', linewidth=4, label='integral of model Hosp')    
+    # p_TEST = plt.plot(x_pos_delay_deaths, total_Deaths, linestyle=None, marker='o', label='data Deaths')    
+    # p_TEST = plt.plot(x_pos_delay_rad, total_Rad, linestyle=None, marker='o', label='data Rad')    
+    p_TEST = plt.plot(x_pos_extended, total_Deaths_delay, linestyle=None, marker='o', label='data Deaths')    
+    p_TEST = plt.plot(x_pos_extended, total_Rad_delay, linestyle=None, marker='o', label='data Rad')        
+    p_TEST = plt.plot(x_pos_extended, sum_rad_deaths_delays  , linestyle=None, marker='o', label='sum Death + Rad')    
+    plt.xticks(x_pos, days_to_plot, rotation='vertical')    
+    plt.ylabel('TEST')  
+    plt.legend()    
+    fig.tight_layout()    
+    string_for_savefig = 'TEST'
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    plt.close()
+    
+    exit(0)
     # #x_ini = np.array([S, E, Ias, Is, Ho, R, Rad, D])
     plt.figure('Deaths', figsize=(16, 10))
     p_deaths = plt.plot(_time, x[:,7], linestyle='-', label='model')  
     plt.ylabel('Deaths')  
+    plt.legend()
     plt.figure('Rad', figsize=(16, 10))
     p_rad = plt.plot(_time, x[:,6], linestyle='-', label='model')
     plt.ylabel('Rad')
+    plt.legend()
     plt.figure('Hosp', figsize=(16, 10))
     p_hosp = plt.plot(_time, x[:,4], linestyle='-', label='model')    
     plt.ylabel('Hospitalizations')
+    plt.legend()
     
     plt.figure('AllStates', figsize=(16, 10))
     states = ['Susceptible', 'Exposed', 'Infectious asymptomatic', 'Infectious symptomatic', 'Hospitalized', 'Recovered', 'Back to home', 'Dead']
@@ -550,12 +600,12 @@ def plotDataAndSEIRLDOnGraphResults(params, G, outputs, days_to_plot):
         # nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=np.log(list_I_values), with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
-        plt.axis('off')        
+        plt.axis('off')
         string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         plt.close()
         
-        fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+        fig40 = plt.figure(figsize=(16, 10)) # in inches!
         string_for_title='Recovered population on Graph at time = '+str(round(G.graph['time'],6))
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
