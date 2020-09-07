@@ -10,7 +10,7 @@ import copy
 import seaborn as sns
 sns.set_context("talk")
 
-def plot_SIRWellMixed(params,outputs):
+def plot_SIRWellMixed(params,outputs):    
     """
     plot SIRWellMixed model results
     S,I, R populations over time
@@ -45,6 +45,133 @@ def plot_SIRWellMixed(params,outputs):
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
     # plt.close()
     plt.show()
+def plot_SIRHigherOrderWellMixed(params,outputs):
+    """
+    plot SIRHigherOrderWellMixed model results
+    S,I, R populations over time
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    x = np.zeros([nbTimeSteps, 3])
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]
+
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    plt.plot(time,x[:,0], 'red', label='Susceptible')
+    plt.plot(time,x[:,1], 'green', label='Infected')
+    plt.plot(time,x[:,2], 'blue', label='Recovered')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRHigherOrderWellMixed, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR'])\
+      + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])#\
+      # + ', n_order = '+str(params['n_order'])
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRWellMixed_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR'])\
+      + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])\
+      + 'n_order='+str(params['n_order'])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    # plt.close()
+    plt.show()
+def plot_SIRHigherOrderSeveralReactionsWellMixed(params,outputs):
+    """
+    plot SIRHigherOrderSeveralReactionsWellMixed model results
+    S,I, R populations over time
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    x = np.zeros([nbTimeSteps, 3])
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]
+
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    plt.plot(time,x[:,0], 'red', label='Susceptible')
+    plt.plot(time,x[:,1], 'green', label='Infected')
+    plt.plot(time,x[:,2], 'blue', label='Recovered')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIRHigherOrderSeveralReactionsWellMixed, tilde_k_SI ='+str(params['tilde_k_SI']) + ', n_order = '+str(params['n_order'])      
+    for i in range(0,params["n_order"]+1):
+        str_to_search = 'p_'+str(i)
+        p = params[str_to_search]
+        string_for_title += ', '+str(str_to_search)+'='+str(p)
+    plt.title(string_for_title)
+    string_for_savefig = 'SIRHigherOrderSeveralReactionsWellMixed_tilde_k_SI='+str(params['tilde_k_SI']) + '_n_order='+str(params['n_order'])
+    for i in range(0,params["n_order"]+1):
+        str_to_search = 'p_'+str(i)
+        p = params[str_to_search]
+        string_for_savefig += '_'+str(str_to_search)+'='+str(p)
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    # plt.close()
+    plt.show()
+
+def plot_SIHigherOrderSeveralReactionsWellMixed(params,outputs):
+    """
+    plot SIHigherOrderSeveralReactionsWellMixed model results
+    S,I, R populations over time
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    x = np.zeros([nbTimeSteps, 2])
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]
+
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    plt.plot(time,x[:,0], 'red', label='Susceptible')
+    plt.plot(time,x[:,1], 'green', label='Infected')    
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')
+    string_for_title='SIHigherOrderSeveralReactionsWellMixed, tilde_k_SI ='+str(params['tilde_k_SI']) + ', n_order = '+str(params['n_order'])
+    for i in range(0,params["n_order"]+1):
+        str_to_search = 'p_'+str(i)
+        p = params[str_to_search]
+        string_for_title += ', '+str(str_to_search)+'='+str(p)
+    plt.title(string_for_title)
+    string_for_savefig = 'SIHigherOrderSeveralReactionsWellMixed_tilde_k_SI='+str(params['tilde_k_SI']) + '_n_order='+str(params['n_order'])
+    for i in range(0,params["n_order"]+1):
+        str_to_search = 'p_'+str(i)
+        p = params[str_to_search]
+        string_for_savefig += '_'+str(str_to_search)+'='+str(p)
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    # plt.close()
+    plt.show()
+
+
 def plot_SIRDWellMixed(params,outputs):
     """
     plot SIRWellMixed model results

@@ -131,6 +131,33 @@ def InitParams(config_name):
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")    
+    elif params["model_name"] == "SIRHigherOrderWellMixed":  # load parameters needed for this model
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["n_order"] = config.getint("model", "n_order")        
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+    elif params["model_name"] == "SIRHigherOrderSeveralReactionsWellMixed":  # load parameters needed for this model
+        params["tilde_k_SI"] = config.getfloat("model", "tilde_k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["n_order"] = config.getint("model", "n_order")
+        # get all probabilities of all reactions
+        for i in range(0,params["n_order"]+1):
+            str_to_search = 'p_'+str(i)
+            params[str_to_search] = config.getfloat("model", str_to_search)
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")            
+    elif params["model_name"] == "SIHigherOrderSeveralReactionsWellMixed":  # load parameters needed for this model
+        params["tilde_k_SI"] = config.getfloat("model", "tilde_k_SI")        
+        params["n_order"] = config.getint("model", "n_order")
+        # get all probabilities of all reactions
+        for i in range(0,params["n_order"]+1):
+            str_to_search = 'p_'+str(i)
+            params[str_to_search] = config.getfloat("model", str_to_search)
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")        
     elif params["model_name"] == "SIROnGraph":  # load parameters needed for this model
         # For now all parameters are the same wherever the region
         params["k_SI"] = config.getfloat("model", "k_SI")
@@ -433,7 +460,6 @@ def InitGraph(params):
                     dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
                     dic_data_covid[id_node] = franceGeom[key]['data_covid']
                     dic_data_hosp[id_node] = franceGeom[key]['data_hosp']
-                    print(id_node, key, dic_data_hosp[id_node])
                     centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
                     dic_positions[id_node] = centroid                    
                     dic_names[id_node] = key
@@ -459,8 +485,7 @@ def InitGraph(params):
                 # - Area
                 dic_total_population[id_node] = franceGeom[key]['agesSex']['ftot'] + franceGeom[key]['agesSex']['htot']
                 dic_data_covid[id_node] = franceGeom[key]['data_covid']
-                dic_data_hosp[id_node] = franceGeom[key]['data_hosp']
-                print(id_node, key, dic_data_hosp[id_node])
+                dic_data_hosp[id_node] = franceGeom[key]['data_hosp']                
 
                 centroid = [franceGeom[key]['centroid'][0], franceGeom[key]['centroid'][1]]
                 dic_positions[id_node] = centroid
@@ -601,11 +626,10 @@ def InitGraph(params):
         dic_densities[id_node] = dic_total_population[id_node] / dic_areas[id_node]
         
     nx.set_node_attributes(G, name='densities', values=dic_densities)
-    print("num_edges = ", G.number_of_edges())
-    print("num_nodes = ", G.number_of_nodes())
-
-    print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
-    print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
+    # print("num_edges = ", G.number_of_edges())
+    # print("num_nodes = ", G.number_of_nodes())
+    # print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
+    # print("edges attributes = ", set([k for n in G.edges for k in G.edges[n].keys()]))
     # dic_areas = nx.get_node_attributes(G, 'areas')    
     # dic_total_pop = nx.get_node_attributes(G, 'total_pop')    
     # total_area = 0.
@@ -636,10 +660,20 @@ def LaunchModel(params, graph):
     """
     print('LaunchModel')
     # initialize models
-    params, graph = InitModels(params, graph)    
+    params, graph = InitModels(params, graph) 
+        
     if params["model_name"] == "SIRWellMixed":
         outputs = SolveOneCompartment(params)
         plot_SIRWellMixed(params, outputs)
+    elif params["model_name"] == "SIRHigherOrderWellMixed":
+        outputs = SolveOneCompartment(params)
+        plot_SIRHigherOrderWellMixed(params, outputs)
+    elif params["model_name"] == "SIRHigherOrderSeveralReactionsWellMixed":
+        outputs = SolveOneCompartment(params)
+        plot_SIRHigherOrderSeveralReactionsWellMixed(params, outputs)
+    elif params["model_name"] == "SIHigherOrderSeveralReactionsWellMixed":
+        outputs = SolveOneCompartment(params)
+        plot_SIHigherOrderSeveralReactionsWellMixed(params, outputs)
     elif params["model_name"] == "SIRDWellMixed":
         outputs = SolveOneCompartment(params)
         plot_SIRDWellMixed(params, outputs)

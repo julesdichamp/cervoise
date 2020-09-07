@@ -79,6 +79,165 @@ def InitModels(params, G):
         params['N_matrix'] = N
         params['M_matrix'] = M
         params['R_matrix'] = R
+    
+    """
+    simple SIR model but with higher order in the number of people one
+    infected can meet
+    n * S + I -> (n+1)*I (with rate k_SI)
+    I     -> R  (with rate k_IR)
+    """
+    if (params["model_name"] == "SIRHigherOrderWellMixed"):
+
+        k_SI = params["k_SI"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        n_order = params["n_order"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+
+        params['x_ini'] = np.array([S_ini, I_ini, R_ini])
+        params['k_plus'] = np.array([k_SI, k_IR])
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 2
+        nbStates = 3
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        #first reaction: n*S + I -> (n+1)*I
+        N[0][0] = n_order ;  M[0][0] = 0
+        N[1][0] = 1 ;  M[1][0] = n_order+1
+        N[2][0] = 0 ;  M[2][0] = 0
+        #second reaction: I -> R
+        N[0][1] = 0 ;  M[0][1] = 0
+        N[1][1] = 1 ;  M[1][1] = 0
+        N[2][1] = 0 ;  M[2][1] = 1
+
+        R = M - N
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+
+    """
+    simple SIR model but with higher order in the number of people one
+    infected can meet. Alternative reactions with given probability can 
+    also occur
+    n * S + I -> n * S + I (with rate p_0 * tilde_k_SI) [nothing happens, this reaction is never chosen)
+    n * S + I -> (n-1) * S + 2I (with rate p_1 * tilde_k_SI)
+    ...
+    n * S + I ->  S + n*I (with rate p_{n-1} * tilde_k_SI)
+    n * S + I ->  S + (n+1)*I (with rate p_{n}* tilde_k_SI)
+    I     -> R  (with rate k_IR)
+    """
+    if (params["model_name"] == "SIRHigherOrderSeveralReactionsWellMixed"):
+
+        tilde_k_SI = params["tilde_k_SI"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        n_order = params["n_order"]
+        
+        rates = []
+        # get all probabilities of all reactions and set rates accordingly
+        for i in range(0,params["n_order"]+1):
+            str_to_search = 'p_'+str(i)
+            p = params[str_to_search]
+            rates.append(p * tilde_k_SI)
+        rates.append(k_IR)
+        params['k_plus'] = np.array(rates)
+        
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+
+        params['x_ini'] = np.array([S_ini, I_ini, R_ini])
+
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = n_order + 1 + 1
+        nbStates = 3
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+        
+        for i in range(0,n_order+1):
+            # S state
+            N[0][i] = n_order
+            M[0][i] = n_order - i
+            # I state
+            N[1][i] = 1
+            M[1][i] = 1 + i
+
+        # I  --> R
+        N[1][nbReactions-1] = 1
+        M[2][nbReactions-1] = 1
+        R = M - N
+        print('M = ' , M)
+        print('N = ' , N)
+        print('R = ' , R)
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+    
+    """ 
+    simple SI model but with higher order in the number of people one
+    infected can meet. Alternative reactions with given probability can 
+    also occur
+    n * S + I -> n * S + I (with rate p_0 * tilde_k_SI) [nothing happens, this reaction is never chosen)
+    n * S + I -> (n-1) * S + 2I (with rate p_1 * tilde_k_SI)
+    ...
+    n * S + I ->  S + n*I (with rate p_{n-1} * tilde_k_SI)
+    n * S + I ->  S + (n+1)*I (with rate p_{n}* tilde_k_SI)
+    """
+    if (params["model_name"] == "SIHigherOrderSeveralReactionsWellMixed"):
+
+        tilde_k_SI = params["tilde_k_SI"]  # A = 1
+        n_order = params["n_order"]
+        rates = []
+        # get all probabilities of all reactions and set rates accordingly
+        for i in range(0,params["n_order"]+1):
+            str_to_search = 'p_'+str(i)
+            p = params[str_to_search]
+            rates.append(p * tilde_k_SI)        
+        params['k_plus'] = np.array(rates)
+        
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+
+        params['x_ini'] = np.array([S_ini, I_ini])
+
+        # indices S = 0, I = 1
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = n_order + 1
+        nbStates = 2
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+        
+        for i in range(0,n_order+1):
+            # S state
+            N[0][i] = n_order
+            M[0][i] = n_order - i
+            # I state
+            N[1][i] = 1
+            M[1][i] = 1 + i
+        
+        R = M - N        
+        print("M=",M)
+        print("N=",N)
+        print("R=",R)
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
 
     """
     simple SIRD model on well mixed hypothesis (D is death)
