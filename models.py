@@ -2437,6 +2437,78 @@ def InitModels(params, G):
         print("k_plus = ", k_plus)
         print("x_ini = ", x_ini)
 
+    """
+    simple SIR model and hopping between nodes of graph
+    with an agent based fashion where we track every individual
+    S + I -> 2I (with rate k_SI)
+    I     -> R  (with rate k_IR)
+    """
+    if (params["model_name"] == "SIROnGraphAgentBased"):
+        ### --- 1/ initializations
+        # load initial state, and reactions values
+        k_SI = params["k_SI"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+        x_ini = [[], [], []]
+        for i in range(0, S_ini):
+            x_ini[0].append(i)
+        for i in range(S_ini, S_ini+I_ini):
+            x_ini[1].append(i)
+        for i in range(S_ini+I_ini, S_ini+I_ini+R_ini):
+            x_ini[2].append(i)        
+        
+        k_plus = np.array([k_SI, k_IR])
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 2
+        nbStates = 3
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> 2I
+        N[0][0] = 1 ;  M[0][0] = 0
+        N[1][0] = 1 ;  M[1][0] = 2
+        N[2][0] = 0 ;  M[2][0] = 0
+        #second reaction: I -> R
+        N[0][1] = 0 ;  M[0][1] = 0
+        N[1][1] = 1 ;  M[1][1] = 0
+        N[2][1] = 0 ;  M[2][1] = 1
+
+        R = M - N
+
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R        
+        dic_x_ini = {}
+        dic_x = {}
+        dic_kinetic = {}
+        for n in G.nodes(): # loop over all compartments
+            dic_x_ini[n] = [[], [], []]
+            # loop over all states
+            for k in range(0, len(x_ini)):
+                # set a fraction of individuals in this node
+                # n should start from zero                
+                for l in range(n*int(len(x_ini[k])/G.number_of_nodes()),(n+1)*int(len(x_ini[k])/G.number_of_nodes())):
+                    dic_x_ini[n][k].append(x_ini[k][l])            
+            dic_kinetic[n] = k_plus
+        
+        dic_x = copy.deepcopy(dic_x_ini)
+        
+        nx.set_node_attributes(G, name='x_ini', values=dic_x_ini)
+        nx.set_node_attributes(G, name='x', values=dic_x)
+        nx.set_node_attributes(G, name='k_plus', values=dic_kinetic)
+
+        # set edges attributes here
+        dic_hopping_rates = {}
+        for e in G.edges():
+            dic_hopping_rates[e] = 0.01 # constant for now because TEST
+        nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)
     return params, G
 
 def SolveOneCompartment(params):
@@ -2572,7 +2644,7 @@ def SolveAgentBasedOneCompartment(params):
                 print('ERROR: the R_matrix given that accounts for the reaction changes is of too high order')
                 print('R[i,j] can only be = 1 or -1')
                 print('We foud R[' , i , ',' , j ,'] = ' , R[i,j])
-            
+                exit(0)
             # fill matrix that accuonts if a state is in a given reaction
             if (abs(N[i,j]) > 0.00000001):  
                 indices_states_per_reaction[i,j] = 1
@@ -2603,7 +2675,7 @@ def SolveAgentBasedOneCompartment(params):
                     # see Example 1 from DD powerpoint
                     if (abs(N[i,j]) > 0.00000001):                        
                         for k in range(0,int(N[i,j])):
-                            y = y * (len(x[i]) -k) # x[i] is a list with all indices that are in 
+                            y = y * (len(x[i]) -k) # x[i] is a list with all indices that are in state i
 
                     t_forward_plus[j] = t_forward_plus[j] * y
 
@@ -2692,8 +2764,7 @@ def SolveAgentBasedOneCompartment(params):
             
             # in case where 1 state is involved in reaction id_reaction 
             # the indice we found is the same as the position in the corresponding
-            # vector of states
-            
+            # vector of states            
             if (nbStatesInReaction == 1):
                 # assume sub-reactions are ordered as follow:
                 # k * x[state][0], k * x[state][1], ... , k * x[state][n]                
@@ -2951,6 +3022,361 @@ def SolveOnGraph(params, G):
             # dic_x_ini = nx.get_node_attributes(G,'x_ini')
             # dic_x = nx.get_node_attributes(G,'x')
             # checkConservation(dic_x_ini, dic_x)            
+            
+            count_loops+=1
+    except KeyboardInterrupt:
+        pass
+    return outputs , G
+
+def SolveAgentBasedOnGraph(params, G):
+    """
+    solve master equation with several compartments (nodes of graph)
+    with hopping processes in an agent based fashion
+    if the rate of the reaction for state S e.g. is k then every
+    individual S^1, S^2, ...S^n such that 
+    S^1 + S^2 + ... + S^n = S (total number of individuals)
+    each individual can jump from state S^1 to state I^1
+    """
+    nbReactions   = params["nbReactions"]
+    nbStates      = params["nbStates"]    
+    N             = params['N_matrix']
+    R             = params['R_matrix']
+    # x_ini is a list of lists of size nbStates, each sub-list contains
+    # the individuals indices in each state
+    # x_ini          = params['x_ini']
+    indices_states_per_reaction = np.zeros([nbStates, nbReactions])
+    for i in range(0,nbStates):
+        for j in range(0,nbReactions):
+            # we don't know how to deal with such reactions yet
+            # example : 2S + I --> 3I
+            # how does ont translate forward rate t_0 = k_SI * S * (S-1) * I
+            # when dealing with individuals??
+            if (abs(R[i,j]) > 1) :
+                print('ERROR: the R_matrix given that accounts for the reaction changes is of too high order')
+                print('R[i,j] can only be = 1 or -1')
+                print('We foud R[' , i , ',' , j ,'] = ' , R[i,j])
+                exit(0)
+            # fill matrix that accuonts if a state is in a given reaction
+            if (abs(N[i,j]) > 0.00000001):  
+                indices_states_per_reaction[i,j] = 1
+
+    # intialize states and time
+    t = params["time_start"]
+    G.graph['time'] = t # intialize time attribtue in graph
+    outputs = []  # we will fill this list with data to be plotted
+    count_loops = 0 # loop counter
+    ### --- 2/ loop in time
+    try: # so we can exit the loop at any time with ctrl + C
+        while (t < params["time_end"]):
+            dic_x = nx.get_node_attributes(G,'x')
+            dic_k_plus = nx.get_node_attributes(G,'k_plus')
+
+            # save time as an attribute in graph at each time step
+            G.graph['time'] = t
+
+            # save every n time steps
+            if ((count_loops % params['save_frequency']) == 0):
+                dic_x_for_save = copy.deepcopy(dic_x)
+                x_print = np.zeros(nbStates)
+                for key in dic_x_for_save.keys():
+                    for ii in range(0,nbStates):
+                        x_print[ii] += len(dic_x_for_save[key][ii])
+                print("t, count_loops, x = " , t, count_loops, x_print)
+                # if ((count_loops % 10000) == 0):
+                    # print("t, count_loops, x = " , t, count_loops, x_print)
+                outputs.append([t, dic_x_for_save])
+
+            # compute W_inside: loop on every node
+            W_inside = 0.0
+            dic_t_forward_plus = {}
+            ### --- 2-1/ compute total inside rate = sum of all forward kinetic rates)
+            for n in G.nodes(): # loop over all compartments
+                x = dic_x[n]
+                k_plus = dic_k_plus[n]
+                # forward reaction rates
+                t_forward_plus = np.zeros(nbReactions)
+                for j in range(0, nbReactions):
+                    t_forward_plus[j] = 1.0
+                    for i in range(0, nbStates):
+                        # y is the product from x[i] * (x[i] - 1) * ... * (x[i] - N[i,j] + 1)
+                        y = 1.0
+                        # only considers states that are present in current reaction
+                        # (see Example 1 from DD powerpoint)
+                        if (abs(N[i,j]) > 0.00000001):
+                            for k in range(0,int(N[i,j])):
+                                # y = y * (x[i] -k)
+                                y = y * (len(x[i]) -k) # x[i] is a list with all indices that are in this state
+                        t_forward_plus[j] = t_forward_plus[j] * y
+
+                    # finally multiply the forward reaction rate by the reaction rate k+
+                    t_forward_plus[j] = t_forward_plus[j] * k_plus[j]
+
+                dic_t_forward_plus[n] = t_forward_plus # save forward reaction rates for all nodes
+
+                # total rate which the state can be left with
+                W_node = np.sum(t_forward_plus)
+                xi = randZeroOne()
+                W_inside += W_node
+
+            ### --- 2-2/ compute total between rate = total rate of leaving the state with a
+            # hopping process = sum of all hopping rates d_ij * xi
+            dic_t_between = {}
+            W_between = 0.0
+            dic_hopping_rates = nx.get_edge_attributes(G,'hopping_rates')
+            for ni in G.nodes(): # loop over all nodes
+                for nj in G.neighbors(ni): # loop over all neighbors
+                    # not sure if it can happen that a node sees itself as a neighbor but just in case...
+                    if (ni != nj):
+                        eij=(ni,nj) # get edge between the two nodes
+                        # complicated stuff to turn the edge the other way around
+                        # in case it is not found in edge list
+                        found_edge=False
+                        for e in G.edges():
+                            if (e == eij):
+                                found_edge=True
+                        if not(found_edge):
+                            eij = (nj,ni)
+
+                        tmp = np.zeros(nbStates)
+                        for i in range(0, nbStates): # loop over all states
+                            W_between += len(dic_x[ni][i]) * dic_hopping_rates[eij]
+                            tmp[i] = len(dic_x[ni][i]) * dic_hopping_rates[eij]
+                        #VERY IMPORTANT CHECK
+                        dic_t_between[(ni,nj)] = tmp # save all between rates
+
+
+            # if W_inside is 0, nothing more can happen anymore and only jumps will occur
+            # so we exit instead
+            if (abs(W_inside) <= 0.0000000001):
+                # print("W = " , W)
+                # print("x = " , x)
+                break
+            
+            ### --- 2-3/ compute total rate and Gillepsie time step
+            W_total = W_inside + W_between
+            # print("W_inside, W_between, W_total = " , W_inside, W_between, W_total)
+                
+            # Gillepsie time of next event using total rate
+            dt = -1 / W_total * np.log(1 - xi)
+            t = t + dt
+            
+            ### --- 2-4/ fill a vector that contains all sum of states: kinetics and hopping
+            ###          there is probably a simpler way to do it but for now we play "by the book"
+            ###          It allows to choose randomly but according to the weight of each reaction,
+            ###          the next event to trigger (hopping process of ONE state or ONE reaction)
+            next_states_sum = np.zeros(nbReactions*len(G.nodes()) + nbStates*len(G.nodes()) * (len(G.nodes()) - 1))
+            # fill states nbReactions*len(G.nodes())
+            kk=0
+            for n in G.nodes(): # loop over all compartments
+                for j in range(0,nbReactions):
+                    # initialization. We do it here because it is annoying to work
+                    # with graph nodes indices
+                    # it is only done for the first compartment and the first reaction
+                    if (kk==0):
+                        next_states_sum[kk] = dic_t_forward_plus[n][j]
+                    else:
+                        next_states_sum[kk] = next_states_sum[kk-1] + dic_t_forward_plus[n][j]
+                    kk+=1
+            # now fill states: nbStates*len(G.nodes()) * (len(G.nodes()) - 1)
+            for ni in G.nodes(): # loop over all nodes
+                for nj in G.neighbors(ni): # loop over all neighbors
+                    if (ni != nj):
+                        for i in range(0, nbStates): # loop over all states                            
+                            next_states_sum[kk] = next_states_sum[kk-1] + dic_t_between[(ni,nj)][i]
+                            kk+=1
+
+            # normalize so that all values are bteween 0 and 1
+            next_states_sum = next_states_sum / W_total
+
+            ### --- 2-5/ choose reaction according to a random uniform variable drop
+            xi = randZeroOne()
+            if xi <= next_states_sum[0]:
+                id_reaction = 0
+            else:
+                for j in range(1, len(next_states_sum)):
+                    if (next_states_sum[j - 1] < xi) and (xi < next_states_sum[j]):
+                        id_reaction = j                
+                        
+            ### --- 2-6/ Set new state
+            ###          look for the id of the reaction and trigger the corresponding event
+            ###          there is probably a simpler way to do it.
+            
+            # --- WE SET A REACTION
+            # TODO: change this 'if' in a agent based fashion
+            if (id_reaction < nbReactions*len(G.nodes())): # we set a kinetic process            
+                # IMPORTANT: this assumes that nodes range from 0 to nb_nodes - 1
+                node_that_reacts = np.floor(id_reaction / nbReactions)
+                chosen_reaction = id_reaction%nbReactions
+                
+                # dic_x[node] = dic_x[node] + R[:, react]                            
+                # if ((dic_x[node][0] < 0) or (dic_x[node][1] < 0) or (dic_x[node][2] < 0) ):
+                    # print('negative kinetic: id_reaction, node, react, dic_x[node] = ' , id_reaction, node, react, dic_x[node])
+                    # exit(-1)
+                # we chose reaction id_reaction but we now need to know to 
+                # which sub-reaction (i.e. which individual in particular 
+                # moves)
+                # compute total number of sub-reactions. e.g. t_0 = k * S * I
+                # that would be k * S1 * I1, k * S2 * I1, ..., k * Sn * I1,
+                # k * S1 * I2 , ... * k Sn * I2
+                nbStatesInReaction = 0
+                nbSubReactions = 1
+                for kk in range(0, nbStates):
+                    # get number of combinations that can happen between each pair 
+                    # of states involve in each reaction
+                    if (abs(indices_states_per_reaction[kk][chosen_reaction]) > 0.0000001):
+                        nbSubReactions = nbSubReactions * indices_states_per_reaction[kk][chosen_reaction] * len(dic_x[node_that_reacts][kk])
+                        nbStatesInReaction += indices_states_per_reaction[kk][chosen_reaction]
+                
+                # each sub event has the same proba and their sum equals
+                # t_forward_plus[id_reaction] 
+                # we keep it normalized to match the value of xi which is 
+                # between 0 and 1
+                proba_each_sub_event = dic_t_forward_plus[node_that_reacts][chosen_reaction] / nbSubReactions / W_total
+                
+                if (chosen_reaction == 0): # first reaction we loop from 0
+                    min_lbound = 0.
+                else: # start from the previous value of the chosen reaction
+                    min_lbound = next_states_sum[id_reaction -1]
+                indice = 0
+                max_ubound = next_states_sum[id_reaction]
+                lbound = min_lbound
+                ubound = min_lbound + proba_each_sub_event    
+                done = False
+                if (xi < lbound): # lucky, we found the first indice as quickly as possible
+                    indice = 0 
+                else: # we need to iterate between next_states[id_reaction-1] and next_states[id_reaction] 
+                    while (not(done)):
+                        # we found the sub event that 
+                        if (lbound < xi) and (xi < ubound):
+                            done = True
+                        elif (xi > max_ubound):
+                            print('[1] Something went wrong we went over the interval where we were supposed to look for the indice of individual to move. Exit here')
+                            exit(0)
+                        else :
+                            # increase bounds by one sub event
+                            lbound += proba_each_sub_event
+                            ubound += proba_each_sub_event
+                            indice += 1                    
+                
+                # in case where 1 state is involved in reaction id_reaction 
+                # the indice we found is the same as the position in the corresponding
+                # vector of states            
+                if (nbStatesInReaction == 1):
+                    # assume sub-reactions are ordered as follow:
+                    # k * x[state][0], k * x[state][1], ... , k * x[state][n]                
+                    indice_sub_event_state_to_remove = indice
+                    for ii in range(0,nbStates):
+                        if (R[ii, chosen_reaction] == -1):
+                            state_to_remove = ii
+                        elif (R[ii, chosen_reaction] == 1):
+                            state_to_add = ii                                                        
+                    # get id of individual we will remove
+                    id_individual_state_to_remove = dic_x[node_that_reacts][state_to_remove][indice_sub_event_state_to_remove]
+                    # remove individual from list
+                    dic_x[node_that_reacts][state_to_remove].pop(indice_sub_event_state_to_remove)
+                    # add individual to state to add
+                    dic_x[node_that_reacts][state_to_add].append(id_individual_state_to_remove)
+                            
+                if (nbStatesInReaction == 2):
+                    # assume sub-reactions are ordered as follow: with 
+                    # state1 = state_to_remove and state2 = state_to_add
+                    # example for 3 individuals in state 1 and 2 
+                    # individuals in state 2
+                    # k * x[state1][0] * x[state2][0], k * 
+                    # x[state1][1] * x[state2][0], k * x[state1][2] * 
+                    # x[state2][0], k * x[state1][0] * x[state2][1], k * 
+                    # x[state1][1] * x[state2][1], , k * x[state1][2] * 
+                    # x[state2][1]
+                    # 0 0, 1 0, 2 0, 0 1, 1 1, 2 1
+                    # found_first_state = False
+                    for ii in range(0,nbStates):                  
+                        if ((R[ii, chosen_reaction]) == -1):
+                            state_to_remove = ii
+                        elif ((R[ii, chosen_reaction]) == 1):
+                            state_to_add = ii
+                    
+                    # get indice of the sub event
+                    # indice_sub_event_state_to_remove = indice % len(x[state_to_remove])
+                    indice_sub_event_state_to_remove = indice % len(dic_x[node_that_reacts][state_to_remove])
+
+                    # get id of individual we will remove
+                    id_individual_state_to_remove = dic_x[node_that_reacts][state_to_remove][indice_sub_event_state_to_remove]
+                    # remove individual from list
+                    dic_x[node_that_reacts][state_to_remove].pop(indice_sub_event_state_to_remove)
+                    # add individual to state to add
+                    dic_x[node_that_reacts][state_to_add].append(id_individual_state_to_remove)
+                
+                
+            # --- WE SET A HOPPING PROCESS
+            else: # we set a hopping process
+                # print("hopping")                
+                kk = nbReactions*len(G.nodes())
+                kk_init = kk                
+                for ni in G.nodes(): # loop over all nodes
+                    for nj in G.neighbors(ni): # loop over all neighbors
+                        if (ni != nj):
+                            for i in range(0, nbStates): # loop over all states
+                                if (kk==id_reaction):
+                                    ni_hop_from = ni
+                                    nj_hop_to   = nj
+                                    hoping_state = i # state of state that will hop
+                                    # dic_x[ni][i] -= 1 # add one
+                                    # dic_x[nj][i] += 1 # remove one
+                                    # update attributes right away
+                                    # nx.set_node_attributes(G, name='x', values=dic_x)
+                                kk+=1                                
+                            
+                # here reaction is a hopping process so there are as many 
+                # possibilities as there are individuals in the state
+                # (everyone is as likely to jump)                
+                nbSubReactions = len(dic_x[ni_hop_from][hoping_state])
+                
+                # each sub event has the same proba and their sum equals
+                # t_forward_plus[id_reaction] 
+                # we keep it normalized to match the value of xi which is 
+                # between 0 and 1                
+                proba_each_sub_event = dic_t_between[(ni_hop_from,nj_hop_to)][hoping_state] / nbSubReactions/ W_total
+
+                if (id_reaction == 0): # first reaction we loop from 0
+                    min_lbound = 0.
+                else: # start from the previous value of the chosen reaction
+                    min_lbound = next_states_sum[id_reaction -1]
+                indice = 0
+                max_ubound = next_states_sum[id_reaction]
+                lbound = min_lbound
+                ubound = min_lbound + proba_each_sub_event
+                done = False
+                if (xi < lbound): # lucky, we found the first indice as quickly as possible
+                    indice = 0
+                else: # we need to iterate between next_states[id_reaction-1] and next_states[id_reaction]
+                    while (not(done)):
+                        # we found the sub event that 
+                        if (lbound < xi) and (xi < ubound):
+                            done = True
+                        elif (xi > max_ubound):
+                            print('[2] Something went wrong we went over the interval where we were supposed to look for the indice of individual to move. Exit here')
+                            exit(0)
+                        else :
+                            # increase bounds by one sub event
+                            lbound += proba_each_sub_event
+                            ubound += proba_each_sub_event
+                            indice += 1                    
+                
+                
+                # sub-hopping processes are ordered following the natural
+                # order of the list of the current hopping state:
+                # d_ij * x[state][0], d_ij * x[state][1], ... , d_ij * x[state][n]            
+                indice_sub_event_state_to_remove = indice                
+                # get id of individual we will remove
+                id_individual_state_to_remove = dic_x[ni_hop_from][hoping_state][indice_sub_event_state_to_remove]
+                # remove individual from list                
+                dic_x[ni_hop_from][hoping_state].pop(indice_sub_event_state_to_remove)
+                # add individual to state to add
+                dic_x[nj_hop_to][hoping_state].append(id_individual_state_to_remove)
+
+
+            # set new dictionnary as graph attribute
+            nx.set_node_attributes(G, name='x', values=dic_x)            
             
             count_loops+=1
     except KeyboardInterrupt:
