@@ -69,6 +69,57 @@ def plotDataRegions(params,G, days_to_plot):
 
 
 
+def plotDataHospitalFrance(params,G, days_to_plot):
+    """
+    plot covid hospital data  for entire france    
+    """
+        
+    dic_data_hosp = nx.get_node_attributes(G, name='data_hosp')
+    total_Deaths = []
+    total_Rad = []
+    total_Hosp = []
+    i=0
+    new_hospitalized = []
+    for _date in days_to_plot:
+        sum_deaths = 0
+        sum_hosp = 0
+        sum_rad = 0
+        
+        for n in G.nodes():
+            # print(n , _date, dic_data_hosp[n]['data_covid'][_date]['Hosp'])
+            sum_deaths += dic_data_hosp[n]['data_covid'][_date]['Deaths']
+            sum_hosp   += dic_data_hosp[n]['data_covid'][_date]['Hosp']
+            sum_rad    += dic_data_hosp[n]['data_covid'][_date]['Rad']
+        total_Deaths.append(sum_deaths)
+        total_Hosp.append(sum_hosp)
+        total_Rad.append(sum_rad)        
+        i+=1
+        print(_date, sum_hosp)
+    
+    total_Hosp = np.array(total_Hosp)
+    # total_Hosp = total_Hosp - total_Hosp[0]
+    # print(days_to_plot)
+    # print(total_Hosp)
+    
+    fig = plt.figure(figsize=(16, 10))
+    x_pos = np.arange(0, len(days_to_plot))
+    plt.xticks(x_pos, days_to_plot, rotation='vertical')
+    plt.plot(x_pos, (total_Hosp), label='Cumulative Hospital cases')
+    plt.yscale('log')
+    
+    # plt.yscale('log')
+    # plt.xscale('log')
+    # plt.plot(total_Deaths, label='Deaths')
+    # plt.plot(total_Rad, label='Rad')    
+    # plt.xlabel('Days')
+    plt.ylabel('Population numbers')
+    # plt.yscale('log')
+    
+    # fig = plt.gcf()
+    fig.tight_layout()    
+    plt.savefig(params['outputs_dir']+'/Covid_hospital_data_france_vs_time'+'.png')    
+    plt.close()
+
 def plotDataFrance(params,G, days_to_plot):
     """
     plot covid data for entire france    

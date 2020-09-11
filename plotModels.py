@@ -984,7 +984,6 @@ def plot_SIerlangOtherWellMixed(params,outputs):
         # plt.close()
         plt.show()   
 
-    
 def plot_SILinearErlangWellMixed(params,outputs):
     """
     plot SIerlangWellMixed model results
@@ -1864,7 +1863,6 @@ def plot_SIerlangWellMixedAgentBased(params,outputs):
         # plt.close()
         plt.show()
 
-
 def plot_SIerlangModifiedWellMixedAgentBased(params,outputs, waiting_times):
     """
     plot SIerlangModifiedWellMixedAgentBased model results
@@ -1955,7 +1953,6 @@ def plot_SIerlangModifiedWellMixedAgentBased(params,outputs, waiting_times):
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         # plt.close()
         plt.show()
-
 
 def plot_SIAndIntermediateErlangWellMixedAgentBased(params,outputs):
     """
@@ -2095,7 +2092,6 @@ def plot_SIAndIntermediateErlangWellMixedAgentBased(params,outputs):
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         # plt.close()
         plt.show()
-
 
 def plot_SIRerlangKrylovaWellMixedAgentBased(params,outputs):
     """
@@ -2421,52 +2417,66 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
         S_ini = params["S_ini"]
         I_ini = params["I_ini"]
         R_ini = params["R_ini"]
-        N = S_ini + I_ini + R_ini
         # because of conservation of mass, there are the same numeber 
         # of individuals all along the simulation
-        t0 = time.time()
-        all_individuals_id = np.arange(0,N)
+        N = S_ini + I_ini + R_ini
         
-        dic_all_individuals_residence_nodes = {}
-        for id_ in all_individuals_id:
-            dic_all_individuals_residence_nodes[id_] = []
-            for n in nodes:
-                for j in range(0,nbStates):
-                    if (id_ in dic_x_ini[n][j]):
-                        starting_node = n
-            ref_node = starting_node
-            dic_all_individuals_residence_nodes[id_].append(ref_node)            
-            for i in range(0,nbTimeSteps):
-                dic_x = outputs[i][1]
+        # --- first version to compute number of jumps: TOO SLOW
+        #______________________________________________________________#
+        
+        if False:
+            t0 = time.time()
+            all_individuals_id = np.arange(0,N)
+            
+            dic_all_individuals_residence_nodes = {}
+            for id_ in all_individuals_id:
+                dic_all_individuals_residence_nodes[id_] = []
                 for n in nodes:
                     for j in range(0,nbStates):
-                        if (id_ in dic_x[n][j]):
-                            new_node = n
-                if (new_node != ref_node):
-                    # print('individual ', id_, ' initially in node ',  starting_node, ' hoped from node ', ref_node, ' to node ' , new_node, ' at time ' , mytime[i])
-                    ref_node = new_node
-                    dic_all_individuals_residence_nodes[id_].append(ref_node)
+                        if (id_ in dic_x_ini[n][j]):
+                            starting_node = n
+                ref_node = starting_node
+                dic_all_individuals_residence_nodes[id_].append(ref_node)            
+                for i in range(0,nbTimeSteps):
+                    dic_x = outputs[i][1]
+                    for n in nodes:
+                        for j in range(0,nbStates):
+                            if (id_ in dic_x[n][j]):
+                                new_node = n
+                    if (new_node != ref_node):
+                        print('individual ', id_, ' initially in node ',  starting_node, ' hoped from node ', ref_node, ' to node ' , new_node, ' at time ' , mytime[i])
+                        ref_node = new_node
+                        dic_all_individuals_residence_nodes[id_].append(ref_node)
+                    
+            number_of_jumps = []
+            for id_ in dic_all_individuals_residence_nodes.keys():
+                # -1 because the first node is the starting node 
+                number_of_jumps.append(len(dic_all_individuals_residence_nodes[id_]) - 1)
+            number_of_jumps = np.array(number_of_jumps)
+            print(number_of_jumps)
+            t1 = time.time()
+            print("number of jumps ran for: ", t1 - t0, " seconds\n")
+            # --- plot distribution of number of jumps per id
+            plt.hist(number_of_jumps, bins=20, density=True, label='number of jumps distribution')
+            plt.legend()
+            plt.xlabel('Number of jumps')
+            plt.ylabel('PDF')
+            string_for_title='SIROnGraphAgentBased, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+            plt.title(string_for_title)
+            string_for_savefig = 'SIROnGraphAgentBased_number_of_jumps_distribution_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+        #______________________________________________________________#
                 
-        # print(dic_all_individuals_residence_nodes)
-        number_of_jumps = []
-        for id_ in dic_all_individuals_residence_nodes.keys():
-            number_of_jumps.append(len(dic_all_individuals_residence_nodes[id_]))
-        number_of_jumps = np.array(number_of_jumps)
-        print(number_of_jumps)
-        t1 = time.time()
-        print("number of jumps ran for: ", t1 - t0, " seconds")
-        
-        
         t0 = time.time()
-        dic_total_individual_jumps = {}
-        
+        dic_total_individual_jumps = {}        
         # create dictionnary of all individuals in every node (node is the key)
         dic_all_individuals_in_nodes_old = {}        
-        dic_x = outputs[0][1]
+        dic_x_ini = nx.get_node_attributes(G,'x_ini')
         for n in nodes:
-            all_individuals_in_node_old = [dic_x[n][i][j] for i in range(0,len(dic_x[n])) for j in range(0,len(dic_x[n][i]))]                
+            all_individuals_in_node_old = [dic_x_ini[n][i][j] for i in range(0,len(dic_x_ini[n])) for j in range(0,len(dic_x_ini[n][i]))]
             dic_all_individuals_in_nodes_old[n] = all_individuals_in_node_old
-        for i in range(1,nbTimeSteps): # start from second time step
+        for i in range(0,nbTimeSteps): # start from second time step
             dic_x = outputs[i][1]
             individuals_that_jumped_at_this_time_step = []
             for n in nodes:
@@ -2477,9 +2487,9 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
                 # test if there was a jump                
                 if (set(all_individuals_in_node_new) != set(all_individuals_in_node_old)):
                     if (len(set(all_individuals_in_node_new)) > len(set(all_individuals_in_node_old))):
-                        individual_that_jumped = set(all_individuals_in_node_new) - set(all_individuals_in_node_old)
+                        individual_that_jumped = set(all_individuals_in_node_new) - set(all_individuals_in_node_old)                    
                     else:
-                        individual_that_jumped = set(all_individuals_in_node_old) - set(all_individuals_in_node_new)
+                        individual_that_jumped = set(all_individuals_in_node_old) - set(all_individuals_in_node_new)                        
                     if (len(individual_that_jumped) != 1): 
                         print('two individuals jumped at the same time. ERROR')
                         print(individual_that_jumped)
@@ -2497,34 +2507,99 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
                         if not(individual_that_jumped in individuals_that_jumped_at_this_time_step):
                             dic_total_individual_jumps[individual_that_jumped] += 1
                             individuals_that_jumped_at_this_time_step.append(individual_that_jumped)
+                            # print('individual ',individual_that_jumped, ' left/entered node ',n,' at time ' , mytime[i])
+                        
                         # update new into old
                         all_individuals_in_node_old = all_individuals_in_node_new
                         dic_all_individuals_in_nodes_old[n] = all_individuals_in_node_old
-                                                
+                        
         number_of_jumps_alternative = np.zeros(N)
         for id_ in dic_total_individual_jumps.keys():
             number_of_jumps_alternative[id_] = dic_total_individual_jumps[id_]
         print('\n', number_of_jumps_alternative)
-        t1 = time.time()
-        print("number of jumps alternative ran for: ", t1 - t0, " seconds")
-        # --- plot distribution of number of jumps per id
-        plt.hist(number_of_jumps, bins=20, density=True, label='number of jumps distribution')
-        plt.legend()
-        plt.xlabel('Number of jumps')
-        plt.ylabel('PDF')
-        string_for_title='SIROnGraphAgentBased, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
-        plt.title(string_for_title)
-        string_for_savefig = 'SIROnGraphAgentBased_number_of_jumps_distribution_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
-        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-        plt.close()
+        t1 = time.time()        
 
+        print('dic_total_individual_jumps=', dic_total_individual_jumps,'\n')
         # --- plot distribution of number of jumps per id
         plt.hist(number_of_jumps_alternative, bins=20, density=True, label='number of jumps distribution alternative')
-        plt.legend()
+        # plt.legend()
         plt.xlabel('Number of jumps')
         plt.ylabel('PDF')
-        string_for_title='SIROnGraphAgentBased, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
-        plt.title(string_for_title)
+        # string_for_title='SIROnGraphAgentBased, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+        # plt.title(string_for_title)
+        fig = plt.gcf()
+        fig.tight_layout()
         string_for_savefig = 'SIROnGraphAgentBased_number_of_jumps_distribution_alternatives_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        # --- track numer of infection each individual does
+        # save all id individuals that infected others        
+        dic_number_of_infectious_per_individual = {}
+        for i in range(0,nbTimeSteps): 
+            # it means we saved the id of the infected that trigger the infection
+            if (len(outputs[i]) == 3):
+                infected_id = outputs[i][2]
+                # intiialize in case it's the first time that this individual
+                # infects someone 
+                if not(infected_id in dic_number_of_infectious_per_individual):
+                    dic_number_of_infectious_per_individual[infected_id] = 0
+                dic_number_of_infectious_per_individual[infected_id] +=1
+            
+        number_of_infections_per_individual = np.zeros(len(dic_number_of_infectious_per_individual))
+        ii=0
+        for jj in dic_number_of_infectious_per_individual.keys():
+            number_of_infections_per_individual[ii] = dic_number_of_infectious_per_individual[jj]
+            ii+=1
+        
+        print('dic_number_of_infectious_per_individual=', dic_number_of_infectious_per_individual,'\n')
+        # --- plot distribution of number of jumps per id
+        plt.hist(number_of_infections_per_individual, bins=20, density=True, label='number of jumps distribution alternative')
+        plt.xlabel('Number of infections per individual')
+        plt.ylabel('PDF')
+        fig = plt.gcf()
+        fig.tight_layout()
+        string_for_savefig = 'SIROnGraphAgentBased_number_of_infections_per_individual_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        # sorted_keys_dic_total_individual_jumps=sorted(dic_total_individual_jumps, key=dic_total_individual_jumps.get)
+        # for _id in sorted_keys_dic_total_individual_jumps:
+            # if _id in dic_number_of_infectious_per_individual:
+                # num_infections_by_id = dic_number_of_infectious_per_individual[_id]
+            # else:
+                # num_infections_by_id = 0
+            # print('id, total_jumps, number_of_infections=', _id, dic_total_individual_jumps[_id], num_infections_by_id)
+            
+        sorted_keys_dic_number_of_infectious_per_individual=sorted(dic_number_of_infectious_per_individual, key=dic_number_of_infectious_per_individual.get)
+        sorted_number_of_infections_per_individual = np.zeros(len(dic_number_of_infectious_per_individual))
+        
+        num_max_infections = int(max(number_of_infections_per_individual))
+        num_jumps_vs_num_infections = np.zeros(num_max_infections+1)
+        ii = 0
+        # look for all number of infections from 0 to =max
+        
+        for ii in range(0,num_max_infections+1):
+            _count = 0
+            for kk in sorted_keys_dic_number_of_infectious_per_individual:
+                # sorted_number_of_infections_per_individual[ii] = dic_number_of_infectious_per_individual[kk]
+                # get total number of jumps of individuals who infected ii other individuals
+                if (dic_number_of_infectious_per_individual[kk]==ii):
+                    # check if the individual jumped                    
+                    if (kk in dic_total_individual_jumps.keys()):                        
+                        num_jumps_vs_num_infections[ii] += dic_total_individual_jumps[kk]
+                    else:
+                        num_jumps_vs_num_infections[ii] += 0
+                    _count += 1
+            num_jumps_vs_num_infections[ii] / _count
+        
+        
+        # plot number of infection vs mean total jumps
+        plt.plot(np.arange(0,num_max_infections+1), num_jumps_vs_num_infections)
+        plt.xlabel('Number of infections per individual')
+        plt.ylabel('Average total number of jumps')
+        fig = plt.gcf()
+        fig.tight_layout()
+        string_for_savefig = 'SIROnGraphAgentBased_number_of_jumps_vs_number_of_infections_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         plt.close()

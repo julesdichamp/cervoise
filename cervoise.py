@@ -409,6 +409,19 @@ def InitParams(config_name):
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
+    elif params["model_name"] == "SEIIssROnGraphAgentBased":  # load parameters needed for this model
+        # For now all parameters are the same wherever the region
+        params["k_SE_I"] = config.getfloat("model", "k_SE_I")
+        params["k_SE_Iss"] = config.getfloat("model", "k_SE_Iss")
+        params["k_EI"] = config.getfloat("model", "k_EI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["k_IssR"] = config.getfloat("model", "k_IssR")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["E_ini"] = config.getint("model", "E_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["Iss_ini"] = config.getint("model", "Iss_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+    
     
     else:
         print("[ERROR]: model name: ",params['model_name']," not found. Exit here.")
@@ -787,9 +800,12 @@ def LaunchModel(params, graph):
         dates_to_plot = params['dates_for_fit'].copy()
         dates_to_plot.insert(0, params['time_start_day'])        
         plotDataAndSEIRLDOnGraphResults(params, G, outputs, dates_to_plot)
-    elif params["model_name"] == "SIROnGraphAgentBased":
+    elif params["model_name"] == "SIROnGraphAgentBased":        
         outputs, graph = SolveAgentBasedOnGraph(params, graph)
         plot_SIROnGraphAgentBased(params, outputs, graph)
+    elif params["model_name"] == "SEIIssROnGraphAgentBased":        
+        outputs, graph = SolveAgentBasedOnGraph(params, graph)
+        plot_SEIIssROnGraphAgentBased(params, outputs, graph)    
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)
@@ -825,10 +841,11 @@ if ("PlotData" in params['plot_options']):
     # with params['dates_for_fit'] list later on (e.g. on the fit function)
     dates_to_plot = params['dates_for_fit'].copy()
     dates_to_plot.insert(0, params['time_start_day'])
-    print("data at start ", params['time_start_day'] , ' = ' , params['total_covid_data'][params['time_start_day']])
-    for _date in params['dates_for_fit']:
-        print ('data at ' , _date , ' = ' , params['total_covid_data'][_date])
-    plotDataFrance(params, G, dates_to_plot)    
+    # print("data at start ", params['time_start_day'] , ' = ' , params['total_covid_data'][params['time_start_day']])
+    # for _date in params['dates_for_fit']:
+        # print ('data at ' , _date , ' = ' , params['total_covid_data'][_date])
+    # plotDataFrance(params, G, dates_to_plot)    
+    plotDataHospitalFrance(params, G, dates_to_plot)    
 
 # launch fit procedure 
 # TODO: save df to some format or do something with it later on

@@ -2508,9 +2508,125 @@ def InitModels(params, G):
         dic_hopping_rates = {}
         for e in G.edges():
             dic_hopping_rates[e] = 0.01 # constant for now because TEST
+        nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)    
+
+    """
+    simple SEIR model and hopping between nodes of graph
+    with an additionnal state of a superspreader Iss which has a much 
+    faster rate
+    with an agent based fashion where we track every individual
+    S + I -> 2I (with rate k_SI)
+    I     -> R  (with rate k_IR)
+    """
+    if (params["model_name"] == "SEIIssROnGraphAgentBased"):
+        ### --- 1/ initializations
+        # load initial state, and reactions values        
+        print('coucou')
+        k_SE_I = params["k_SE_I"]
+        k_SE_Iss = params["k_SE_Iss"]
+        k_EI = params["k_EI"]
+        k_IR = params["k_IR"]
+        k_IssR = params["k_IssR"]
+        S_ini = params["S_ini"]
+        E_ini = params["E_ini"]
+        I_ini = params["I_ini"]
+        Iss_ini = params["Iss_ini"]
+        R_ini = params["R_ini"]
+        
+        # orders of states : S, E, I, Iss, R
+        x_ini = [[], [], [], [], []]
+        for i in range(0, S_ini):
+            x_ini[0].append(i)
+        for i in range(S_ini, S_ini+E_ini):
+            x_ini[1].append(i)
+        for i in range(S_ini+E_ini, S_ini+E_ini+I_ini):
+            x_ini[2].append(i)
+        for i in range(S_ini+E_ini+I_ini, S_ini+E_ini+I_ini+Iss_ini):
+            x_ini[3].append(i)
+        for i in range(S_ini+E_ini+Iss_ini, S_ini+E_ini+I_ini+Iss_ini+R_ini):
+            x_ini[4].append(i)
+        
+        k_plus = np.array([k_SE_I, k_SE_Iss, k_EI, k_IR, k_IssR])
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 5
+        nbStates = 5
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> E + I
+        N[0][0] = 1 ;  M[0][0] = 0
+        N[1][0] = 0 ;  M[1][0] = 1
+        N[2][0] = 1 ;  M[2][0] = 1
+        N[3][0] = 0 ;  M[3][0] = 0
+        N[4][0] = 0 ;  M[4][0] = 0
+        # second reaction: S + Iss -> E + Iss
+        N[0][1] = 1 ;  M[0][1] = 0
+        N[1][1] = 0 ;  M[1][1] = 1
+        N[2][1] = 0 ;  M[2][1] = 0
+        N[3][1] = 1 ;  M[3][1] = 1
+        N[4][1] = 0 ;  M[4][1] = 0
+        # third reaction: E -> I
+        N[0][2] = 0 ;  M[0][2] = 0
+        N[1][2] = 1 ;  M[1][2] = 0
+        N[2][2] = 0 ;  M[2][2] = 1
+        N[3][2] = 0 ;  M[3][2] = 0
+        N[4][2] = 0 ;  M[4][2] = 0
+        # fourth reaction: I -> R
+        N[0][3] = 0 ;  M[0][3] = 0
+        N[1][3] = 0 ;  M[1][3] = 0
+        N[2][3] = 1 ;  M[2][3] = 0
+        N[3][3] = 0 ;  M[3][3] = 0
+        N[4][3] = 0 ;  M[4][3] = 1
+        # fifth reaction: Iss -> R
+        N[0][4] = 0 ;  M[0][4] = 0
+        N[1][4] = 0 ;  M[1][4] = 0
+        N[2][4] = 0 ;  M[2][4] = 0
+        N[3][4] = 1 ;  M[3][4] = 0
+        N[4][4] = 0 ;  M[4][4] = 1
+
+        R = M - N
+        
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R        
+        dic_x_ini = {}
+        dic_x = {}
+        dic_kinetic = {}
+        super_spreader_set = False
+        for n in G.nodes(): # loop over all compartments
+            dic_x_ini[n] = [[], [], [], [], []]
+            # loop over all states
+            for k in range(0, len(x_ini)):
+                # we set a superspreader. Ugly temporary way
+                # TODO: change that
+                if ((len(x_ini[k]) == 1) and not(super_spreader_set)):
+                    dic_x_ini[n][k].append(x_ini[k])
+                    super_spreader_set = True
+                else:
+                    # set a fraction of individuals in this node
+                    # n should start from zero                
+                    for l in range(n*int(len(x_ini[k])/G.number_of_nodes()),(n+1)*int(len(x_ini[k])/G.number_of_nodes())):                    
+                        dic_x_ini[n][k].append(x_ini[k][l])
+            dic_kinetic[n] = k_plus
+        
+        dic_x = copy.deepcopy(dic_x_ini)
+        
+        nx.set_node_attributes(G, name='x_ini', values=dic_x_ini)
+        nx.set_node_attributes(G, name='x', values=dic_x)
+        nx.set_node_attributes(G, name='k_plus', values=dic_kinetic)
+
+        # set edges attributes here
+        dic_hopping_rates = {}
+        for e in G.edges():
+            dic_hopping_rates[e] = 0.01 # constant for now because TEST
         nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)
     return params, G
-
+    
 def SolveOneCompartment(params):
     """
     solve master equation with one compartment
@@ -3060,11 +3176,13 @@ def SolveAgentBasedOnGraph(params, G):
             if (abs(N[i,j]) > 0.00000001):  
                 indices_states_per_reaction[i,j] = 1
 
+    
     # intialize states and time
     t = params["time_start"]
     G.graph['time'] = t # intialize time attribtue in graph
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0 # loop counter
+    count_saved_loops = 0 # loop that we save counter
     ### --- 2/ loop in time
     try: # so we can exit the loop at any time with ctrl + C
         while (t < params["time_end"]):
@@ -3085,6 +3203,7 @@ def SolveAgentBasedOnGraph(params, G):
                 # if ((count_loops % 10000) == 0):
                     # print("t, count_loops, x = " , t, count_loops, x_print)
                 outputs.append([t, dic_x_for_save])
+                count_saved_loops +=1
 
             # compute W_inside: loop on every node
             W_inside = 0.0
@@ -3201,18 +3320,11 @@ def SolveAgentBasedOnGraph(params, G):
             ###          look for the id of the reaction and trigger the corresponding event
             ###          there is probably a simpler way to do it.
             
-            # --- WE SET A REACTION
-            # TODO: change this 'if' in a agent based fashion
+            # --- WE SET A REACTION            
             if (id_reaction < nbReactions*len(G.nodes())): # we set a kinetic process            
                 # IMPORTANT: this assumes that nodes range from 0 to nb_nodes - 1
                 node_that_reacts = np.floor(id_reaction / nbReactions)
                 chosen_reaction = id_reaction%nbReactions
-                
-                # dic_x[node] = dic_x[node] + R[:, react]                            
-                # if ((dic_x[node][0] < 0) or (dic_x[node][1] < 0) or (dic_x[node][2] < 0) ):
-                    # print('negative kinetic: id_reaction, node, react, dic_x[node] = ' , id_reaction, node, react, dic_x[node])
-                    # exit(-1)
-                # we chose reaction id_reaction but we now need to know to 
                 # which sub-reaction (i.e. which individual in particular 
                 # moves)
                 # compute total number of sub-reactions. e.g. t_0 = k * S * I
@@ -3231,9 +3343,8 @@ def SolveAgentBasedOnGraph(params, G):
                 # t_forward_plus[id_reaction] 
                 # we keep it normalized to match the value of xi which is 
                 # between 0 and 1
-                proba_each_sub_event = dic_t_forward_plus[node_that_reacts][chosen_reaction] / nbSubReactions / W_total
-                
-                if (chosen_reaction == 0): # first reaction we loop from 0
+                proba_each_sub_event = dic_t_forward_plus[node_that_reacts][chosen_reaction] / (nbSubReactions * W_total)                
+                if (id_reaction == 0): # first reaction we loop from 0
                     min_lbound = 0.
                 else: # start from the previous value of the chosen reaction
                     min_lbound = next_states_sum[id_reaction -1]
@@ -3294,18 +3405,24 @@ def SolveAgentBasedOnGraph(params, G):
                             state_to_remove = ii
                         elif ((R[ii, chosen_reaction]) == 1):
                             state_to_add = ii
+                                                            
+                    # we add to the outputs the id of the infected that triggered an infection
+                    if ((count_loops % params['save_frequency']) == 0):                        
+                        # get indice of infectious that is infecting the susceptible
+                        indice_sub_event_infected = int(np.floor(indice/len(dic_x[node_that_reacts][state_to_remove])))
+                        # get if of infected individual that infected a susceptible                        
+                        id_individual_infected = dic_x[node_that_reacts][state_to_add][indice_sub_event_infected]                        
+                        # - 1 because we already incremented by one the counter of saved loops
+                        outputs[count_saved_loops-1].append(id_individual_infected)
                     
-                    # get indice of the sub event
-                    # indice_sub_event_state_to_remove = indice % len(x[state_to_remove])
-                    indice_sub_event_state_to_remove = indice % len(dic_x[node_that_reacts][state_to_remove])
-
+                    # get indice of the sub event                    
+                    indice_sub_event_state_to_remove = indice % len(dic_x[node_that_reacts][state_to_remove])                
                     # get id of individual we will remove
                     id_individual_state_to_remove = dic_x[node_that_reacts][state_to_remove][indice_sub_event_state_to_remove]
                     # remove individual from list
                     dic_x[node_that_reacts][state_to_remove].pop(indice_sub_event_state_to_remove)
                     # add individual to state to add
                     dic_x[node_that_reacts][state_to_add].append(id_individual_state_to_remove)
-                
                 
             # --- WE SET A HOPPING PROCESS
             else: # we set a hopping process
