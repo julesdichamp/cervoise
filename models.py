@@ -2514,17 +2514,15 @@ def InitModels(params, G):
     simple SEIR model and hopping between nodes of graph
     with an additionnal state of a superspreader Iss which has a much 
     faster rate
-    with an agent based fashion where we track every individual
-    S + I -> 2I (with rate k_SI)
-    I     -> R  (with rate k_IR)
+    with an agent based fashion where we track every individual    
     """
     if (params["model_name"] == "SEIIssROnGraphAgentBased"):
         ### --- 1/ initializations
         # load initial state, and reactions values        
-        print('coucou')
         k_SE_I = params["k_SE_I"]
         k_SE_Iss = params["k_SE_Iss"]
         k_EI = params["k_EI"]
+        k_EIss = params["k_EIss"]
         k_IR = params["k_IR"]
         k_IssR = params["k_IssR"]
         S_ini = params["S_ini"]
@@ -2546,12 +2544,13 @@ def InitModels(params, G):
         for i in range(S_ini+E_ini+Iss_ini, S_ini+E_ini+I_ini+Iss_ini+R_ini):
             x_ini[4].append(i)
         
-        k_plus = np.array([k_SE_I, k_SE_Iss, k_EI, k_IR, k_IssR])
+        print('x_ini = ', x_ini , '\n')
+        k_plus = np.array([k_SE_I, k_SE_Iss, k_EI, k_EIss, k_IR, k_IssR])
         # indices S = 0, I = 1, R = 2
         # N_ij = stoechiomatrix coefficients on left hand side of reactions
         # M_ij = stoechiomatrix coefficients on right hand side of reactions
         # i = state, j = reaction
-        nbReactions = 5
+        nbReactions = 6
         nbStates = 5
         N = np.zeros([nbStates, nbReactions])
         M = np.zeros([nbStates, nbReactions])
@@ -2574,18 +2573,24 @@ def InitModels(params, G):
         N[2][2] = 0 ;  M[2][2] = 1
         N[3][2] = 0 ;  M[3][2] = 0
         N[4][2] = 0 ;  M[4][2] = 0
-        # fourth reaction: I -> R
+        # fourth reaction: E -> Iss
         N[0][3] = 0 ;  M[0][3] = 0
-        N[1][3] = 0 ;  M[1][3] = 0
-        N[2][3] = 1 ;  M[2][3] = 0
-        N[3][3] = 0 ;  M[3][3] = 0
-        N[4][3] = 0 ;  M[4][3] = 1
-        # fifth reaction: Iss -> R
+        N[1][3] = 1 ;  M[1][3] = 0
+        N[2][3] = 0 ;  M[2][3] = 0
+        N[3][3] = 0 ;  M[3][3] = 1
+        N[4][3] = 0 ;  M[4][3] = 0
+        # fifth reaction: I -> R
         N[0][4] = 0 ;  M[0][4] = 0
         N[1][4] = 0 ;  M[1][4] = 0
-        N[2][4] = 0 ;  M[2][4] = 0
-        N[3][4] = 1 ;  M[3][4] = 0
+        N[2][4] = 1 ;  M[2][4] = 0
+        N[3][4] = 0 ;  M[3][4] = 0
         N[4][4] = 0 ;  M[4][4] = 1
+        # sixth reaction: Iss -> R
+        N[0][5] = 0 ;  M[0][5] = 0
+        N[1][5] = 0 ;  M[1][5] = 0
+        N[2][5] = 0 ;  M[2][5] = 0
+        N[3][5] = 1 ;  M[3][5] = 0
+        N[4][5] = 0 ;  M[4][5] = 1
 
         R = M - N
         
@@ -2605,7 +2610,7 @@ def InitModels(params, G):
                 # we set a superspreader. Ugly temporary way
                 # TODO: change that
                 if ((len(x_ini[k]) == 1) and not(super_spreader_set)):
-                    dic_x_ini[n][k].append(x_ini[k])
+                    dic_x_ini[n][k] = (x_ini[k])
                     super_spreader_set = True
                 else:
                     # set a fraction of individuals in this node
@@ -3408,12 +3413,27 @@ def SolveAgentBasedOnGraph(params, G):
                                                             
                     # we add to the outputs the id of the infected that triggered an infection
                     if ((count_loops % params['save_frequency']) == 0):                        
-                        # get indice of infectious that is infecting the susceptible
+                        
+                        # in SIR model S + I --> 2I so that the individual that infected is also
+                        # the individual to remove from the state list 
+                        # i SEIR model S + I --> E + I so that it is not longer the case
+                        # per convention we will consider that the states in matrix indices_states_per_reaction
+                        # will be ordered such that 'I' will always be after 'S' in matrix
+                        state_of_infectious = -1
+                        for kkk in range(0,nbStates):
+                            if (abs(indices_states_per_reaction[kkk][chosen_reaction]) > 0.000001):
+                                if (kkk > state_of_infectious):
+                                    state_of_infectious = kkk
+                        # print(indice, state_of_infectious)
+                        # print(id_reaction, node_that_reacts, chosen_reaction)
+                        # get indice of infectious that is infecting the susceptible                        
                         indice_sub_event_infected = int(np.floor(indice/len(dic_x[node_that_reacts][state_to_remove])))
-                        # get if of infected individual that infected a susceptible                        
-                        id_individual_infected = dic_x[node_that_reacts][state_to_add][indice_sub_event_infected]                        
+                        # get if of infected individual that infected a susceptible                                    
+                        id_individual_infected = dic_x[node_that_reacts][state_of_infectious][indice_sub_event_infected]
                         # - 1 because we already incremented by one the counter of saved loops
                         outputs[count_saved_loops-1].append(id_individual_infected)
+                        # print(state_of_infectious, indice_sub_event_infected, id_individual_infected)
+                        # print(dic_x[node_that_reacts])
                     
                     # get indice of the sub event                    
                     indice_sub_event_state_to_remove = indice % len(dic_x[node_that_reacts][state_to_remove])                
@@ -3479,19 +3499,25 @@ def SolveAgentBasedOnGraph(params, G):
                             ubound += proba_each_sub_event
                             indice += 1                    
                 
-                
                 # sub-hopping processes are ordered following the natural
-                # order of the list of the current hopping state:
+                # order of the list of the current hopping state within a node:
                 # d_ij * x[state][0], d_ij * x[state][1], ... , d_ij * x[state][n]            
                 indice_sub_event_state_to_remove = indice                
                 # get id of individual we will remove
                 id_individual_state_to_remove = dic_x[ni_hop_from][hoping_state][indice_sub_event_state_to_remove]
+                # JD DEBUG; to check when infected hop: only works with SEIIssR
+                # if (hoping_state == 2): # an infected hops
+                    # print('infected hops:', ni_hop_from, nj_hop_to, hoping_state)
+                    # print('dic_x[ni_hop_from] = ' , dic_x[ni_hop_from])
+                # if (hoping_state == 3): # a in fected superspreader hops
+                    # print('superspreader hops:', ni_hop_from, nj_hop_to, hoping_state)
+                    # print('dic_x[ni_hop_from] = ' , dic_x[ni_hop_from])
+                
                 # remove individual from list                
                 dic_x[ni_hop_from][hoping_state].pop(indice_sub_event_state_to_remove)
                 # add individual to state to add
                 dic_x[nj_hop_to][hoping_state].append(id_individual_state_to_remove)
-
-
+                
             # set new dictionnary as graph attribute
             nx.set_node_attributes(G, name='x', values=dic_x)            
             

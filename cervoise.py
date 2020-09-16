@@ -413,16 +413,15 @@ def InitParams(config_name):
         # For now all parameters are the same wherever the region
         params["k_SE_I"] = config.getfloat("model", "k_SE_I")
         params["k_SE_Iss"] = config.getfloat("model", "k_SE_Iss")
-        params["k_EI"] = config.getfloat("model", "k_EI")
-        params["k_IR"] = config.getfloat("model", "k_IR")
-        params["k_IssR"] = config.getfloat("model", "k_IssR")
+        params["k_EI"]   = eval(config.get("model", "k_EI"))
+        params["k_EIss"] = eval(config.get("model", "k_EIss"))                
+        params["k_IR"]   = eval(config.get("model", "k_IR"))
+        params["k_IssR"] = eval(config.get("model", "k_IssR"))        
         params["S_ini"] = config.getint("model", "S_ini")
         params["E_ini"] = config.getint("model", "E_ini")
         params["I_ini"] = config.getint("model", "I_ini")
         params["Iss_ini"] = config.getint("model", "Iss_ini")
         params["R_ini"] = config.getint("model", "R_ini")
-    
-    
     else:
         print("[ERROR]: model name: ",params['model_name']," not found. Exit here.")
         exit(0)        
