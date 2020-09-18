@@ -430,6 +430,12 @@ def InitParams(config_name):
     params["time_start"] = config.getfloat("settings", "time_start")
     params["time_end"] = config.getfloat("settings", "time_end")
     
+    if config.has_option("settings", "seed_num"):
+        params["seed_num"] = config.getint("settings", "seed_num")
+    else: # if seed is not given then default is 0
+        params["seed_num"] = 0
+        
+    print(params["seed_num"])
     # load fit infos
     # to know if we fit or not
     params["fit_model"] = strtobool(config.get("fit", "fit_model"))
@@ -451,7 +457,9 @@ def InitParams(config_name):
                               plot_options.split(",")]
     
     params["save_frequency"] = config.getint("outputs", "save_frequency")
-
+    
+    
+    
     return params
 
 def InitGraph(params):

@@ -2544,7 +2544,7 @@ def InitModels(params, G):
         for i in range(S_ini+E_ini+Iss_ini, S_ini+E_ini+I_ini+Iss_ini+R_ini):
             x_ini[4].append(i)
         
-        print('x_ini = ', x_ini , '\n')
+        # print('x_ini = ', x_ini , '\n')
         k_plus = np.array([k_SE_I, k_SE_Iss, k_EI, k_EIss, k_IR, k_IssR])
         # indices S = 0, I = 1, R = 2
         # N_ij = stoechiomatrix coefficients on left hand side of reactions
@@ -2650,6 +2650,8 @@ def SolveOneCompartment(params):
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0
+    fastrand.pcg32inc(0) # changes the increment and guaantee the randomness is preserved
+    fastrand.pcg32_seed(params["seed_num"]) #set the seed value
     try: # so we can exit the loop at any time with ctrl + C
         while t < params["time_end"]:
             if ((count_loops % params['save_frequency']) == 0):
@@ -2777,6 +2779,8 @@ def SolveAgentBasedOneCompartment(params):
     t = params["time_start"]
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0
+    fastrand.pcg32inc(0) # changes the increment and guaantee the randomness is preserved
+    fastrand.pcg32_seed(params["seed_num"]) #set the seed value
     try: # so we can exit the loop at any time with ctrl + C
         while t < params["time_end"]:
             if ((count_loops % params['save_frequency']) == 0):
@@ -2976,6 +2980,8 @@ def SolveOnGraph(params, G):
     G.graph['time'] = t # intialize time attribtue in graph
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0 # loop counter
+    fastrand.pcg32inc(0) # changes the increment and guaantee the randomness is preserved
+    fastrand.pcg32_seed(params["seed_num"]) #set the seed value
     ### --- 2/ loop in time
     try: # so we can exit the loop at any time with ctrl + C
         while (t < params["time_end"]):
@@ -3188,6 +3194,8 @@ def SolveAgentBasedOnGraph(params, G):
     outputs = []  # we will fill this list with data to be plotted
     count_loops = 0 # loop counter
     count_saved_loops = 0 # loop that we save counter
+    fastrand.pcg32inc(0) # changes the increment and guaantee the randomness is preserved
+    fastrand.pcg32_seed(params["seed_num"]) #set the seed value
     ### --- 2/ loop in time
     try: # so we can exit the loop at any time with ctrl + C
         while (t < params["time_end"]):
@@ -3238,12 +3246,11 @@ def SolveAgentBasedOnGraph(params, G):
                 dic_t_forward_plus[n] = t_forward_plus # save forward reaction rates for all nodes
 
                 # total rate which the state can be left with
-                W_node = np.sum(t_forward_plus)
-                xi = randZeroOne()
+                W_node = np.sum(t_forward_plus)                
                 W_inside += W_node
 
             ### --- 2-2/ compute total between rate = total rate of leaving the state with a
-            # hopping process = sum of all hopping rates d_ij * xi
+            # hopping process = sum of all hopping rates d_ij * x[i]
             dic_t_between = {}
             W_between = 0.0
             dic_hopping_rates = nx.get_edge_attributes(G,'hopping_rates')
@@ -3271,12 +3278,11 @@ def SolveAgentBasedOnGraph(params, G):
 
             # if W_inside is 0, nothing more can happen anymore and only jumps will occur
             # so we exit instead
-            if (abs(W_inside) <= 0.0000000001):
-                # print("W = " , W)
-                # print("x = " , x)
+            if (abs(W_inside) <= 0.0000000001):                
                 break
             
             ### --- 2-3/ compute total rate and Gillepsie time step
+            xi = randZeroOne()
             W_total = W_inside + W_between
             # print("W_inside, W_between, W_total = " , W_inside, W_between, W_total)
                 
@@ -3504,15 +3510,7 @@ def SolveAgentBasedOnGraph(params, G):
                 # d_ij * x[state][0], d_ij * x[state][1], ... , d_ij * x[state][n]            
                 indice_sub_event_state_to_remove = indice                
                 # get id of individual we will remove
-                id_individual_state_to_remove = dic_x[ni_hop_from][hoping_state][indice_sub_event_state_to_remove]
-                # JD DEBUG; to check when infected hop: only works with SEIIssR
-                # if (hoping_state == 2): # an infected hops
-                    # print('infected hops:', ni_hop_from, nj_hop_to, hoping_state)
-                    # print('dic_x[ni_hop_from] = ' , dic_x[ni_hop_from])
-                # if (hoping_state == 3): # a in fected superspreader hops
-                    # print('superspreader hops:', ni_hop_from, nj_hop_to, hoping_state)
-                    # print('dic_x[ni_hop_from] = ' , dic_x[ni_hop_from])
-                
+                id_individual_state_to_remove = dic_x[ni_hop_from][hoping_state][indice_sub_event_state_to_remove]                
                 # remove individual from list                
                 dic_x[ni_hop_from][hoping_state].pop(indice_sub_event_state_to_remove)
                 # add individual to state to add
