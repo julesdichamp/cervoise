@@ -170,6 +170,42 @@ def plot_SIHigherOrderSeveralReactionsWellMixed(params,outputs):
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
     # plt.close()
     plt.show()
+def plot_SIRGroupMeetingsWellMixed(params,outputs):
+    """
+    plot SIRGroupMeetingsWellMixed model results
+    S,I, R populations over time
+    """
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    x = np.zeros([nbTimeSteps, 3])
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        x[i,:] = outputs[i][1]
+
+    fig2 = plt.figure(figsize=(16, 10)) # in inches!
+    index_max_infected = np.argmax(x[:,1])
+    print(time[index_max_infected], x[index_max_infected,1])
+    plt.plot(time,x[:,0], 'red', label='Susceptible')
+    plt.plot(time,x[:,1], 'green', label='Infected')
+    plt.plot(time,x[:,2], 'blue', label='Recovered')
+    plt.legend()
+    plt.xlabel('Arbitrary time unit')
+    plt.ylabel('Population numbers')        
+    string_for_savefig = 'SIRGroupMeetingsWellMixed_k_SI='+str(params['k_SI']) + '_n_max='+str(params['n_max'])    
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    # plt.close()
+    plt.show()
+
 def plot_SIRDWellMixed(params,outputs):
     """
     plot SIRWellMixed model results
@@ -3014,5 +3050,3 @@ def plot_SEIIssROnGraphAgentBased(params,outputs, G):
               + '_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini'])
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         plt.close()
-
-

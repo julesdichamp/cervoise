@@ -72,8 +72,11 @@ def InitModelODEs(params, G):
     return params , G
             
 def LaunchModelODEs(params):
+    
     if (params["model_name"] == "RealSEIRLDWellMixed"):
         x = odeint(modelODEs_SEIRLD, params['x_ini'], params['time_ODEs'], args=(params,))
+    elif (params["model_name"] == "SIRWellMixed"):
+        x = odeint(modelODEs_SIR, params['x_ini'], params['time_ODEs'], args=(params,))
     elif (params["model_name"] == "RealSIRLDWellMixed"):
         x = odeint(modelODEs_SIRLD, params['x_ini'], params['time_ODEs'], args=(params,))
     elif (params["model_name"] == "RealSIRLDmodifiedWellMixed"):

@@ -239,6 +239,58 @@ def InitModels(params, G):
         params['M_matrix'] = M
         params['R_matrix'] = R
 
+    """ 
+    simple SIR model but with all possible combinations of group meetings
+    of size at most n_max
+    m * I + (n-m) S --> n*I    
+    """
+    if (params["model_name"] == "SIRGroupMeetingsWellMixed"):
+
+        k_SI = params["k_SI"] # so far all reactions have the same rate..
+        k_IR = params["k_IR"]
+        n_max = params["n_max"]
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+        params['x_ini'] = np.array([S_ini, I_ini, R_ini])
+        # reactions are ordered as:
+        # n, m
+        # S + I --> 2I
+        # 2S + I --> 3I, S + 2I --> 3I
+        # 3S + I --> 4I, 2S + 2I --> 4I, S + 3I --> 4I        
+        # i = state, j = reaction        
+        nbReactions = int((((n_max - 1) * n_max) /2) + 1)
+        nbStates = 3        
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+        j=0        
+        for n in range(0,n_max+1):
+            for m in range(1,n):
+                N[0][j] = n-m # fill S states
+                N[1][j] = m # fill I states
+                M[1][j] = n # fill in M matrix the number of infected 
+                # tmp_k_plus.append(k_SI)                
+                j+=1
+
+        N[1][nbReactions-1] = 1 # fill R state in M matrix
+        M[2][nbReactions-1] = 1 # fill R state in M matrix
+        tmp_k_plus = []
+        for j in range(0,nbReactions-1):
+            order_reac = np.sum(N[:,j]) -1
+            tmp_k_plus.append(k_SI/((S_ini+I_ini+R_ini)**order_reac))        
+        tmp_k_plus.append(k_IR)
+        params['k_plus'] = np.array(tmp_k_plus)
+        print("params['k_plus'] = ", params['k_plus'])
+        R = M - N
+        print("M=",M)
+        print("N=",N)
+        print("R=",R)
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+
     """
     simple SIRD model on well mixed hypothesis (D is death)
     S + I -> 2I (with rate k_SI)
@@ -2657,9 +2709,9 @@ def SolveOneCompartment(params):
             if ((count_loops % params['save_frequency']) == 0):
                 x_save = copy.deepcopy(x)
                 outputs.append((t, x_save))
-                if ((count_loops % 100000) == 0):            
-                    print(t,count_loops, x_save)
-                # print(t,count_loops, x_save)
+                # if ((count_loops % 100000) == 0):            
+                    # print(t,count_loops, x_save)
+                print(t,count_loops, x_save)
             # forward reaction rates
             t_forward_plus = np.zeros(nbReactions)
             for j in range(0, nbReactions):
@@ -2714,7 +2766,7 @@ def SolveOneCompartment(params):
             
             
             # set new state according to reaction
-            
+            # print("id_reaction, N[:,id], M[:,id], R[:,id] = ", id_reaction, N[:,id_reaction], params['M_matrix'][:,id_reaction], R[:,id_reaction])
             x = x + R[:, id_reaction]
             # special case of a custom model to test waiting times...
             if (params["model_name"] == "SIerlangWellMixedModified") or (params["model_name"] == "SIAndIntermediateErlangWellMixedModified"):

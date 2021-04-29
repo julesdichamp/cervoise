@@ -235,6 +235,13 @@ def InitParams(config_name):
         params["S_ini"] = config.getint("model", "S_ini")
         params["I_ini"] = config.getint("model", "I_ini")    
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")        
+    elif params["model_name"] == "SIRGroupMeetingsWellMixed":  # load parameters needed for this model
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["n_max"] = config.getint("model", "n_max")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")            
     
     # --- deals with real data
     elif params["model_name"] == "RealSIRDWellMixed":  # load parameters needed for this model        
@@ -756,6 +763,9 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIAndIntermediateErlangWellMixedModified":
         outputs, waiting_times = SolveOneCompartment(params)
         plot_SIAndIntermediateErlangWellMixedModified(params, outputs, waiting_times)
+    elif params["model_name"] == "SIRGroupMeetingsWellMixed":
+        outputs = SolveOneCompartment(params)
+        plot_SIRGroupMeetingsWellMixed(params, outputs)
     elif params["model_name"] == "RealSEIRLDWellMixed":
         outputs = SolveOneCompartment(params)
         dates_to_plot = []
@@ -764,14 +774,15 @@ def LaunchModel(params, graph):
         dates_to_plot = params['dates_for_fit'].copy()
         dates_to_plot.insert(0, params['time_start_day'])
         plotDataAndSEIRLDResults(params, graph,outputs, dates_to_plot)    
-    elif params["model_name"] == "RealSEIsIasHoRadRDWellMixed":        
+    elif params["model_name"] == "RealSEIsIasHoRadRDWellMixed":                
         outputs = SolveOneCompartment(params)
         dates_to_plot = []
         # copy list otherwize references are copied... and it messes up
         # with params['dates_for_fit'] list later on (e.g. on the fit function)
         dates_to_plot = params['dates_for_fit'].copy()
         dates_to_plot.insert(0, params['time_start_day'])
-        plotDataAndRealSEIsIasHoRadRDWellMixed(params, graph,outputs, dates_to_plot)        
+        
+        plotDataAndRealSEIsIasHoRadRDWellMixed(params, graph,outputs, dates_to_plot)            
     elif params["model_name"] == "SIRWellMixedAgentBased":
         outputs = SolveAgentBasedOneCompartment(params)
         plot_SIRWellMixedAgentBased(params, outputs)
@@ -892,6 +903,8 @@ if ("PlotResults" in params['plot_options']):
 else:
     if (params['fit_with_ODEs']):
         params , G = InitModelODEs(params, G)
+        print('coucou')
+        
         outputs = LaunchModelODEs(params) 
         
         # save params inputs
@@ -903,8 +916,13 @@ else:
         f = open(params['outputs_dir']+'/outputs.txt',"w")
         f.write(str(outputs))
         f.close()
-    
-        if params["model_name"] == "RealSEIRLDWellMixed":      
+        
+        if params["model_name"] == "SIRWellMixed":
+            R0 = params['k_SI'] * params['S_ini']/ (params['k_IR'])
+            print('R0 = ' , R0)
+            plot_SIRWellMixed(params, outputs)
+            
+        elif params["model_name"] == "RealSEIRLDWellMixed":      
             R0 = params['k_SE'] / (params['k_IR'] + params['k_IL'])
             print('R0 = ' , R0)
             dates_to_plot = []
