@@ -1137,7 +1137,7 @@ def plot_SIROnGraph(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1149,7 +1149,7 @@ def plot_SIROnGraph(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Infected_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1161,7 +1161,7 @@ def plot_SIROnGraph(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')
             string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1188,7 +1188,7 @@ def plot_SIROnGraph(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1200,7 +1200,7 @@ def plot_SIROnGraph(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1212,7 +1212,7 @@ def plot_SIROnGraph(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')
         string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1326,7 +1326,7 @@ def plot_SIRDOnGraph(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1338,7 +1338,7 @@ def plot_SIRDOnGraph(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Infected_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1350,7 +1350,7 @@ def plot_SIRDOnGraph(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')
             string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1362,7 +1362,7 @@ def plot_SIRDOnGraph(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')
             string_for_savefig = 'Deaths_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1393,7 +1393,7 @@ def plot_SIRDOnGraph(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1405,7 +1405,7 @@ def plot_SIRDOnGraph(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1417,7 +1417,7 @@ def plot_SIRDOnGraph(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')
         string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1429,7 +1429,7 @@ def plot_SIRDOnGraph(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')
         string_for_savefig = 'Deaths_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1548,7 +1548,7 @@ def plot_TEST(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1560,7 +1560,7 @@ def plot_TEST(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Infected_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1572,7 +1572,7 @@ def plot_TEST(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')
             string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1584,7 +1584,7 @@ def plot_TEST(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')
             string_for_savefig = 'Deaths_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -1615,7 +1615,7 @@ def plot_TEST(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1627,7 +1627,7 @@ def plot_TEST(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1639,7 +1639,7 @@ def plot_TEST(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')
         string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -1651,7 +1651,7 @@ def plot_TEST(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_D_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')
         string_for_savefig = 'Deaths_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -2325,7 +2325,7 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -2337,7 +2337,7 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Infected_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -2349,7 +2349,7 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')
             string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -2376,7 +2376,7 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -2388,7 +2388,7 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -2400,7 +2400,7 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')
         string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -2723,7 +2723,7 @@ def plot_SEIIssROnGraphAgentBased(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -2735,7 +2735,7 @@ def plot_SEIIssROnGraphAgentBased(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')    
             string_for_savefig = 'Infected_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -2747,7 +2747,7 @@ def plot_SEIIssROnGraphAgentBased(params,outputs, G):
             plt.title(string_for_title)
             ### --- drawing nodes and edges separately so we can capture collection for colobar
             ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
             plt.colorbar(nc)
             plt.axis('off')
             string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
@@ -2775,7 +2775,7 @@ def plot_SEIIssROnGraphAgentBased(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -2787,7 +2787,7 @@ def plot_SEIIssROnGraphAgentBased(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')    
         string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
@@ -2799,7 +2799,7 @@ def plot_SEIIssROnGraphAgentBased(params,outputs, G):
         plt.title(string_for_title)
         # ### --- drawing nodes and edges separately so we can capture collection for colobar
         ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, with_labels=False, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
         plt.colorbar(nc)
         plt.axis('off')
         string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
