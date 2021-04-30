@@ -457,7 +457,8 @@ def InitParams(config_name):
     if not (
             os.path.exists(params["outputs_dir"])
     ):  # if directory does not exist, create it
-        os.mkdir(params["outputs_dir"])
+        params["outputs_dir"]
+        os.makedirs(params["outputs_dir"])
     plot_options = config.get("outputs", "plot_options")
     # remove spaces and return to line if there are different plot options
     params["plot_options"] = [p.replace(" ", "").replace('\n','') for p in
