@@ -383,6 +383,12 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["R_ini"] = config.getint("model", "R_ini")
         params["nb_intermediate_states"] = config.getint("model", "nb_intermediate_states")    
+    elif params["model_name"] == "TestScalingHoppingRates":  # load parameters needed for this model
+        ### --- MARWANE --- ###
+        print('coucou')
+        ### ...
+        ### --------------- ###
+    # --- deals with real data
     
     # --- deals with real data
     elif params["model_name"] == "RealSIRDOnGraph":  # load parameters needed for this model
@@ -429,6 +435,11 @@ def InitParams(config_name):
         params["I_ini"] = config.getint("model", "I_ini")
         params["Iss_ini"] = config.getint("model", "Iss_ini")
         params["R_ini"] = config.getint("model", "R_ini")
+    elif params["model_name"] == "TestSimpleReturnHomeModel":  # load parameters needed for this model
+        ### --- MARWANE --- ###
+        print('coucou')
+        ### ...
+        ### --------------- ###
     else:
         print("[ERROR]: model name: ",params['model_name']," not found. Exit here.")
         exit(0)        
@@ -808,6 +819,11 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIRerlangOnGraph":
         outputs, graph = SolveOnGraph(params, graph)
         plot_SIRerlangOnGraph(params, outputs, graph)
+    ### --- MARWANE START --- ###
+    elif params["model_name"] == "TestScalingHoppingRates":
+        outputs, graph = SolveOnGraph(params, graph)
+        plot_TestScalingHoppingRates(params, outputs, graph)   
+    ### --- MARWANE END   --- ###  
     elif params["model_name"] == "RealSIRDOnGraph":                 
         outputs , graph = SolveOnGraph(params, graph)
         plot_TEST(params,outputs, graph)
@@ -822,9 +838,14 @@ def LaunchModel(params, graph):
     elif params["model_name"] == "SIROnGraphAgentBased":        
         outputs, graph = SolveAgentBasedOnGraph(params, graph)
         plot_SIROnGraphAgentBased(params, outputs, graph)
-    elif params["model_name"] == "SEIIssROnGraphAgentBased":        
+    elif params["model_name"] == "SEIIssROnGraphAgentBased":      
         outputs, graph = SolveAgentBasedOnGraph(params, graph)
-        plot_SEIIssROnGraphAgentBased(params, outputs, graph)    
+        plot_SEIIssROnGraphAgentBased(params, outputs, graph)
+    ### --- MARWANE START --- ###
+    elif params["model_name"] == "TestSimpleReturnHomeModelAgentBased":
+        outputs, graph = SolveAgentBasedOnGraph(params, graph)
+        plot_TestSimpleReturnHomeModelAgentBasedl(params, outputs, graph)
+    ### --- MARWANE END   --- ###  
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         exit(0)

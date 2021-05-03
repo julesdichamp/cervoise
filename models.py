@@ -2682,6 +2682,154 @@ def InitModels(params, G):
         for e in G.edges():
             dic_hopping_rates[e] = 0.01 # constant for now because TEST
         nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)
+    
+    ### --- MARWANE START --- #
+    """
+    simple SIRD model with hopping between compartments
+    S + I -> 2I (with rate k_SI)
+    I     -> R  (with rate k_IR)
+    I     -> D  (with rate k_ID)
+    """
+    if (params["model_name"] == "TestScalingHoppingRates"):
+        # load initial state, and reactions values
+        k_SI = params["k_SI"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        k_ID = params["k_ID"]  # A = 2
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+        D_ini = params["D_ini"]
+
+        x_ini = np.array([S_ini, I_ini, R_ini, D_ini])
+        k_plus = np.array([k_SI, k_IR, k_ID])
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 3
+        nbStates = 4
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> 2I
+        N[0][0] = 1 ; M[0][0] = 0
+        N[1][0] = 1 ; M[1][0] = 2
+        N[2][0] = 0 ; M[2][0] = 0
+        N[3][0] = 0 ; M[3][0] = 0
+        #second reaction: I -> R
+        N[0][1] = 0 ; M[0][1] = 0
+        N[1][1] = 1 ; M[1][1] = 0
+        N[2][1] = 0 ; M[2][1] = 1
+        N[3][1] = 0 ; M[3][1] = 0
+        #third reaction: I -> D
+        N[0][2] = 0 ; M[0][2] = 0
+        N[1][2] = 1 ; M[1][2] = 0
+        N[2][2] = 0 ; M[2][2] = 0
+        N[3][2] = 0 ; M[3][2] = 1
+
+        R = M - N
+
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R
+
+        # JD: test here to set attributes to graph nodes
+        dic_x_ini = {}
+        dic_x = {}
+        dic_kinetic = {}
+        for n in G.nodes(): # loop over all compartments
+            dic_x_ini[n] = x_ini/(G.number_of_nodes())
+            dic_x[n] = x_ini/(G.number_of_nodes())
+            dic_kinetic[n] = k_plus
+
+        nx.set_node_attributes(G, name='x_ini', values=dic_x_ini)
+        nx.set_node_attributes(G, name='x', values=dic_x)
+        nx.set_node_attributes(G, name='k_plus', values=dic_kinetic)
+
+        # set edges attributes here
+        dic_hopping_rates = {}
+        for e in G.edges():
+            dic_hopping_rates[e] = 0.01 # constant for now because TEST
+        nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)
+    ### --- MARWANE END --- #
+    
+    ### --- MARWANE START --- #
+    """
+    simple SIR model and hopping between nodes of graph
+    with an agent based fashion where we track every individual
+    S + I -> 2I (with rate k_SI)
+    I     -> R  (with rate k_IR)
+    """
+    if (params["model_name"] == "TestSimpleReturnHomeModel"):
+        ### --- 1/ initializations
+        # load initial state, and reactions values
+        k_SI = params["k_SI"]  # A = 1
+        k_IR = params["k_IR"]  # A = 2
+        S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+        x_ini = [[], [], []]
+        for i in range(0, S_ini):
+            x_ini[0].append(i)
+        for i in range(S_ini, S_ini+I_ini):
+            x_ini[1].append(i)
+        for i in range(S_ini+I_ini, S_ini+I_ini+R_ini):
+            x_ini[2].append(i)        
+        
+        k_plus = np.array([k_SI, k_IR])
+        # indices S = 0, I = 1, R = 2
+        # N_ij = stoechiomatrix coefficients on left hand side of reactions
+        # M_ij = stoechiomatrix coefficients on right hand side of reactions
+        # i = state, j = reaction
+        nbReactions = 2
+        nbStates = 3
+        N = np.zeros([nbStates, nbReactions])
+        M = np.zeros([nbStates, nbReactions])
+
+        # first reaction: S + I -> 2I
+        N[0][0] = 1 ;  M[0][0] = 0
+        N[1][0] = 1 ;  M[1][0] = 2
+        N[2][0] = 0 ;  M[2][0] = 0
+        #second reaction: I -> R
+        N[0][1] = 0 ;  M[0][1] = 0
+        N[1][1] = 1 ;  M[1][1] = 0
+        N[2][1] = 0 ;  M[2][1] = 1
+
+        R = M - N
+
+        params["nbReactions"] = nbReactions
+        params["nbStates"] = nbStates
+        params['N_matrix'] = N
+        params['M_matrix'] = M
+        params['R_matrix'] = R        
+        dic_x_ini = {}
+        dic_x = {}
+        dic_kinetic = {}
+        for n in G.nodes(): # loop over all compartments
+            dic_x_ini[n] = [[], [], []]
+            # loop over all states
+            for k in range(0, len(x_ini)):
+                # set a fraction of individuals in this node
+                # n should start from zero                
+                for l in range(n*int(len(x_ini[k])/G.number_of_nodes()),(n+1)*int(len(x_ini[k])/G.number_of_nodes())):
+                    dic_x_ini[n][k].append(x_ini[k][l])            
+            dic_kinetic[n] = k_plus
+        
+        dic_x = copy.deepcopy(dic_x_ini)
+        
+        nx.set_node_attributes(G, name='x_ini', values=dic_x_ini)
+        nx.set_node_attributes(G, name='x', values=dic_x)
+        nx.set_node_attributes(G, name='k_plus', values=dic_kinetic)
+
+        # set edges attributes here
+        dic_hopping_rates = {}
+        for e in G.edges():
+            dic_hopping_rates[e] = 0.01 # constant for now because TEST
+        nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)    
+    ### --- MARWANE END --- #
+    
     return params, G
     
 def SolveOneCompartment(params):
