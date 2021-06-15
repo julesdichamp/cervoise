@@ -1,0 +1,27 @@
+2020-03-25 meeting: 
+
+Next steps
+
+1. Generation of the graph for links between regions, taking into account traffic by cars / buses, trains, plane lines. 
+	1. a. Connect every region (administrative) with its nearest neighbor region  
+	1. b. Add a connection of Ile de France to every other region. 
+	1. c. Link regions according to direct connection by train + plane with significant transport 
+
+2. Formulate extended SIR model in terms of chemical reactions. Formulate master equation for it (-> DD) 
+
+3. Limiting case: Extended SIR for entire France -> serves to estimate the rates for the extended SIR model, that can later be used as starting rates for fit in each region. 
+(the well mixed whole France-model corresponds to a summation over all regions) 
+
+2020-03-27 meeting:
+
+- 30k euros of ANR money
+- find a way to adda chat or forum to gitlab
+Objectives: 
+- get global dynamic of France
+- simulate on a graph where every node is connected to every other
+ --> each node should have the same dynamic [VALIDATION]
+- first, probably the same kinetic parameters for all regions
+- fit procedure, probably do not start from day 1 because it is not 
+stable enough
+
+

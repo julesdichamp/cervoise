@@ -1,0 +1,763 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 25 22:04:48 2020
+
+@author: florian
+"""
+import geopandas as gpd
+import pandas as pd
+import numpy as np
+import glob
+import collections
+
+import requests
+import zipfile
+import io
+
+# WARNING: there exists in destination of airways between departments
+#  and outremer which are not departments:
+# Polynésie-française
+# there are also internal lines between outre-mer territories that are not covered yet
+
+
+def covidator(params, zone=""):
+    url_dep = "http://osm13.openstreetmap.fr/~cquest/openfla/export/departements-20140306-5m-shp.zip"
+    covid_url = (
+        "https://www.data.gouv.fr/fr/datasets/r/63352e38-d353-4b54-bfd1-f1b3ee1cabd7"
+    )
+    local_path = "data/dpts/"
+    r = requests.get(url_dep)
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    z.extractall(path=local_path)
+    filenames = [
+        y
+        for y in sorted(z.namelist())
+        for ending in ["dbf", "prj", "shp", "shx"]
+        if y.endswith(ending)
+    ]
+
+    dbf, prj, shp, shx = [filename for filename in filenames]
+    fr = gpd.read_file(local_path + shp)  # + encoding="utf-8" if needed
+    fr.crs = "epsg:4326"  # {'init': 'epsg:4326'}
+    # met.set_index("code_insee", inplace=True)
+    # met = met["geometry"]
+
+    cov = pd.read_csv(covid_url, sep=";", index_col=2, parse_dates=True,)
+    cov = cov.query("sexe == 0")  # sum of male/female
+    # cov = cov.query("dep not in @filter_dep")
+    cov.dropna(inplace=True)
+
+    # %% data pop/age/sex
+    ageFile = params["ageFile_name"]
+    ages = pd.read_excel(ageFile)
+
+    # %%
+    # fill dpts & reg
+    dd = {}
+    reg = {}
+    k = 0
+    listDpts = pd.read_csv(params['departments_name'])
+    name_shapefile = params["shapefile_name"]
+    shapefile = gpd.read_file(name_shapefile)
+    
+    count_dc_test=0
+    for el in range(cov.shape[0]):
+        daydata = cov.iloc[el]
+        if not(daydata['sexe'] == 0):
+            print('error daydata["sexe"] = ' , daydata["sexe"])
+            print (daydata)
+            exit(0)
+        dataDpt = listDpts.loc[listDpts["NUM"] == daydata["dep"]]
+        dateName = daydata.name
+        dateName = str(dateName)[:10]
+        dptName = list(dataDpt["NOM"])[0]
+        dptNum = list(dataDpt["NUM"])[0]
+        if dptNum == '2A':
+            dptNum = 19
+        elif dptNum == '2B':
+            dptNum = 20
+        elif int(dptNum) < 19:
+            dptNum = int(dptNum) + 1
+        elif int(dptNum) > 20:
+            dptNum = int(dptNum)
+        
+        
+        dptNum = int(dptNum)
+        regionName = listDpts.loc[listDpts["NOM"] == dptName]
+        regionName = list(regionName["REGION"])[0]
+        # if dptNum < 99:
+
+        #     dptGeom = shapefile["geometry"][dptNum - 1]
+        #     centroid = dptGeom.centroid.coords[0]
+        # else:
+        #     centroid = (0, 0)  # random position if outside metropolitan france
+
+        # initialize entry for current department name
+        if dptName not in dd:
+            dd[dptName] = {}
+            dd[dptName]["data_covid"] = {}
+
+        # dd[dptName]["centroid"] = centroid
+
+        # if "area" not in dd[dptName]:
+        #     dd[dptName]["area"] = dataDpt["SUPERFICIE (km²)"]
+
+        if "neighbours" not in dd[dptName]:
+            dd[dptName]["neighbours"] = {}
+        # neighList = []
+        # lenList = []
+
+        # look for greographic neighbours
+        # for nb in range(shapefile.shape[0] - 1):
+        #     if nb != dpt:
+        #         neighbour = shapefile["geometry"][nb]
+        #         if dptGeom.touches(neighbour):
+        #             dptneighname = shapefile["nom"][nb]
+        #             if type(dptneighname) == bytes:
+        #                 dptneighname = dptneighname.decode("latin-1", "replace")
+        #             else:
+        #                 dptneighname = dptneighname
+        #             neighList.append(dptneighname)
+        #             l = dptGeom.boundary.intersection(neighbour.boundary)
+        #             l = l.length
+        #             lenList.append(l)
+
+        # franceGeom[dptname]["neighbours"] = neighList
+        # franceGeom[dptname]["length"] = lenList
+
+        if "agesSex" not in dd[dptName]:
+            dd[dptName]["agesSex"] = ages.loc[ages["dptname"] == dptName].to_dict()
+
+        if dateName not in dd[dptName]["data_covid"]:
+            dd[dptName]["data_covid"][dateName] = {}
+        dd[dptName]["data_covid"][dateName]["Hosp"] = daydata["hosp"]
+        dd[dptName]["data_covid"][dateName]["Deaths"] = daydata["dc"]        
+        dd[dptName]["data_covid"][dateName]["Rad"] = daydata["rad"]
+        dd[dptName]["data_covid"][dateName]["Rea"] = daydata["rea"]
+
+        if regionName not in reg:
+            reg[regionName] = {}
+            reg[regionName]["data_covid"] = {}
+
+            reg[regionName]["id"] = k
+            k += 1
+        # reg[regionName]["centroid"] = (0, 0)  # usused at the moment
+        # if "area" not in reg[regionName]:
+        #     reg[regionName]["area"] = int(dataDpt["SUPERFICIE (km²)"])
+        # else:
+        #     reg[regionName]["area"] += int(dataDpt["SUPERFICIE (km²)"])
+
+        # if "neighbours" not in reg[regionName]:
+        #     reg[regionName]["neighbours"] = {}
+
+        if dateName not in reg[regionName]['data_covid']:
+            reg[regionName]["data_covid"][dateName] = {}
+            reg[regionName]["data_covid"][dateName]["Hosp"] = daydata["hosp"]
+            reg[regionName]["data_covid"][dateName]["Deaths"] = daydata["dc"]            
+            reg[regionName]["data_covid"][dateName]["Rad"] = daydata["rad"]
+            reg[regionName]["data_covid"][dateName]["Rea"] = daydata["rea"]
+        else:
+            reg[regionName]["data_covid"][dateName]["Hosp"] += daydata["hosp"]
+            reg[regionName]["data_covid"][dateName]["Deaths"] += daydata["dc"]            
+            reg[regionName]["data_covid"][dateName]["Rad"] += daydata["rad"]
+            reg[regionName]["data_covid"][dateName]["Rea"] += daydata["rea"]    
+                
+        # print('\n\n', dptName)
+        # print(ages.loc[ages["dptname"] == dptName.replace(" ", "-")].to_dict(orient="list"))
+        # if "agesSex" not in reg[regionName]:
+        #     reg[regionName]["agesSex"] = ages.loc[ages["dptname"] == dptName].to_dict(
+        #         orient="list"
+        #     )
+        # else:
+        #     for key in reg[regionName]["agesSex"].keys():
+        #         if (key != "dptname") and (key != "dpt"):
+        #             if not (key in reg[regionName]["agesSex"].keys()):
+        #                 reg[regionName]["agesSex"][key] = 0.0
+        #                 # we sum the number of people in respective age class for all departments
+        #             # print(regionName)
+        #             # print(reg[regionName]["agesSex"][key])
+        #             # print(reg[regionName]["agesSex"][key][0])
+        #             reg[regionName]["agesSex"][key][0] += ages.loc[
+        #                 ages["dptname"] == dptName.replace(" ", "-")
+        #             ].to_dict(orient="list")[key][
+        #                 0
+        #             ]  # reg[regionName]["agesSex"][key][0]
+
+        # x += franceGeomDpts[dptName]["centroid"][0] / len(franceGeomRegions[regName]['departments'])
+        # y += franceGeomDpts[dptName]["centroid"][1] / len(franceGeomRegions[regName]['departments'])
+
+        # set centroid for region
+        # franceGeomRegions[regName]["centroid"] = (x, y)
+
+    # if zone == "departement":
+    #     return dd
+    # else:
+    
+    
+    return dd, reg
+
+
+def getFranceGeomDpts(params):
+    franceGeomDpts_, franceGeomRegions_ = covidator(params, "departement")
+
+    print("getFranceGeomDpts")
+    # %% data spatiales
+    name_shapefile = params["shapefile_name"]
+    shapefile = gpd.read_file(name_shapefile)
+
+    # %% data train
+    gareFile = params["gareFile_name"]
+    gares = pd.read_csv(gareFile, delimiter=";")
+    # sum by dpt
+    freqGares = np.zeros(shapefile.shape[0])
+
+    # %% data pop/age/sex
+    ageFile = params["ageFile_name"]
+    ages = pd.read_excel(ageFile)
+
+    # %% data airplanes
+    airplaneFile = params["airplaneFile_name"]
+    airways = pd.read_excel(airplaneFile)
+
+    citiesFile = params["citiesFile_name"]
+    cities = pd.read_csv(citiesFile)
+    airwaysDict = {}
+    for airway in airways.iterrows():
+        # print(airway[1]["in"], airway[1]["out"])
+        if not airway[1]["in"] in airwaysDict:
+            airwaysDict[airway[1]["in"]] = [[airway[1]["out"], airway[1]["Pax"]]]
+        else:
+            airwaysDict[airway[1]["in"]].append(
+                [airway[1]["out"], airway[1]["Pax"]]
+            )
+    # building the dict
+    #  keys = dpts numbers
+    #  values = list of [dpt number arrival, total pax]
+    airwaysDictdpt = {}
+    for flightSource in airwaysDict:
+        # print(flightSource, cities[cities.eq(flightSource).any(1)].dpt.values[0])
+        flightSourcedpt = cities[cities.eq(flightSource).any(1)].dpt.values[0]
+        if flightSourcedpt not in airwaysDictdpt:
+            if flightSourcedpt not in airwaysDictdpt:
+                airwaysDictdpt[flightSourcedpt] = {}
+            for flightDest in airwaysDict[flightSource]:
+
+                # print(flightDest[0])
+                # print(cities[cities.eq(flightDest[0]).any(1)].dpt.values[0])
+                flightDestdpt = cities[cities.eq(flightDest[0]).any(1)].dpt.values[
+                    0
+                ]
+                if not bool(airwaysDictdpt[flightSourcedpt]):
+                    airwaysDictdpt[flightSourcedpt] = [
+                        [flightDestdpt, int(flightDest[1])]
+                    ]
+                elif flightDestdpt not in airwaysDictdpt[flightSourcedpt]:
+                    airwaysDictdpt[flightSourcedpt].append(
+                        [flightDestdpt, int(flightDest[1])]
+                    )
+                else:
+                    airwaysDictdpt[flightSourcedpt][
+                        airwaysDictdpt[flightSourcedpt][0] == flightDestdpt
+                    ] += int(flightDest[1])
+    # print (airwaysDictdpt)
+    # cleaning dict as there are several flightSource dpt
+
+    # %% covid19 data
+    covidDptsFileNames = params["allCovid19DepartmentsFileNames"]
+    covidRegionsFileNames = params["allCovid19RegionsFileNames"]
+
+    dic_data_covid = {}
+    for fname in covidDptsFileNames:
+        _date = fname[-15:-5]
+        df = pd.read_json(fname, orient="columns")
+        for i in range(0, df.shape[0]):
+            properties = df.iloc[i, 1]["properties"]
+            dpt_name = properties["Province/State"]
+            if "Confirmed" in properties:
+                num_confirmed = properties["Confirmed"]
+            else:
+                num_confirmed = 0
+            if "Deaths" in properties:
+                num_deaths = properties["Deaths"]
+            else:
+                num_deaths = 0
+            if "Recovered" in properties:
+                num_recovered = properties["Recovered"]
+            else:
+                num_recovered = 0
+            # rename it because it has a different name in other data set...
+            if dpt_name == "Territoire de Belfort":
+                dpt_name = "Territoire-de-Belfort"
+
+            # check that department is not alerady in dictionnary
+            if not (dpt_name in dic_data_covid):
+                dic_data_covid[dpt_name] = {}
+            dic_data_covid[dpt_name][_date] = {}
+            dic_data_covid[dpt_name][_date]["Confirmed"] = num_confirmed
+            dic_data_covid[dpt_name][_date]["Deaths"] = num_deaths
+            dic_data_covid[dpt_name][_date]["Recovered"] = num_recovered
+
+    # the data set in departments does not include La Reunion for some reason
+    # data for La Reunion is however available is directory regions-france
+    # La Reunion is both a region and a department so we include it to
+    # the data from regions folder
+    for fname in covidRegionsFileNames:
+        _date = fname[-15:-5]
+        df = pd.read_json(fname, orient="columns")
+        for i in range(0, df.shape[0]):
+            properties = df.iloc[i, 1]["properties"]
+            dpt_name = properties["Province/State"]
+            if dpt_name == "La Réunion":
+                if "Confirmed" in properties:
+                    num_confirmed = properties["Confirmed"]
+                else:
+                    num_confirmed = 0
+                if "Deaths" in properties:
+                    num_deaths = properties["Deaths"]
+                else:
+                    num_deaths = 0
+                if "Recovered" in properties:
+                    num_recovered = properties["Recovered"]
+                else:
+                    num_recovered = 0
+                if not (dpt_name in dic_data_covid):
+                    dic_data_covid[dpt_name] = {}
+
+                dic_data_covid[dpt_name][_date] = {}
+                dic_data_covid[dpt_name][_date]["Confirmed"] = num_confirmed
+                dic_data_covid[dpt_name][_date]["Deaths"] = num_deaths
+                dic_data_covid[dpt_name][_date]["Recovered"] = num_recovered
+
+    print(
+        "WARNING: data in departements-france does not match data inregions-france for e.g. Martinique"
+    )
+
+    # %% sort and sum by dpt data train
+    for i in range(gares.shape[0]):
+        gare = gares.loc[i]
+        cp = str(gare["Code postal"])
+        if len(cp) < 5:
+            cp = "0" + cp
+        dpt = int(cp[:2]) - 1  # parceque les dpts commencent à 01 et les arrays a 0
+        freq = gare["Total Voyageurs 2018"]
+        freqGares[dpt] += freq
+
+    #  read departments name
+    df = pd.read_csv(params["departments_name"], delimiter=",")
+    # with old departments_name file
+    # nums = df['NUMÉRO'].to_list()
+    # with new departments_name file
+    nums = df['NUM'].to_list()
+    names = df["NOM"].to_list()
+    dic_dptname_to_num = {}
+    dic_dptnum_to_name = {}
+    for i in range(0, len(nums)):
+        # do so to change 06 into 6
+        if not((nums[i] =='2A') or (nums[i] =='2B')): 
+            dic_dptname_to_num[names[i]] = str(int(nums[i]))
+            dic_dptnum_to_name[str(int(nums[i]))] = names[i]
+        else:
+            dic_dptname_to_num[names[i]] = nums[i]
+            dic_dptnum_to_name[nums[i]] = names[i]
+        
+        # %% create dict
+    franceGeom = {}
+    dptID = 0
+    for dpt in range(shapefile.shape[0]):
+        # dptID+=1
+        dptGeom = shapefile["geometry"][dpt]
+        dptname = shapefile["nom"][dpt]
+
+        if type(dptname) == bytes:
+            dptname = dptname.decode("latin-1", "replace")
+        else:
+            dptname = dptname
+
+        # if (dptname == 'Métropole de Lyon'):
+        # print("change name of 'Métropole de Lyon' for 'Rhône'")
+        # dptname = 'Rhône'
+
+        if not (dptname in dic_dptname_to_num):
+            print(
+                "[ERROR]: we didn't find ",
+                dptname,
+                "in dic_dptname_to_num. Exit here.",
+            )
+            # exit(0)
+        else:
+            dptID = dic_dptname_to_num[dptname]
+
+        franceGeom[dptname] = {}
+        franceGeom[dptname]["agesSex"] = ages.loc[
+            dpt
+        ].to_dict()  # added to_dict() so it can be read easily from files
+        franceGeom[dptname]["freqGare"] = freqGares[dpt]
+        franceGeom[dptname]["neighbours"] = {}
+        franceGeom[dptname]["length"] = {}
+        franceGeom[dptname]["area"] = dptGeom.area
+
+        if not (dptname in dic_data_covid):
+            print("[ERROR]: ", dptname, "not find in dic_data_covid. Exit here")
+        franceGeom[dptname]["length"] = {}
+
+        if not (dptname in dic_data_covid):
+            print("[ERROR]: ", dptname, "not find in dic_data_covid. Exit here")
+            exit(0)
+
+        # add airways data to dic (rename dptID into dpt names to match the keys
+        franceGeom[dptname]["airways"] = {}
+        if str(dptID) in airwaysDictdpt:
+            franceGeom[dptname]["airways"] = [
+                [dic_dptnum_to_name[x[0]], x[1]] for x in airwaysDictdpt[str(dptID)]
+            ]
+            # for x in franceGeom[dptname]["airways"]:
+            # if (not(x[0] in _list)):
+            # print( x , " is not in franceGeom keys")
+
+        #  add data_covid to dic
+        franceGeom[dptname]["data_covid"] = dic_data_covid[dptname]
+
+        # add centroid to dic
+        franceGeom[dptname]["centroid"] = dptGeom.centroid.coords[0]
+        # look for neighbours
+        neighList = []
+        lenList = []
+
+        # look for greographic neighbours
+        for nb in range(shapefile.shape[0] - 1):
+            if nb != dpt:
+                neighbour = shapefile["geometry"][nb]
+                if dptGeom.touches(neighbour):
+                    dptneighname = shapefile["nom"][nb]
+                    if type(dptneighname) == bytes:
+                        dptneighname = dptneighname.decode("latin-1", "replace")
+                    else:
+                        dptneighname = dptneighname
+                    neighList.append(dptneighname)
+                    l = dptGeom.boundary.intersection(neighbour.boundary)
+                    l = l.length
+                    lenList.append(l)
+
+        franceGeom[dptname]["neighbours"] = neighList
+        franceGeom[dptname]["length"] = lenList
+
+    # add an ID that will be used in node
+    # IT IS NOT RELATED TO THE DEPARTMENT NUMBER
+    # BECAUSE IT STARTS FROM 0
+    id_dpt = 0
+    for dptname in franceGeom.keys():
+        franceGeom[dptname]["id"] = id_dpt
+        id_dpt += 1
+
+    outname = params["franceGeom_name"]
+    with open(outname, "w") as file:
+        file.write(str(franceGeom))
+
+    return franceGeom
+
+
+def getFranceGeomRegions(params):
+    print("asking the allmighty internet for new data \n plz wait")
+
+    franceGeomDpts_, franceGeomRegions_ = covidator(params, "departement")
+
+
+    print("getFranceGeomRegions")
+    # we start from data at department scale
+    franceGeomDpts = getFranceGeomDpts(params)
+    df = pd.read_csv(params["departments_name"])
+    dpts_names_from_list = df["NOM"]
+    all_correct = True
+    for dpt_name in dpts_names_from_list:
+        if not (dpt_name in franceGeomDpts):
+            print(dpt_name, " not found in franceGeomDpts")
+            all_correct = False
+
+    if not all_correct:
+        print("we miss at least one department")
+    else:
+        print("we found all departments")
+
+    df = pd.read_csv(params["departments_name"])
+    LIST_METROPOLE = [
+        "Auvergne-Rhône-Alpes",
+        "Bourgogne-Franche-Comté",
+        "Bretagne",
+        "Centre-Val de Loire",
+        "Corse",
+        "Grand Est",
+        "Hauts-de-France",
+        "Ile-de-France",
+        "Normandie",
+        "Nouvelle-Aquitaine",
+        "Occitanie",
+        "Pays de la Loire",
+        # "Provence-Alpes-Côte d’Azur",
+        "Provence-Alpes-Côte d'Azur",
+    ]
+
+    LIST_DPTS_REGS_OUTREMER = [
+        "Guadeloupe",
+        "Guyane",
+        "Martinique",
+        "Mayotte",
+        "La Réunion",
+    ]
+    # LIST_OUTREMER = [
+    # "Guadeloupe",
+    # "Guyane",
+    # "Martinique",
+    # "Mayotte",
+    # "La Réunion",
+    # "Saint-Barthélémy",
+    # "Saint-Martin",
+    # ]
+    LIST_REGIONS = LIST_METROPOLE + LIST_DPTS_REGS_OUTREMER
+
+    dpts_regions_from_list = df["REGION"]
+    list_regions = []
+    for r in dpts_regions_from_list:
+        if not (r in list_regions):
+            list_regions.append(r)
+
+    all_correct = True
+    for reg in LIST_REGIONS:
+        if not (reg in list_regions):
+            print(reg, " not found in LIST_REGIONS")
+            all_correct = False
+
+    if not all_correct:
+        print("we miss at least one region")
+    else:
+        print("we found all regions")
+
+    # go look for covid data for every region because this might not be up to date
+    # i.e. sum over departments != region
+    covidRegionsFileNames = params["allCovid19RegionsFileNames"]
+    dic_data_covid = {}
+    for fname in covidRegionsFileNames:
+        _date = fname[-15:-5]
+        df_covid = pd.read_json(fname, orient="columns")
+        for i in range(0, df_covid.shape[0]):
+            properties = df_covid.iloc[i, 1]["properties"]
+            reg_name = properties["Province/State"]
+            if "Confirmed" in properties:
+                num_confirmed = properties["Confirmed"]
+            else:
+                num_confirmed = 0
+            if "Deaths" in properties:
+                num_deaths = properties["Deaths"]
+            else:
+                num_deaths = 0
+            if "Recovered" in properties:
+                num_recovered = properties["Recovered"]
+            else:
+                num_recovered = 0
+
+            # change name to match other data set
+            if reg_name == "Île-de-France":
+                reg_name = "Ile-de-France"
+
+            # if reg_name == "Provence-Alpes-Côte d'Azur":
+                # reg_name = "Provence-Alpes-Côte d’Azur"
+
+            if not (reg_name in dic_data_covid):
+                dic_data_covid[reg_name] = {}
+
+            dic_data_covid[reg_name][_date] = {}
+            dic_data_covid[reg_name][_date]["Confirmed"] = num_confirmed
+            dic_data_covid[reg_name][_date]["Deaths"] = num_deaths
+            dic_data_covid[reg_name][_date]["Recovered"] = num_recovered
+            # print(_date, reg_name, num_confirmed, num_deaths)
+
+    # for each  region get list of departments in that region
+    franceGeomRegions = {}
+    for regName in LIST_REGIONS:
+        # indices = [df['REGION'].index(regName)]
+        franceGeomRegions[regName] = {}
+        indices = [i for i, r in enumerate(df["REGION"]) if r == regName]
+        franceGeomRegions[regName]["departments"] = df["NOM"][indices].to_list()
+        x = 0.0
+        y = 0.0
+        franceGeomRegions[regName]["data_covid"] = {}
+        franceGeomRegions[regName]["data_hosp"] = {}
+        if regName == 'Provence-Alpes-Côte d’Azur':
+            franceGeomRegions[regName]["data_hosp"] = franceGeomRegions_["Provence-Alpes-Côte d'Azur"]
+        else:
+            franceGeomRegions[regName]["data_hosp"] = franceGeomRegions_[regName]
+
+        franceGeomRegions[regName]["freqGare"] = 0.0
+        franceGeomRegions[regName]["agesSex"] = {}
+        franceGeomRegions[regName]["airways"] = []
+        franceGeomRegions[regName]["area"] = 0.0
+
+        franceGeomRegions[regName]["data_covid"] = dic_data_covid[regName]
+
+        # loop over all departments that are part of the region
+        for dptName in franceGeomRegions[regName]["departments"]:
+            # JD: BELOW IS OLD WAY TO COMPUTE COVID19 DATA AT REGION SCALE
+            # NOW WE RE-COMPUTE IT FROM FILES FOR REGIONS DIRECTLY
+            # BECAUSE THIS MIGHT NOT BE UP TO DATE AT DEPARTMENTS SCALE
+            # sum all confirmed and deaths from departments in region and
+            # set those values in region dictionnary
+            # do it for each date there are data for
+            # for _date in franceGeomDpts[dptName]["data_covid"].keys():
+            # if not (_date in franceGeomRegions[regName]["data_covid"]):
+            # franceGeomRegions[regName]["data_covid"][_date] = {}
+            # franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] = 0
+            # franceGeomRegions[regName]["data_covid"][_date]['Deaths'] = 0
+            # franceGeomRegions[regName]["data_covid"][_date]['Recovered'] = 0
+
+            # franceGeomRegions[regName]["data_covid"][_date]['Confirmed'] += \
+            # franceGeomDpts[dptName]["data_covid"][_date]['Confirmed']
+            # franceGeomRegions[regName]["data_covid"][_date]['Deaths'] += \
+            # franceGeomDpts[dptName]["data_covid"][_date]['Deaths']
+            # franceGeomRegions[regName]["data_covid"][_date]['Recovered'] += \
+            # franceGeomDpts[dptName]["data_covid"][_date]['Recovered']
+
+            # sum surfaces of departments which are in current region
+            franceGeomRegions[regName]["area"] += franceGeomDpts[dptName]["area"]
+
+            # add train stations frequentations = sum over all train frequentations
+            # in departments
+            franceGeomRegions[regName]["freqGare"] += franceGeomDpts[dptName][
+                "freqGare"
+            ]
+
+            # add ages per sex data = sum over all data in each department
+            for key in franceGeomDpts[dptName]["agesSex"].keys():
+                # do not add those keys because they are useless now
+                if (key != "dptname") and (key != "dpt"):
+                    # if the key is not in the franceGeomRegions dictionnary
+                    # we initialize as 0 the number of people in respective age class
+                    if not (key in franceGeomRegions[regName]["agesSex"].keys()):
+                        franceGeomRegions[regName]["agesSex"][key] = 0.0
+                    # we sum the number of people in respective age class for all departments
+                    franceGeomRegions[regName]["agesSex"][key] += franceGeomDpts[
+                        dptName
+                    ]["agesSex"][key]
+
+            # get centroid from region as barycenter from all centroids departments
+            x += franceGeomDpts[dptName]["centroid"][0] / len(
+                franceGeomRegions[regName]["departments"]
+            )
+            y += franceGeomDpts[dptName]["centroid"][1] / len(
+                franceGeomRegions[regName]["departments"]
+            )
+
+        # set centroid for region
+        franceGeomRegions[regName]["centroid"] = (x, y)
+
+        # prepare empty lists
+        franceGeomRegions[regName]["neighbours"] = []
+
+    # set neighbours of regions
+    # loop over all departments that are part of the region
+    for regName1 in franceGeomRegions.keys():
+        for regName2 in franceGeomRegions.keys():
+            if regName1 != regName2:
+                for dptName1 in franceGeomRegions[regName1]["departments"]:
+                    for dptName2 in franceGeomRegions[regName2]["departments"]:
+                        if (
+                            dptName1 in franceGeomDpts[dptName2]["neighbours"]
+                        ) and (dptName2 in franceGeomDpts[dptName1]["neighbours"]):
+                            # print(regName1, " is neighbour of ", regName2)
+                            if not (
+                                regName1
+                                in franceGeomRegions[regName2]["neighbours"]
+                            ):
+                                franceGeomRegions[regName2]["neighbours"].append(
+                                    regName1
+                                )
+                            if not (
+                                regName2
+                                in franceGeomRegions[regName1]["neighbours"]
+                            ):
+                                franceGeomRegions[regName1]["neighbours"].append(
+                                    regName2
+                                )
+
+                                #  add neighbours based on airways connections
+    #  also iterate on pax to get it at region scale
+    for regName1 in franceGeomRegions.keys():
+        for dptName1 in franceGeomRegions[regName1]["departments"]:
+            list_airplanes_connections = franceGeomDpts[dptName1]["airways"]
+            for connection in list_airplanes_connections:
+                dptname_connected = connection[0]
+                pax = connection[1]
+                # look at which region dpt_connected corresponds
+                for regName2 in franceGeomRegions.keys():
+                    #  we found the corresponding region
+                    if (
+                        dptname_connected
+                        in franceGeomRegions[regName2]["departments"]
+                    ):
+                        regName_connected = regName2
+
+                # check that this connection between region does not already exist
+                _count = 0
+                connection_exists = False
+                for check_connection in franceGeomRegions[regName1]["airways"]:
+                    #  this already region already had a connection
+                    if regName_connected == check_connection[0]:
+                        indice = _count
+                        connection_exists = True
+                    _count += 1
+                #  if a connection already exists we add pax value to already
+                #  existing pax value
+                if connection_exists:
+                    franceGeomRegions[regName1]["airways"][indice][1] += pax
+                # we the pax and the new connection to the list ['airways']
+                else:
+                    franceGeomRegions[regName1]["airways"].append(
+                        [regName_connected, pax]
+                    )
+
+    # add an ID that will be used in node
+    # IT IS NOT RELATED TO THE DEPARTMENT NUMBER
+    # BECAUSE IT STARTS FROM 0
+    id_reg = 0
+    for regName in franceGeomRegions.keys():
+        franceGeomRegions[regName]["id"] = id_reg
+        id_reg += 1
+
+    # print(franceGeomRegions)
+    outname = params["franceGeom_name"]
+    # print('\n\n', outname)
+    with open(outname, "w") as file:
+        file.write(str(franceGeomRegions))
+    return franceGeomRegions
+
+
+def readFranceGeom(params):
+    # if params["model_name"] in ["SIAndIntermediateErlangWellMixed"]:
+    #     hosp = True  # flag for new dataset without infected people
+    # else:
+    #     hosp = False
+
+    if not params["franceFileExist"]:  # test if string is empty (or filled with blanks)
+        # in that case we need to process data files to get dictionnary
+        # of data
+
+        if params["graph_type"] == "departments":
+            franceGeom = getFranceGeomDpts(params)
+        elif (params["graph_type"] == "regions") or (
+            params["graph_type"] == "fullConnectedRegions"
+        ):
+            franceGeom = getFranceGeomRegions(params)
+        else:
+            print(
+                "Not sure what to do with that graph_type = ",
+                params["graph_type"],
+                ", exit here.",
+            )
+    else:
+        print("read franceGeom file: ", params["franceGeom_name"])
+        s = open(params["franceGeom_name"], "r").read()
+        franceGeom = eval(s)
+    return franceGeom
+
+
+if __name__ == "__main__":
+    print("You should not do that. Please stop being an idiot.")
