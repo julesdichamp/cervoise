@@ -3230,28 +3230,27 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
         for n in dic_x.keys():
             x[i,0] += len(dic_x[n][0]) 
             
+    nbReturn = 0
     for j in range(nbTimeSteps - 1):
         if(binary_tab[j] == 1 and binary_tab[j + 1] == 0):
-            time_move.append(mytime[j + 1])           
+            t1 = mytime[j + 1]
+            time_move.append(t1)      
         elif(binary_tab[j] == 0 and binary_tab[j + 1] == 1):
+            t2 = mytime[j + 1]
             time_move.append(mytime[j + 1])
-            
-    nbMove = len(time_move)
-    if(nbMove % 2 == 1):
-        time_move.pop()
-        nbMove -= 1
-        
-    nbReturn = nbMove / 2
-    
-    for l in range(nbMove - 1):
-        return_time.append(time_move[l + 1] - time_move[l]) # won't work if there's no departure + return
-        
+            return_time.append(t2 - t1)
+            nbReturn += 1
+                  
     average_rt = sum(return_time) / nbReturn
+    total_home_time = mytime[-1] - sum(return_time)
+    total_out_time = mytime[-1] - total_home_time
     
     print("binary_tab =", binary_tab)
     print("time_move =", time_move)
     print("return_time =", return_time)
     print("average return time =", average_rt)
+    print("total home time =", total_home_time)
+    print("total out time =", total_out_time)
 
     plt.plot(mytime, dis_path)
     #plt.plot(mytime, ind_path)
@@ -3261,6 +3260,22 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     #plt.ylabel("node of the tracked individual")
     plt.ylabel("distance between the individual and her home node")
     #plt.ylabel("average distance between the individual and her home node")
+    string_for_savefig =  'TestSimpleReturnHomeModelAgentBased'+'_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini']) + '_beta='+str(params["beta"]) + '_d_tot='+str(params["d_tot"]) +'_ind_tracked='+str(ind_tracked)  +'_seed_num='+str(params["seed_num"])
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    
+    with open(params["outputs_dir"]+"/"+str(string_for_savefig) + '.txt', 'w') as f:
+        f.write("binary_tab =")
+        f.write(str(binary_tab) + "\n")
+        f.write("time_move =")
+        f.write(str(time_move) + "\n")
+        f.write("return_time =")
+        f.write(str(return_time) + "\n")
+        f.write("average return time =")
+        f.write(str(average_rt) + "\n")
+        f.write("total home time =")
+        f.write(str(total_home_time) + "\n")
+        f.write("total out time =")
+        f.write(str(total_out_time))
     
     plt.show()
     

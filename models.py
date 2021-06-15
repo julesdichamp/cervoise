@@ -2797,7 +2797,7 @@ def InitModels(params, G):
         nx.set_node_attributes(G, name='k_plus', values=dic_kinetic)
 
         # set edges attributes here
-        d_tot = 600000 # total hopping rate
+        d_tot = params["d_tot"] # total hopping rate
         beta = params["beta"] # parameter to calibrate the hopping probability
         sumpop = 0
         dic_hopping_rates_const = {}
@@ -3699,6 +3699,7 @@ def SolveOnGraphFullAgentBased(params, G):
     fastrand.pcg32inc(0) # changes the increment and guaantee the randomness is preserved
     fastrand.pcg32_seed(params["seed_num"]) #set the seed value
     beta = params["beta"]
+    d_tot = params["d_tot"]
     ### --- 2/ loop in time
     try: # so we can exit the loop at any time with ctrl + C
         while (t < params["time_end"]):
@@ -3763,9 +3764,9 @@ def SolveOnGraphFullAgentBased(params, G):
             
             for i in G.nodes():
                 for j in G.neighbors(i):
-                    for k in dic_x[j][0]:
+                    for k in dic_x[i][0]:
                         distance_home = len(nx.dijkstra_path(G, home_nodes[k], j)) - 1 #dijkstra_path returns the shortest path between two nodes
-                        w += exp(- beta * distance_home)    
+                        w += exp(- beta * distance_home)
                     
             for ni in G.nodes(): # loop over all nodes
                 for nj in G.neighbors(ni): # loop over all neighbors

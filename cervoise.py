@@ -440,6 +440,7 @@ def InitParams(config_name):
         params["k_S"] = config.getfloat("model", "k_S")
         params["S_ini"] = config.getint("model", "S_ini")
         params["beta"] = config.getfloat("model", "beta")
+        params["d_tot"] = config.getint("model", "d_tot")
         ### ...
         ### --------------- ###
     else:
