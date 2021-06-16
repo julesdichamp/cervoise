@@ -3901,23 +3901,36 @@ def SolveOnGraphFullAgentBased(params, G):
             else: # we set a hopping process
                 # print("hopping")                
                 kk = part1
-                kk_init = kk                
+                kk_init = kk
+                loop_breaker = False
                 for ni in G.nodes(): # loop over all nodes
-                    for nj in G.neighbors(ni): # loop over all neighbors
-                        if (ni != nj):
-                            for i in range(0, nbStates): # loop over all states
-                                for k in dic_x[ni][i]:
-                                    if (kk==id_reaction):
-                                        ni_hop_from = ni
-                                        nj_hop_to   = nj
-                                        hoping_state = i 
-                                        individual_hop = k
-                                        # state of state that will hop
-                                    # dic_x[ni][i] -= 1 # add one
-                                    # dic_x[nj][i] += 1 # remove one
-                                    # update attributes right away
-                                    # nx.set_node_attributes(G, name='x', values=dic_x)
-                                    kk+=1            
+                    if(not(loop_breaker)):
+                        for nj in G.neighbors(ni): # loop over all neighbors
+                            if(not(loop_breaker)):
+                                if (ni != nj):
+                                    for i in range(0, nbStates): # loop over all states
+                                        if(not(loop_breaker)):
+                                            for k in dic_x[ni][i]:
+                                                if (kk==id_reaction):
+                                                    ni_hop_from = ni
+                                                    nj_hop_to   = nj
+                                                    hoping_state = i 
+                                                    individual_hop = k
+                                        
+                                                    loop_breaker = True
+                                                    break
+                                                    # state of state that will hop
+                                                # dic_x[ni][i] -= 1 # add one
+                                                # dic_x[nj][i] += 1 # remove one
+                                                # update attributes right away
+                                                # nx.set_node_attributes(G, name='x', values=dic_x)
+                                                kk+=1
+                                        else:
+                                            break
+                            else:
+                                break
+                    else:
+                        break
                                                                 
                 # remove individual from list                
                 dic_x[ni_hop_from][hoping_state].remove(individual_hop)

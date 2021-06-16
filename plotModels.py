@@ -3207,51 +3207,76 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     S_ini = params["S_ini"]
     x = np.zeros([nbTimeSteps, nbStates])
     dic_graphs = {}
-    ind_tracked = 42
     ind_path = []
     dis_path = []
     dis_moy = []
-    binary_tab = []
-    time_move = []
-    return_time = []
+    binary_tab = [[] for i in range(S_ini)]
+    time_move = [[] for i in range(S_ini)]
+    return_time = [[] for i in range(S_ini)]
     # orders of states : S
     for i in range(0,nbTimeSteps):
         mytime[i] = outputs[i][0]
         dic_x = outputs[i][1]
+        
+        moy = 0
         for k in G.nodes():
-            if ind_tracked in outputs[i][1][k][0]:
-                dis = len(nx.dijkstra_path(G, home_nodes[ind_tracked], k)) - 1
-                dis_path.append(dis)
+            for l in outputs[i][1][k][0]:
+                dis = len(nx.dijkstra_path(G, home_nodes[l], k)) - 1
+                moy += dis
                 if(dis == 0):
-                    binary_tab.append(1)
+                    binary_tab[l].append(1)
                 else:
-                    binary_tab.append(0)
-            
+                    binary_tab[l].append(0)
+                    
+        dis_path.append(moy / S_ini)
+                    
         for n in dic_x.keys():
             x[i,0] += len(dic_x[n][0]) 
             
-    nbReturn = 0
-    for j in range(nbTimeSteps - 1):
-        if(binary_tab[j] == 1 and binary_tab[j + 1] == 0):
-            t1 = mytime[j + 1]
-            time_move.append(t1)      
-        elif(binary_tab[j] == 0 and binary_tab[j + 1] == 1):
-            t2 = mytime[j + 1]
-            time_move.append(mytime[j + 1])
-            return_time.append(t2 - t1)
-            nbReturn += 1
-                  
-    average_rt = sum(return_time) / nbReturn
-    total_home_time = mytime[-1] - sum(return_time)
-    total_out_time = mytime[-1] - total_home_time
+    average_rt1 = 0
+    average_rt2 = 0
+    nb_rt = 0
+    average_rt_tab = []
+    nbReturn = np.zeros(S_ini)
+    for l in range(S_ini):
+        for j in range(nbTimeSteps - 1):
+            if(binary_tab[l][j] == 1 and binary_tab[l][j + 1] == 0):
+                t1 = mytime[j + 1]
+                time_move[l].append(t1)      
+            elif(binary_tab[l][j] == 0 and binary_tab[l][j + 1] == 1):
+                t2 = mytime[j + 1]
+                time_move[l].append(mytime[j + 1])
+                return_time[l].append(t2 - t1)
+                nbReturn[l] += 1
+        average_rt1 += sum(return_time[l])
+        if(nbReturn[l] != 0):
+            nb_rt += 1
+            average_rt_tab.append(sum(return_time[l]) / nbReturn[l])
+            average_rt2 += sum(return_time[l]) / nbReturn[l]
+    print("nbReturn = ", nbReturn)
+                
     
-    print("binary_tab =", binary_tab)
-    print("time_move =", time_move)
+                  
+    average_rt1 = average_rt1 / sum(nbReturn) # average of all the return times
+    average_rt2 = average_rt2 / nb_rt # average of the average return times of all the individuals
+    
+    total_home_time = []
+    total_out_time = []
+    for l in range(S_ini):
+        total_home_time.append(mytime[-1] - sum(return_time[l]))
+        total_out_time.append(mytime[-1] - total_home_time[l])
+        
+    avg_total_home_time = sum(total_home_time) / S_ini
+    avg_total_out_time = sum(total_out_time) / S_ini
+    
     print("return_time =", return_time)
-    print("average return time =", average_rt)
-    print("total home time =", total_home_time)
-    print("total out time =", total_out_time)
+    print("average return time 1 =", average_rt1)
+    print("average return time 2 =", average_rt2)
+    print("average total home time =", avg_total_home_time)
+    print("average total out time =", avg_total_out_time)
 
+    string_for_savefig = '_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini']) + '_beta='+str(params["beta"]) + '_d_tot='+str(params["d_tot"])  +'_seed_num='+str(params["seed_num"])
+    
     plt.plot(mytime, dis_path)
     #plt.plot(mytime, ind_path)
     #plt.plot(mytime, dis_moy)
@@ -3260,24 +3285,30 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     #plt.ylabel("node of the tracked individual")
     plt.ylabel("distance between the individual and her home node")
     #plt.ylabel("average distance between the individual and her home node")
-    string_for_savefig =  'TestSimpleReturnHomeModelAgentBased'+'_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini']) + '_beta='+str(params["beta"]) + '_d_tot='+str(params["d_tot"]) +'_ind_tracked='+str(ind_tracked)  +'_seed_num='+str(params["seed_num"])
-    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+    string_for_savefig1 =  'AverageDistanceFromHome'+ string_for_savefig
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig1)+'.png')
+    plt.close()
     
-    with open(params["outputs_dir"]+"/"+str(string_for_savefig) + '.txt', 'w') as f:
-        f.write("binary_tab =")
-        f.write(str(binary_tab) + "\n")
-        f.write("time_move =")
-        f.write(str(time_move) + "\n")
+    plt.hist(average_rt_tab)
+    plt.xlabel("average return time")
+    plt.ylabel("nb of individuals")
+    string_for_savefig2 = 'AverageReturnTimeDistribution'+string_for_savefig
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')
+    
+    plt.close()
+    
+    with open(params["outputs_dir"]+"/"+ "Informations" +str(string_for_savefig) + '.txt', 'w') as f:
         f.write("return_time =")
         f.write(str(return_time) + "\n")
-        f.write("average return time =")
-        f.write(str(average_rt) + "\n")
-        f.write("total home time =")
-        f.write(str(total_home_time) + "\n")
-        f.write("total out time =")
-        f.write(str(total_out_time))
+        f.write("average return_time 1 =")
+        f.write(str(average_rt1) + "\n")
+        f.write("average return time 2 =")
+        f.write(str(average_rt2) + "\n")
+        f.write("average total home time")
+        f.write(str(avg_total_home_time) + "\n")
+        f.write("average total out time")
+        f.write(str(avg_total_out_time) + "\n")
     
-    plt.show()
     
     if ('WellMixed' in params['plot_options']):
         print("Running: plot option: 'WellMixed'")
@@ -3292,6 +3323,7 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
         # string_for_savefig = 'plot_TestSimpleReturnHomeModelAgentBased_graph_type_'+str(params['graph_type'])+'_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini']) 
         string_for_savefig = 'plot_TestSimpleReturnHomeModelAgentBased_graph_type_'+str(params['graph_type'])+'_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini'])
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        
         plt.close()
     
     if ('AllNodes' in params['plot_options']):
