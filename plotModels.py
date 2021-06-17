@@ -3199,7 +3199,7 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     f.write(str(params))
     f.close()
     
-    nbTimeSteps = len(outputs)
+    nbTimeSteps = len(outputs) # important not to forget that this is not the same as the total nb of travels because of save frequency
     mytime=np.zeros(nbTimeSteps)    
     nbStates = params['nbStates']
     nbReactions = params['nbReactions']
@@ -3208,10 +3208,10 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     x = np.zeros([nbTimeSteps, nbStates])
     dic_graphs = {}
     ind_path = []
-    dis_path = []
+    dis_path = [] # will contain the average distances from home nodes
     dis_moy = []
-    binary_tab = [[] for i in range(S_ini)]
-    time_move = [[] for i in range(S_ini)]
+    node_path = [[] for i in range(S_ini)] # individual path of each individual
+    time_move = [[] for i in range(S_ini)] 
     return_time = [[] for i in range(S_ini)]
     # orders of states : S
     for i in range(0,nbTimeSteps):
@@ -3223,42 +3223,60 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
             for l in outputs[i][1][k][0]:
                 dis = len(nx.dijkstra_path(G, home_nodes[l], k)) - 1
                 moy += dis
-                if(dis == 0):
-                    binary_tab[l].append(1)
-                else:
-                    binary_tab[l].append(0)
-                    
+                node_path[l].append(k)                    
         dis_path.append(moy / S_ini)
                     
         for n in dic_x.keys():
             x[i,0] += len(dic_x[n][0]) 
             
-    average_rt1 = 0
-    average_rt2 = 0
     nb_rt = 0
-    average_rt_tab = []
-    nbReturn = np.zeros(S_ini)
-    for l in range(S_ini):
+    average_rt_tab = [] # list of all the average return times, doesn't include the individuals with no home loop (= leave home + come back)
+    nodes_visited = [[] for i in range(S_ini)] 
+    avg_nb_nodes_visited = []
+    total_rt = 0  
+    total_nbNodes = 0 
+    nbReturn = np.zeros(S_ini, dtype=int) # number of home loops for each individual
+    
+    for l in range(S_ini): # loops over all individuals
+        nbNodes = 0
+        home_val = True
         for j in range(nbTimeSteps - 1):
-            if(binary_tab[l][j] == 1 and binary_tab[l][j + 1] == 0):
+            if(node_path[l][j] == home_nodes[l] and node_path[l][j + 1] != home_nodes[l]): # individual l leaving home
                 t1 = mytime[j + 1]
-                time_move[l].append(t1)      
-            elif(binary_tab[l][j] == 0 and binary_tab[l][j + 1] == 1):
+                time_move[l].append(t1)
+                nodes_visited[l].append([node_path[l][j + 1]])
+                home_val = False
+                nbNodes += 1
+                
+            elif(node_path[l][j] != home_nodes[l] and node_path[l][j + 1] == home_nodes[l]): # individual l getting back to home
                 t2 = mytime[j + 1]
                 time_move[l].append(mytime[j + 1])
                 return_time[l].append(t2 - t1)
                 nbReturn[l] += 1
-        average_rt1 += sum(return_time[l])
+                home_val = True
+                
+            if(not(home_val)): # only checks while the individual l is away from home
+                if(not(node_path[l][j + 1] in nodes_visited[l][nbReturn[l]])):
+                    nodes_visited[l][nbReturn[l]].append(node_path[l][j + 1]) # keeps visited node in memory to make sure we count each node only one time
+                    nbNodes += 1
+                    
+        total_nbNodes += len(set(node_path[l])) # adds total number of different nodes visited by individual l 
+        total_rt += sum(return_time[l])
         if(nbReturn[l] != 0):
             nb_rt += 1
-            average_rt_tab.append(sum(return_time[l]) / nbReturn[l])
-            average_rt2 += sum(return_time[l]) / nbReturn[l]
+            average_rt_tab.append(sum(return_time[l]) / nbReturn[l])            
+            avg_nb_nodes_visited.append(nbNodes / nbReturn[l])
+            
+    """print("node_path =", node_path)
     print("nbReturn = ", nbReturn)
-                
+    print("nodes visited =", nodes_visited)
+    print("avg nb nodes visited =", avg_nb_nodes_visited)"""
     
-                  
-    average_rt1 = average_rt1 / sum(nbReturn) # average of all the return times
-    average_rt2 = average_rt2 / nb_rt # average of the average return times of all the individuals
+    average_nv1 = total_nbNodes / S_ini # average of the total number of different nodes visited of all the individuals (home node included)
+    average_nv2 = sum(avg_nb_nodes_visited) / nb_rt # average of the average number of nodes visited by the individuals on a home loop (home node excluded)
+                                      
+    average_rt1 = total_rt / sum(nbReturn) # average of all the return times
+    average_rt2 = sum(average_rt_tab) / nb_rt # average of the average return times of all the individuals
     
     total_home_time = []
     total_out_time = []
@@ -3266,16 +3284,18 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
         total_home_time.append(mytime[-1] - sum(return_time[l]))
         total_out_time.append(mytime[-1] - total_home_time[l])
         
-    avg_total_home_time = sum(total_home_time) / S_ini
-    avg_total_out_time = sum(total_out_time) / S_ini
+    avg_total_home_time = sum(total_home_time) / S_ini # average time away from home
+    avg_total_out_time = sum(total_out_time) / S_ini # average time at home
     
-    print("return_time =", return_time)
+    #print("return_time =", return_time)
     print("average return time 1 =", average_rt1)
     print("average return time 2 =", average_rt2)
+    print("average nodes visited 1 =", average_nv1)
+    print("average nodes visited 2 =", average_nv2)
     print("average total home time =", avg_total_home_time)
     print("average total out time =", avg_total_out_time)
 
-    string_for_savefig = '_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini']) + '_beta='+str(params["beta"]) + '_d_tot='+str(params["d_tot"])  +'_seed_num='+str(params["seed_num"])
+    string_for_savefig = '_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini']) + '_beta='+str(params["beta"]) + '_d_tot='+str(params["d_tot"])  +'_timeend='+ str(params["time_end"]) +'_seed_num='+str(params["seed_num"])
     
     plt.plot(mytime, dis_path)
     #plt.plot(mytime, ind_path)
@@ -3283,7 +3303,7 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     #plt.legend()
     plt.xlabel("Arbitrary time unit")
     #plt.ylabel("node of the tracked individual")
-    plt.ylabel("distance between the individual and her home node")
+    plt.ylabel("avg distance to home")
     #plt.ylabel("average distance between the individual and her home node")
     string_for_savefig1 =  'AverageDistanceFromHome'+ string_for_savefig
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig1)+'.png')
@@ -3293,118 +3313,32 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     plt.xlabel("average return time")
     plt.ylabel("nb of individuals")
     string_for_savefig2 = 'AverageReturnTimeDistribution'+string_for_savefig
-    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')
-    
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
     plt.close()
     
-    with open(params["outputs_dir"]+"/"+ "Informations" +str(string_for_savefig) + '.txt', 'w') as f:
-        f.write("return_time =")
-        f.write(str(return_time) + "\n")
-        f.write("average return_time 1 =")
+    plt.hist(avg_nb_nodes_visited)
+    plt.xlabel("average number of visited nodes")
+    plt.ylabel("nb of individuals")
+    string_for_savefig2 = 'AverageNodesVisitedDistribution'+string_for_savefig
+    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
+    plt.close()
+    
+    with open(params["outputs_dir"]+"/"+ "Informations" +str(string_for_savefig) + '.ini', 'w') as f:
+        f.write("[" + string_for_savefig + "]" + "\n" + "\n")
+        f.write("[informations]" + "\n")
+        #f.write("return_time = ")
+        #f.write(str(return_time) + "\n")
+        f.write("average_return_time1 = ")
         f.write(str(average_rt1) + "\n")
-        f.write("average return time 2 =")
+        f.write("average_return_time2 = ")
         f.write(str(average_rt2) + "\n")
-        f.write("average total home time")
+        f.write("average_nodes_visited1 = ")
+        f.write(str(average_nv1) + "\n")
+        f.write("average_nodes_visited2 = ")
+        f.write(str(average_nv2) + "\n")
+        f.write("average_total_home_time = ")
         f.write(str(avg_total_home_time) + "\n")
-        f.write("average total out time")
+        f.write("average_total_out_time = ")
         f.write(str(avg_total_out_time) + "\n")
     
-    
-    if ('WellMixed' in params['plot_options']):
-        print("Running: plot option: 'WellMixed'")
-        ### --- plot wellmixed model ( = sum over all compartments i.e. nodes of the graph)
-        fig10 = plt.figure(figsize=(16, 10)) # in inches!
-        plt.plot(mytime,x[:,0], 'red', label='Susceptible')
-        plt.legend()
-        plt.xlabel('Arbitrary time unit')
-        plt.ylabel('Population numbers')
-        # string_for_title='TestSimpleReturnHomeModelAgentBased', k_S ='+str(params['k_S']) +', S_ini = '+ str(params['S_ini'])
-        # plt.title(string_for_title)
-        # string_for_savefig = 'plot_TestSimpleReturnHomeModelAgentBased_graph_type_'+str(params['graph_type'])+'_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini']) 
-        string_for_savefig = 'plot_TestSimpleReturnHomeModelAgentBased_graph_type_'+str(params['graph_type'])+'_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini'])
-        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-        
-        plt.close()
-    
-    if ('AllNodes' in params['plot_options']):
-        print("Running: plot option: 'AllNodes'")
-        ### --- loop over all saved data and plot SIRWellMixed on each region
-        # use dic_x available in node attributes from graph to get 
-        # number of nodes and number of reactions
-        dic_x = nx.get_node_attributes(G,'x')        
-        nbNodes = len(dic_x)
-        nbStates = len(dic_x[0])
-        nodes = G.nodes()
-        all_nodes_all_x_over_time = {}
-        for n in nodes:
-            x = np.zeros([nbTimeSteps, nbStates])
-            for i in range(0,nbTimeSteps):
-                dic_x = outputs[i][1]            
-                for j in range(0,nbStates):
-                    x[i,j] = len(dic_x[n][j])
-            all_nodes_all_x_over_time[n] = x
-            fig10 = plt.figure(figsize=(16, 10)) # in inches!
-            plt.plot(mytime,x[:,0], 'red', label='Susceptible')
-            plt.legend()
-            plt.xlabel('Arbitrary time unit')
-            plt.ylabel('Population numbers')
-            # string_for_title='SEIIssROnGraphAgentBased, region num = '+str(n)+', k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
-            # plt.title(string_for_title)            
-            string_for_savefig = 'TestSimpleReturnHomeModelAgentBased_graph_type_'+str(params['graph_type'])+'_region_num='+str(n)+'_k_S='+str(params['k_S']) + '_S_ini='+ str(params['S_ini'])
-            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-            plt.close()
-                            
-    if ('AllGraphs' in params['plot_options']):
-        print("Running: plot option: 'AllGraphs'")
-        ### --- loop over all saved graph and plot at each saved time step    
-        for j in range(0,nbTimeSteps):
-            print("saving ",j," th time step = " ,mytime[j])        
-            # dic_x = outputs[j][1]
-            dic_x = copy.deepcopy(outputs[j][1])
-            dic_positions = nx.get_node_attributes(G,'positions')        
-            dic_S = {}
-            for i in dic_x.keys():
-                dic_S[i] = len(dic_x[i][0])
-            
-            list_S_values = [v for v in dic_S.values()]                       
-            fig20 = plt.figure(figsize=(16, 10)) # in inches!  
-            string_for_title='Susceptible population on Graph at time = '+str(round(mytime[j],6))
-            plt.title(string_for_title)
-            ### --- drawing nodes and edges separately so we can capture collection for colobar
-            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
-            plt.colorbar(nc)
-            plt.axis('off')    
-            string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
-            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
-            plt.close()
-            
-    if ('FinalGraph' in params['plot_options']):
-        print("Running: plot option: 'FinalGraph'")
-        # ### --- plot graph with final species update == state in Graph
-        dic_positions = nx.get_node_attributes(G,'positions')        
-        dic_x = nx.get_node_attributes(G,'x')
-        dic_S = {}
-        for i in dic_x.keys():
-            dic_S[i] = len(dic_x[i][0])
-        
-        list_S_values = [v for v in dic_S.values()]
-        fig20 = plt.figure(figsize=(16, 10)) # in inches!  
-        string_for_title='Susceptible population on Graph at time = '+str(round(G.graph['time'],6))
-        plt.title(string_for_title)
-        # ### --- drawing nodes and edges separately so we can capture collection for colobar
-        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
-        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
-        plt.colorbar(nc)
-        plt.axis('off')    
-        string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
-        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
-        plt.close()
-        
-    if ('TrackInd' in params['plot_options']):
-        print("Running: plot option: 'TrackInd'")
-        ind_tracked = 1
-        
-        
-        
 ### --- MARWANE END   --- ### 

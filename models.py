@@ -3931,7 +3931,9 @@ def SolveOnGraphFullAgentBased(params, G):
                                 break
                     else:
                         break
-                                                                
+                             
+                # couple of breaks to exit from loop when id_reaction is found, it makes us gain some time from what I've seen, it might not be worth it for small S_ini  
+                # it can be written in a less messy manner with a function, might do it later
                 # remove individual from list                
                 dic_x[ni_hop_from][hoping_state].remove(individual_hop)
                 # add individual to state to add
