@@ -2,8 +2,8 @@ import configparser
 import os
 import matplotlib.pyplot as plt
 
-nbBeta = 3 # max beta
-randTry = 4 # number of tries with a different seed_num
+nbBeta = 9 # max beta
+randTry = 1 # number of tries with a different seed_num
 beta_tab = []
 rt_tab = []
 
@@ -39,5 +39,6 @@ for k in range(0, nbBeta):
 plt.plot(beta_tab, rt_tab)
 plt.xlabel("values of beta")
 plt.ylabel("average return times")
+plt.tight_layout()
 
 plt.show()

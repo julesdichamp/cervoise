@@ -386,6 +386,7 @@ def InitParams(config_name):
         ### --- MARWANE --- ###
         params["k_S"] = config.getfloat("model", "k_S")
         params["S_ini"] = config.getint("model", "S_ini")
+        params["d_tot"] = config.getint("model", "d_tot")
         ### ...
         ### --------------- ###
     # --- deals with real data

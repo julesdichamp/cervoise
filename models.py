@@ -2491,7 +2491,8 @@ def InitModels(params, G):
         print('R = \n' , R)
         print("k_plus = ", k_plus)
         print("x_ini = ", x_ini)
-
+        
+#MARWANE
     """
     simple SIR model and hopping between nodes of graph
     with an agent based fashion where we track every individual
@@ -2543,6 +2544,7 @@ def InitModels(params, G):
         dic_x_ini = {}
         dic_x = {}
         dic_kinetic = {}
+        home_nodes = []
         for n in G.nodes(): # loop over all compartments
             dic_x_ini[n] = [[], [], []]
             # loop over all states
@@ -2550,7 +2552,8 @@ def InitModels(params, G):
                 # set a fraction of individuals in this node
                 # n should start from zero                
                 for l in range(n*int(len(x_ini[k])/G.number_of_nodes()),(n+1)*int(len(x_ini[k])/G.number_of_nodes())):
-                    dic_x_ini[n][k].append(x_ini[k][l])            
+                    dic_x_ini[n][k].append(x_ini[k][l])
+                    home_nodes.append(n)
             dic_kinetic[n] = k_plus
         
         dic_x = copy.deepcopy(dic_x_ini)
@@ -2563,7 +2566,8 @@ def InitModels(params, G):
         dic_hopping_rates = {}
         for e in G.edges():
             dic_hopping_rates[e] = 0.01 # constant for now because TEST
-        nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates)    
+        nx.set_edge_attributes(G, name='hopping_rates', values=dic_hopping_rates) 
+        params["home_nodes"] = home_nodes 
 
     """
     simple SEIR model and hopping between nodes of graph
@@ -2732,7 +2736,7 @@ def InitModels(params, G):
         nx.set_node_attributes(G, name='k_plus', values=dic_kinetic)
 
         # set edges attributes here
-        d_tot = 100 # total hopping rate
+        d_tot = params["d_tot"] # total hopping rate
         sumpop = 0
         dic_hopping_rates = {}
         for f in G.nodes():
@@ -2799,18 +2803,19 @@ def InitModels(params, G):
         # set edges attributes here
         d_tot = params["d_tot"] # total hopping rate
         beta = params["beta"] # parameter to calibrate the hopping probability
-        sumpop = 0
-        dic_hopping_rates_const = {}
-        for f in G.nodes():
+        #sumpop = 0
+        #dic_hopping_rates_const = d_tot / 60000000
+        dic_hopping_rates_const = 0.01
+        """for f in G.nodes():
             for g in G.neighbors(f):
                 if(g != f):
-                    sumpop += len(dic_x[g][0])
+                    sumpop += len(dic_x[g][0])"""
                     
-        for n in G.nodes():
+        """for n in G.nodes():
             for m in G.neighbors(n):
                 for j in x_ini[0]:
-                    dic_hopping_rates_const[(n,m,j)] = d_tot / sumpop # (departure node, arrival node, agent index)
-                                
+                    #dic_hopping_rates_const[(n,m,j)] = d_tot / sumpop # (departure node, arrival node, agent index)
+                    dic_hopping_rates_const[(n,m,j)] = 1 # without scaling for test"""
         params["hopping_rates_const"] = dic_hopping_rates_const
         params["home_nodes"] = home_nodes        
     ### --- MARWANE END --- #
@@ -3241,13 +3246,10 @@ def SolveOnGraph(params, G):
             ### --- 2-3/ compute total rate and Gillepsie time step
             W_total = W_inside + W_between
             # print("W_inside, W_between, W_total = " , W_inside, W_between, W_total)
-            print("W_between: ", W_between)
             # Gillepsie time of next event using total rate
             xi = randZeroOne()
             dt = -1 / W_total * np.log(1 - xi)
             t = t + dt
-            print("Pas de temps: ", dt)
-            print("temps: ", t)
             
             ### --- 2-4/ fill a vector that contains all sum of states: kinetics and hopping
             ###          there is probably a simpler way to do it but for now we play "by the book"
@@ -3432,8 +3434,8 @@ def SolveAgentBasedOnGraph(params, G):
 
             # if W_inside is 0, nothing more can happen anymore and only jumps will occur
             # so we exit instead
-            if (abs(W_inside) <= 0.0000000001):                
-                break
+            """if (abs(W_inside) <= 0.0000000001):                
+                break"""
             
             ### --- 2-3/ compute total rate and Gillepsie time step
             W_total = W_inside + W_between
@@ -3760,13 +3762,17 @@ def SolveOnGraphFullAgentBased(params, G):
             W_between = 0.0
             dic_hopping_rates_const = params["hopping_rates_const"]
             dic_hopping_rates = {}
-            w = 0 # scaling factor
+            num = 0 # scaling factor numerator
+            den = 0 # scaling factor denominator
             
             for i in G.nodes():
                 for j in G.neighbors(i):
                     for k in dic_x[i][0]:
                         distance_home = len(nx.dijkstra_path(G, home_nodes[k], j)) - 1 #dijkstra_path returns the shortest path between two nodes
-                        w += exp(- beta * distance_home)
+                        num += exp(- beta * distance_home) * dic_hopping_rates_const
+                        den += dic_hopping_rates_const
+                        
+            w = num / den
                     
             for ni in G.nodes(): # loop over all nodes
                 for nj in G.neighbors(ni): # loop over all neighbors
@@ -3774,7 +3780,8 @@ def SolveOnGraphFullAgentBased(params, G):
                             for j in dic_x[ni][i]:
                                 triplet = (ni, nj, j)
                                 distance_home = len(nx.dijkstra_path(G, home_nodes[j], nj)) - 1
-                                dic_hopping_rates[triplet] = dic_hopping_rates_const[triplet] * exp(- beta * distance_home) / w
+                                dic_hopping_rates[triplet] = dic_hopping_rates_const * exp(- beta * distance_home) / w
+                                #dic_hopping_rates[triplet] = dic_hopping_rates_const * exp(- beta * distance_home)
                                 W_between += dic_hopping_rates[triplet]
                                 dic_t.append(dic_hopping_rates[triplet])
 

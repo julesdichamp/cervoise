@@ -1600,6 +1600,7 @@ def plot_TestScalingHoppingRates(params,outputs, G):
         string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         plt.close()
+
         
 ### --- MARWANE END   --- ### 
 
@@ -2383,7 +2384,7 @@ def plot_SIRerlangKrylovaWellMixedAgentBased(params,outputs):
         plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
         # plt.close()
         plt.show()
-        
+#marwane   
 def plot_SIROnGraphAgentBased(params,outputs, G):
     """
     plot plot_SIROnGraph model results
@@ -2416,6 +2417,155 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
             x[i,0] += len(dic_x[n][0])
             x[i,1] += len(dic_x[n][1])
             x[i,2] += len(dic_x[n][2])      
+            
+    if ('AvgNodesVisited' in params['plot_options']):
+        nbStates = params['nbStates']
+        nbReactions = params['nbReactions']
+        home_nodes = params['home_nodes']
+        S_ini = params["S_ini"]
+        x = np.zeros([nbTimeSteps, nbStates])
+        dic_graphs = {}
+        ind_path = []
+        dis_path = [] # will contain the average distances from home nodes
+        dis_moy = []
+        node_path = [[] for i in range(S_ini)] # individual path of each individual
+        time_move = [[] for i in range(S_ini)] 
+        return_time = [[] for i in range(S_ini)]
+        # orders of states : S
+        for i in range(0,nbTimeSteps):       
+            moy = 0
+            for k in G.nodes():
+                for l in outputs[i][1][k][0]:
+                    dis = len(nx.dijkstra_path(G, home_nodes[l], k)) - 1
+                    moy += dis
+                    node_path[l].append(k)                    
+            dis_path.append(moy / S_ini)
+            
+        nb_rt = 0
+        average_rt_tab = [] # list of all the average return times, doesn't include the individuals with no home loop (= leave home + come back)
+        nodes_visited = [[] for i in range(S_ini)] 
+        avg_nb_nodes_visited = []
+        total_rt = 0  
+        total_nbNodes = 0 
+        nbReturn = np.zeros(S_ini, dtype=int) # number of home loops for each individual
+    
+        for l in range(S_ini): # loops over all individuals
+            nbNodes = 0
+            home_val = True
+            for j in range(nbTimeSteps - 1):
+                if(node_path[l][j] == home_nodes[l] and node_path[l][j + 1] != home_nodes[l]): # individual l leaving home
+                    t1 = mytime[j + 1]
+                    time_move[l].append(t1)
+                    nodes_visited[l].append([node_path[l][j + 1]])
+                    home_val = False
+                    nbNodes += 1
+                
+                elif(node_path[l][j] != home_nodes[l] and node_path[l][j + 1] == home_nodes[l]): # individual l getting back to home
+                    t2 = mytime[j + 1]
+                    time_move[l].append(mytime[j + 1])
+                    return_time[l].append(t2 - t1)
+                    nbReturn[l] += 1
+                    home_val = True
+                
+                if(not(home_val)): # only checks while the individual l is away from home
+                    if(not(node_path[l][j + 1] in nodes_visited[l][nbReturn[l]])):
+                        nodes_visited[l][nbReturn[l]].append(node_path[l][j + 1]) # keeps visited node in memory to make sure we count each node only one time
+                        nbNodes += 1
+                    
+            total_nbNodes += len(set(node_path[l])) # adds total number of different nodes visited by individual l 
+            total_rt += sum(return_time[l])
+            if(nbReturn[l] != 0):
+                nb_rt += 1
+                average_rt_tab.append(sum(return_time[l]) / nbReturn[l])            
+                avg_nb_nodes_visited.append(nbNodes / nbReturn[l])
+            
+        print("number of hoppings =", nbTimeSteps)
+        print("number of individuals with return time =", nb_rt)
+        print("total number of return times =", sum(nbReturn))
+    
+        """print("node_path =", node_path)
+        #print("nbReturn = ", nbReturn)
+        print("nodes visited =", nodes_visited)
+        print("avg nb nodes visited =", avg_nb_nodes_visited)"""
+    
+        average_nv1 = total_nbNodes / S_ini # average of the total number of different nodes visited of all the individuals (home node included)
+        average_nv2 = sum(avg_nb_nodes_visited) / nb_rt # average of the average number of nodes visited by the individuals on a home loop (home node excluded)
+                                      
+        average_rt1 = total_rt / sum(nbReturn) # average of all the return times
+        average_rt2 = sum(average_rt_tab) / nb_rt # average of the average return times of all the individuals
+    
+        total_home_time = []
+        total_out_time = []
+    
+        for l in range(S_ini):
+            total_home_time.append(mytime[-1] - sum(return_time[l]))
+            total_out_time.append(mytime[-1] - total_home_time[l])
+        
+        avg_total_home_time = sum(total_home_time) / S_ini # average time away from home
+        avg_total_out_time = sum(total_out_time) / S_ini # average time at home
+    
+        #print("return_time =", return_time)
+        print("average return time 1 =", average_rt1)
+        print("average return time 2 =", average_rt2)
+        print("average nodes visited 1 =", average_nv1)
+        print("average nodes visited 2 =", average_nv2)
+        print("average total home time =", avg_total_home_time)
+        print("average total out time =", avg_total_out_time)
+
+        string_for_savefig = '_k_S='+str(params['k_SI']) +'_S_ini='+ str(params['S_ini']) +'_timeend='+ str(params["time_end"]) +'_seed_num='+str(params["seed_num"])
+    
+        plt.plot(mytime, dis_path)
+        #plt.plot(mytime, ind_path)
+        #plt.plot(mytime, dis_moy)
+        #plt.legend()
+        plt.xlabel("Arbitrary time unit")
+        #plt.ylabel("node of the tracked individual")
+        plt.ylabel("avg distance to home")
+        plt.tight_layout()
+        #plt.ylabel("average distance between the individual and her home node")
+        string_for_savefig1 =  'AverageDistanceFromHome'+ string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig1)+'.png')
+        plt.close()
+        
+        plt.hist(average_rt_tab, bins = 30)
+        plt.xlabel("average return time")
+        plt.ylabel("nb of individuals")
+        plt.tight_layout()
+        string_for_savefig2 = 'AverageReturnTimeDistribution'+string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
+        plt.close()
+        
+        plt.hist(avg_nb_nodes_visited, bins = 30)
+        plt.xlabel("average number of visited nodes")
+        plt.ylabel("nb of individuals")
+        plt.tight_layout()
+        string_for_savefig2 = 'AverageNodesVisitedDistribution'+string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
+        plt.close()
+        
+        with open(params["outputs_dir"]+"/"+ "Informations" +str(string_for_savefig) + '.ini', 'w') as f:
+            f.write("[" + string_for_savefig + "]" + "\n" + "\n")
+            f.write("[informations]" + "\n")
+            #f.write("return_time = ")
+            #f.write(str(return_time) + "\n")
+            f.write("number of hoppings =")
+            f.write(str(nbTimeSteps) + "\n")
+            f.write("number of individuals with return time = ")
+            f.write(str(nb_rt) + "\n")
+            f.write("total number of return times =")
+            f.write(str(sum(nbReturn)) + "\n")
+            f.write("average_return_time1 = ")
+            f.write(str(average_rt1) + "\n")
+            f.write("average_return_time2 = ")
+            f.write(str(average_rt2) + "\n")
+            f.write("average_nodes_visited1 = ")
+            f.write(str(average_nv1) + "\n")
+            f.write("average_nodes_visited2 = ")
+            f.write(str(average_nv2) + "\n")
+            f.write("average_total_home_time = ")
+            f.write(str(avg_total_home_time) + "\n")
+            f.write("average_total_out_time = ")
+            f.write(str(avg_total_out_time) + "\n")
     
     if ('WellMixed' in params['plot_options']):
         print("Running: plot option: 'WellMixed'")
@@ -3267,6 +3417,13 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
             average_rt_tab.append(sum(return_time[l]) / nbReturn[l])            
             avg_nb_nodes_visited.append(nbNodes / nbReturn[l])
             
+    pcRT = nb_rt / S_ini * 100
+            
+    print("number of hoppings =", nbTimeSteps)
+    print("number of individuals with return time =", nb_rt)
+    print("percentage of individuals with return time =", pcRT)
+    print("total number of return times =", sum(nbReturn))
+    
     """print("node_path =", node_path)
     print("nbReturn = ", nbReturn)
     print("nodes visited =", nodes_visited)
@@ -3280,6 +3437,7 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     
     total_home_time = []
     total_out_time = []
+    
     for l in range(S_ini):
         total_home_time.append(mytime[-1] - sum(return_time[l]))
         total_out_time.append(mytime[-1] - total_home_time[l])
@@ -3304,21 +3462,24 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     plt.xlabel("Arbitrary time unit")
     #plt.ylabel("node of the tracked individual")
     plt.ylabel("avg distance to home")
+    plt.tight_layout()
     #plt.ylabel("average distance between the individual and her home node")
     string_for_savefig1 =  'AverageDistanceFromHome'+ string_for_savefig
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig1)+'.png')
     plt.close()
     
-    plt.hist(average_rt_tab)
+    plt.hist(average_rt_tab, bins = 30)
     plt.xlabel("average return time")
     plt.ylabel("nb of individuals")
+    plt.tight_layout()
     string_for_savefig2 = 'AverageReturnTimeDistribution'+string_for_savefig
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
     plt.close()
     
-    plt.hist(avg_nb_nodes_visited)
+    plt.hist(avg_nb_nodes_visited, bins = 30)
     plt.xlabel("average number of visited nodes")
     plt.ylabel("nb of individuals")
+    plt.tight_layout()
     string_for_savefig2 = 'AverageNodesVisitedDistribution'+string_for_savefig
     plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
     plt.close()
@@ -3328,6 +3489,14 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
         f.write("[informations]" + "\n")
         #f.write("return_time = ")
         #f.write(str(return_time) + "\n")
+        f.write("number of hoppings =")
+        f.write(str(nbTimeSteps) + "\n")
+        f.write("number of individuals with return time = ")
+        f.write(str(nb_rt) + "\n")
+        f.write("percentage of individuals with return time =")
+        f.write(str(pcRT) + "\n")
+        f.write("total number of return times =")
+        f.write(str(sum(nbReturn)) + "\n")
         f.write("average_return_time1 = ")
         f.write(str(average_rt1) + "\n")
         f.write("average_return_time2 = ")
