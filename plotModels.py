@@ -1739,7 +1739,7 @@ def plot_TEST(params,outputs, G):
             plt.colorbar(nc)
             plt.axis('off')
             string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
-            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.savef^ig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
             plt.close()
             
             fig50 = plt.figure(figsize=(16, 10)) # in inches!            
@@ -2423,33 +2423,37 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
         nbReactions = params['nbReactions']
         home_nodes = params['home_nodes']
         S_ini = params["S_ini"]
+        I_ini = params["I_ini"]
+        R_ini = params["R_ini"]
+        total_pop = S_ini + I_ini + R_ini
         x = np.zeros([nbTimeSteps, nbStates])
         dic_graphs = {}
         ind_path = []
         dis_path = [] # will contain the average distances from home nodes
         dis_moy = []
-        node_path = [[] for i in range(S_ini)] # individual path of each individual
-        time_move = [[] for i in range(S_ini)] 
-        return_time = [[] for i in range(S_ini)]
+        node_path = [[] for i in range(total_pop)] # individual path of each individual
+        time_move = [[] for i in range(total_pop)] 
+        return_time = [[] for i in range(total_pop)]
         # orders of states : S
-        for i in range(0,nbTimeSteps):       
+        for i in range(0, nbTimeSteps):       
             moy = 0
             for k in G.nodes():
-                for l in outputs[i][1][k][0]:
-                    dis = len(nx.dijkstra_path(G, home_nodes[l], k)) - 1
-                    moy += dis
-                    node_path[l].append(k)                    
-            dis_path.append(moy / S_ini)
+                for j in range(0, nbStates):
+                    for l in outputs[i][1][k][j]:
+                        dis = len(nx.dijkstra_path(G, home_nodes[l], k)) - 1
+                        moy += dis
+                        node_path[l].append(k)                    
+            dis_path.append(moy / total_pop)
             
         nb_rt = 0
         average_rt_tab = [] # list of all the average return times, doesn't include the individuals with no home loop (= leave home + come back)
-        nodes_visited = [[] for i in range(S_ini)] 
+        nodes_visited = [[] for i in range(total_pop)] 
         avg_nb_nodes_visited = []
         total_rt = 0  
         total_nbNodes = 0 
-        nbReturn = np.zeros(S_ini, dtype=int) # number of home loops for each individual
+        nbReturn = np.zeros(total_pop, dtype=int) # number of home loops for each individual
     
-        for l in range(S_ini): # loops over all individuals
+        for l in range(total_pop): # loops over all individuals
             nbNodes = 0
             home_val = True
             for j in range(nbTimeSteps - 1):
@@ -2482,13 +2486,15 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
         print("number of hoppings =", nbTimeSteps)
         print("number of individuals with return time =", nb_rt)
         print("total number of return times =", sum(nbReturn))
+        
+        pcRT = nb_rt / total_pop * 100
     
         """print("node_path =", node_path)
         #print("nbReturn = ", nbReturn)
         print("nodes visited =", nodes_visited)
         print("avg nb nodes visited =", avg_nb_nodes_visited)"""
     
-        average_nv1 = total_nbNodes / S_ini # average of the total number of different nodes visited of all the individuals (home node included)
+        average_nv1 = total_nbNodes / total_pop # average of the total number of different nodes visited of all the individuals (home node included)
         average_nv2 = sum(avg_nb_nodes_visited) / nb_rt # average of the average number of nodes visited by the individuals on a home loop (home node excluded)
                                       
         average_rt1 = total_rt / sum(nbReturn) # average of all the return times
@@ -2497,12 +2503,12 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
         total_home_time = []
         total_out_time = []
     
-        for l in range(S_ini):
+        for l in range(total_pop):
             total_home_time.append(mytime[-1] - sum(return_time[l]))
             total_out_time.append(mytime[-1] - total_home_time[l])
         
-        avg_total_home_time = sum(total_home_time) / S_ini # average time away from home
-        avg_total_out_time = sum(total_out_time) / S_ini # average time at home
+        avg_total_home_time = sum(total_home_time) / total_pop # average time away from home
+        avg_total_out_time = sum(total_out_time) / total_pop # average time at home
     
         #print("return_time =", return_time)
         print("average return time 1 =", average_rt1)
@@ -2512,7 +2518,7 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
         print("average total home time =", avg_total_home_time)
         print("average total out time =", avg_total_out_time)
 
-        string_for_savefig = '_k_S='+str(params['k_SI']) +'_S_ini='+ str(params['S_ini']) +'_timeend='+ str(params["time_end"]) +'_seed_num='+str(params["seed_num"])
+        string_for_savefig = '_k_SI='+str(params['k_SI']) + "_k_IR=" + str(params["k_IR"]) +'_S_ini='+ str(params['S_ini']) + '_I_ini=' + str(params['I_ini']) + '_R_ini='+ str(params["R_ini"]) +'_timeend='+ str(params["time_end"]) +'_seed_num='+str(params["seed_num"])
     
         plt.plot(mytime, dis_path)
         #plt.plot(mytime, ind_path)
@@ -2548,10 +2554,14 @@ def plot_SIROnGraphAgentBased(params,outputs, G):
             f.write("[informations]" + "\n")
             #f.write("return_time = ")
             #f.write(str(return_time) + "\n")
+            #f.write("node_path = ")
+            #f.write(str(node_path) + "\n")
             f.write("number of hoppings =")
             f.write(str(nbTimeSteps) + "\n")
             f.write("number of individuals with return time = ")
             f.write(str(nb_rt) + "\n")
+            f.write("percentage of individuals with return time =")
+            f.write(str(pcRT) + "\n")
             f.write("total number of return times =")
             f.write(str(sum(nbReturn)) + "\n")
             f.write("average_return_time1 = ")
@@ -3355,159 +3365,1357 @@ def plot_TestSimpleReturnHomeModelAgentBased(params,outputs, G):
     nbReactions = params['nbReactions']
     home_nodes = params['home_nodes']
     S_ini = params["S_ini"]
+    I_ini = params["I_ini"]
+    R_ini = params["R_ini"]
+    total_pop = S_ini + I_ini + R_ini
     x = np.zeros([nbTimeSteps, nbStates])
-    dic_graphs = {}
-    ind_path = []
-    dis_path = [] # will contain the average distances from home nodes
-    dis_moy = []
-    node_path = [[] for i in range(S_ini)] # individual path of each individual
-    time_move = [[] for i in range(S_ini)] 
-    return_time = [[] for i in range(S_ini)]
-    # orders of states : S
+    string_for_savefig = '_k_SI='+str(params['k_SI']) + "_k_IR=" + str(params["k_IR"]) +'_S_ini='+ str(params['S_ini']) + '_I_ini=' + str(params['I_ini']) + '_R_ini='+ str(params["R_ini"]) + '_beta='+str(params["beta"]) + '_d_tot='+str(params["d_tot"])  +'_timeend='+ str(params["time_end"]) +'_seed_num='+str(params["seed_num"])
+    
     for i in range(0,nbTimeSteps):
         mytime[i] = outputs[i][0]
-        dic_x = outputs[i][1]
-        
-        moy = 0
-        for k in G.nodes():
-            for l in outputs[i][1][k][0]:
-                dis = len(nx.dijkstra_path(G, home_nodes[l], k)) - 1
-                moy += dis
-                node_path[l].append(k)                    
-        dis_path.append(moy / S_ini)
-                    
+        dic_x = outputs[i][1]        
         for n in dic_x.keys():
-            x[i,0] += len(dic_x[n][0]) 
+            x[i,0] += len(dic_x[n][0])
+            x[i,1] += len(dic_x[n][1])
+            x[i,2] += len(dic_x[n][2]) 
+              
+    if ('AvgNodesVisited' in params['plot_options']):
+        dic_graphs = {}
+        ind_path = []
+        dis_path_avg = [] # will contain the average distances from home nodes
+        dis_path = [[] for i in range(total_pop)] 
+        max_dis = []
+        max_dis_scaled = []
+        dis_moy = []
+        node_path = [[] for i in range(total_pop)] # individual path of each individual
+        time_move = [[] for i in range(total_pop)] 
+        return_time = [[] for i in range(total_pop)]
+        # orders of states : S
+        for i in range(0,nbTimeSteps):            
+            moy = 0
+            for k in G.nodes():
+                for j in range(0, nbStates):
+                    for l in outputs[i][1][k][j]:
+                        dis = len(nx.dijkstra_path(G, home_nodes[l], k)) - 1
+                        moy += dis
+                        node_path[l].append(k)
+                        dis_path[l].append(dis)
+            dis_path_avg.append(moy / total_pop)
             
-    nb_rt = 0
-    average_rt_tab = [] # list of all the average return times, doesn't include the individuals with no home loop (= leave home + come back)
-    nodes_visited = [[] for i in range(S_ini)] 
-    avg_nb_nodes_visited = []
-    total_rt = 0  
-    total_nbNodes = 0 
-    nbReturn = np.zeros(S_ini, dtype=int) # number of home loops for each individual
-    
-    for l in range(S_ini): # loops over all individuals
-        nbNodes = 0
-        home_val = True
-        for j in range(nbTimeSteps - 1):
-            if(node_path[l][j] == home_nodes[l] and node_path[l][j + 1] != home_nodes[l]): # individual l leaving home
-                t1 = mytime[j + 1]
-                time_move[l].append(t1)
-                nodes_visited[l].append([node_path[l][j + 1]])
-                home_val = False
-                nbNodes += 1
-                
-            elif(node_path[l][j] != home_nodes[l] and node_path[l][j + 1] == home_nodes[l]): # individual l getting back to home
-                t2 = mytime[j + 1]
-                time_move[l].append(mytime[j + 1])
-                return_time[l].append(t2 - t1)
-                nbReturn[l] += 1
-                home_val = True
-                
-            if(not(home_val)): # only checks while the individual l is away from home
-                if(not(node_path[l][j + 1] in nodes_visited[l][nbReturn[l]])):
-                    nodes_visited[l][nbReturn[l]].append(node_path[l][j + 1]) # keeps visited node in memory to make sure we count each node only one time
+            
+        nb_rt = 0
+        average_rt_tab = [] # list of all the average return times, doesn't include the individuals with no home loop (= leave home + come back)
+        nodes_visited = [[] for i in range(total_pop)] 
+        avg_nb_nodes_visited = []
+        total_rt = 0  
+        total_nbNodes = 0 
+        nbReturn = np.zeros(total_pop, dtype=int) # number of home loops for each individual
+        tab_dis = np.zeros(len(G.nodes), dtype = int)
+        
+        for i in G.nodes():
+            max_dis_node = 0
+            for j in G.nodes():
+                dis = len(nx.dijkstra_path(G, i, j)) - 1
+                if(max_dis_node < dis):
+                    max_dis_node = dis
+            tab_dis[i] = max_dis_node
+            
+        #print("tab_dis =", tab_dis)
+        
+        for l in range(total_pop): # loops over all individuals
+            nbNodes = 0
+            home_val = True
+            for j in range(nbTimeSteps - 1):
+                if(node_path[l][j] == home_nodes[l] and node_path[l][j + 1] != home_nodes[l]): # individual l leaving home
+                    t1 = mytime[j + 1]
+                    time_move[l].append(t1)
+                    nodes_visited[l].append([node_path[l][j + 1]])
+                    home_val = False
                     nbNodes += 1
                     
-        total_nbNodes += len(set(node_path[l])) # adds total number of different nodes visited by individual l 
-        total_rt += sum(return_time[l])
-        if(nbReturn[l] != 0):
-            nb_rt += 1
-            average_rt_tab.append(sum(return_time[l]) / nbReturn[l])            
-            avg_nb_nodes_visited.append(nbNodes / nbReturn[l])
+                elif(node_path[l][j] != home_nodes[l] and node_path[l][j + 1] == home_nodes[l]): # individual l getting back to home
+                    t2 = mytime[j + 1]
+                    time_move[l].append(mytime[j + 1])
+                    return_time[l].append(t2 - t1)
+                    nbReturn[l] += 1
+                    home_val = True
+                
+                if(not(home_val)): # only checks while the individual l is away from home
+                    if(not(node_path[l][j + 1] in nodes_visited[l][nbReturn[l]])):
+                        nodes_visited[l][nbReturn[l]].append(node_path[l][j + 1]) # keeps visited node in memory to make sure we count each node only one time
+                        nbNodes += 1
+                    
+            total_nbNodes += len(set(node_path[l])) # adds total number of different nodes visited by individual l 
+            total_rt += sum(return_time[l])
+            if(nbReturn[l] != 0):
+                nb_rt += 1
+                average_rt_tab.append(sum(return_time[l]) / nbReturn[l])            
+                avg_nb_nodes_visited.append(nbNodes / nbReturn[l])
+                
+            max_dis.append(max(dis_path[l]))
+            max_dis_scaled.append(max_dis[l] / tab_dis[home_nodes[l]])            
             
-    pcRT = nb_rt / S_ini * 100
+        pcRT = nb_rt / total_pop * 100
             
-    print("number of hoppings =", nbTimeSteps)
-    print("number of individuals with return time =", nb_rt)
-    print("percentage of individuals with return time =", pcRT)
-    print("total number of return times =", sum(nbReturn))
+        print("number of hoppings =", nbTimeSteps)
+        print("number of individuals with return time =", nb_rt)
+        print("percentage of individuals with return time =", pcRT)
+        print("total number of return times =", sum(nbReturn))
     
-    """print("node_path =", node_path)
-    print("nbReturn = ", nbReturn)
-    print("nodes visited =", nodes_visited)
-    print("avg nb nodes visited =", avg_nb_nodes_visited)"""
+        #print("node_path =", node_path)
+        #print("nbReturn = ", nbReturn)
+        #print("nodes visited =", nodes_visited)
+        #print("avg nb nodes visited =", avg_nb_nodes_visited)
     
-    average_nv1 = total_nbNodes / S_ini # average of the total number of different nodes visited of all the individuals (home node included)
-    average_nv2 = sum(avg_nb_nodes_visited) / nb_rt # average of the average number of nodes visited by the individuals on a home loop (home node excluded)
+        average_nv1 = total_nbNodes / total_pop # average of the total number of different nodes visited of all the individuals (home node included)
+        average_nv2 = sum(avg_nb_nodes_visited) / nb_rt # average of the average number of nodes visited by the individuals on a home loop (home node excluded)
                                       
-    average_rt1 = total_rt / sum(nbReturn) # average of all the return times
-    average_rt2 = sum(average_rt_tab) / nb_rt # average of the average return times of all the individuals
+        average_rt1 = total_rt / sum(nbReturn) # average of all the return times
+        average_rt2 = sum(average_rt_tab) / nb_rt # average of the average return times of all the individuals
     
-    total_home_time = []
-    total_out_time = []
-    
-    for l in range(S_ini):
-        total_home_time.append(mytime[-1] - sum(return_time[l]))
-        total_out_time.append(mytime[-1] - total_home_time[l])
+        total_home_time = []
+        total_out_time = []
         
-    avg_total_home_time = sum(total_home_time) / S_ini # average time away from home
-    avg_total_out_time = sum(total_out_time) / S_ini # average time at home
+        for l in range(total_pop):
+            total_home_time.append(mytime[-1] - sum(return_time[l]))
+            total_out_time.append(mytime[-1] - total_home_time[l])
+        
+        avg_total_home_time = sum(total_home_time) / total_pop # average time away from home
+        avg_total_out_time = sum(total_out_time) / total_pop # average time at home
     
-    #print("return_time =", return_time)
-    print("average return time 1 =", average_rt1)
-    print("average return time 2 =", average_rt2)
-    print("average nodes visited 1 =", average_nv1)
-    print("average nodes visited 2 =", average_nv2)
-    print("average total home time =", avg_total_home_time)
-    print("average total out time =", avg_total_out_time)
+        #print("return_time =", return_time)
+        print("average return time 1 =", average_rt1)
+        print("average return time 2 =", average_rt2)
+        print("average nodes visited 1 =", average_nv1)
+        print("average nodes visited 2 =", average_nv2)
+        print("average total home time =", avg_total_home_time)
+        print("average total out time =", avg_total_out_time)
 
-    string_for_savefig = '_k_S='+str(params['k_S']) +'_S_ini='+ str(params['S_ini']) + '_beta='+str(params["beta"]) + '_d_tot='+str(params["d_tot"])  +'_timeend='+ str(params["time_end"]) +'_seed_num='+str(params["seed_num"])
+        string_for_savefig = '_k_SI='+str(params['k_SI']) + "_k_IR=" + str(params["k_IR"]) +'_S_ini='+ str(params['S_ini']) + '_I_ini=' + str(params['I_ini']) + '_R_ini='+ str(params["R_ini"]) + '_beta='+str(params["beta"]) + '_d_tot='+str(params["d_tot"])  +'_timeend='+ str(params["time_end"]) +'_seed_num='+str(params["seed_num"]) + '_graph_type='+ params["graph_type"]
     
-    plt.plot(mytime, dis_path)
-    #plt.plot(mytime, ind_path)
-    #plt.plot(mytime, dis_moy)
-    #plt.legend()
-    plt.xlabel("Arbitrary time unit")
-    #plt.ylabel("node of the tracked individual")
-    plt.ylabel("avg distance to home")
-    plt.tight_layout()
-    #plt.ylabel("average distance between the individual and her home node")
-    string_for_savefig1 =  'AverageDistanceFromHome'+ string_for_savefig
-    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig1)+'.png')
-    plt.close()
+        plt.plot(mytime, dis_path_avg)
+        #plt.plot(mytime, ind_path)
+        #plt.plot(mytime, dis_moy)
+        #plt.legend()
+        plt.xlabel("Arbitrary time unit")
+        #plt.ylabel("node of the tracked individual")
+        plt.ylabel("avg distance to home")
+        plt.tight_layout()
+        #plt.ylabel("average distance between the individual and her home node")
+        string_for_savefig1 =  'AverageDistanceFromHome'+ string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig1)+'.png')
+        plt.close()
     
-    plt.hist(average_rt_tab, bins = 30)
-    plt.xlabel("average return time")
-    plt.ylabel("nb of individuals")
-    plt.tight_layout()
-    string_for_savefig2 = 'AverageReturnTimeDistribution'+string_for_savefig
-    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
-    plt.close()
+        plt.hist(average_rt_tab, bins = 30)
+        plt.xlabel("average return time")
+        plt.ylabel("nb of individuals")
+        plt.tight_layout()
+        string_for_savefig2 = 'AverageReturnTimeDistribution'+string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
+        plt.close()
     
-    plt.hist(avg_nb_nodes_visited, bins = 30)
-    plt.xlabel("average number of visited nodes")
-    plt.ylabel("nb of individuals")
-    plt.tight_layout()
-    string_for_savefig2 = 'AverageNodesVisitedDistribution'+string_for_savefig
-    plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
-    plt.close()
+        plt.hist(avg_nb_nodes_visited, bins = 30)
+        plt.xlabel("average number of visited nodes")
+        plt.ylabel("nb of individuals")
+        plt.tight_layout()
+        string_for_savefig2 = 'AverageNodesVisitedDistribution'+string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
+        plt.close()
+        
+        plt.hist(max_dis, bins = 30)
+        plt.xlabel("highest distance travelled from home")
+        plt.ylabel("nb of individuals")
+        plt.tight_layout()
+        string_for_savefig2 = 'HighestDistanceFromHome'+string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
+        plt.close()
+        
+        plt.hist(max_dis_scaled, bins = 30)
+        plt.xlabel("highest scaled distance from home")
+        plt.ylabel("nb of individuals")
+        plt.tight_layout()
+        string_for_savefig2 = 'HighestDistanceFromHomeScaled'+string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig2)+'.png')    
+        plt.close()
+        
+        print("diameter of G =", nx.diameter(G))
+    
+        nx.draw(G)
+        plt.show()
+    
+        with open(params["outputs_dir"]+"/"+ "Informations" +str(string_for_savefig) + '.ini', 'w') as f:
+            f.write("[" + string_for_savefig + "]" + "\n" + "\n")
+            f.write("[informations]" + "\n")
+            #f.write("return_time = ")
+            #f.write(str(return_time) + "\n"
+            #f.write("node_path = ")
+            #f.write(str(node_path) + "\n")
+            f.write("number of hoppings =")
+            f.write(str(nbTimeSteps) + "\n")
+            f.write("number of individuals with return time = ")
+            f.write(str(nb_rt) + "\n")
+            f.write("percentage of individuals with return time =")
+            f.write(str(pcRT) + "\n")
+            f.write("total number of return times =")
+            f.write(str(sum(nbReturn)) + "\n")
+            f.write("average_return_time1 = ")
+            f.write(str(average_rt1) + "\n")
+            f.write("average_return_time2 = ")
+            f.write(str(average_rt2) + "\n")
+            f.write("average_nodes_visited1 = ")
+            f.write(str(average_nv1) + "\n")
+            f.write("average_nodes_visited2 = ")
+            f.write(str(average_nv2) + "\n")
+            f.write("average_total_home_time = ")
+            f.write(str(avg_total_home_time) + "\n")
+            f.write("average_total_out_time = ")
+            f.write(str(avg_total_out_time) + "\n")
+            
+    if ('WellMixed' in params['plot_options']):
+        print("Running: plot option: 'WellMixed'")
+        ### --- plot wellmixed model ( = sum over all compartments i.e. nodes of the graph)
+        fig10 = plt.figure(figsize=(16, 10)) # in inches!
+        plt.plot(mytime,x[:,0], 'red', label='Susceptible')
+        plt.plot(mytime,x[:,1], 'green', label='Infected')
+        plt.plot(mytime,x[:,2], 'blue', label='Recovered')
+        plt.legend()
+        plt.xlabel('Arbitrary time unit')
+        plt.ylabel('Population numbers')
+        string_for_title = 'SIROnGraphFullAgentBased' + string_for_savefig
+        plt.title(string_for_title)
+        string_for_savefig1 = 'SIROnGraphFullAgentBased_graph_type_'+str(params['graph_type'])+ string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+    if ('AllNodes' in params['plot_options']):
+        print("Running: plot option: 'AllNodes'")
+        ### --- loop over all saved data and plot SIRWellMixed on each region
+        # use dic_x available in node attributes from graph to get 
+        # number of nodes and number of reactions
+        dic_x = nx.get_node_attributes(G,'x')        
+        nbNodes = len(dic_x)
+        nodes = G.nodes()
+        all_nodes_all_x_over_time = {}
+        for n in nodes:
+            x = np.zeros([nbTimeSteps, nbStates])
+            for i in range(0,nbTimeSteps):
+                dic_x = outputs[i][1]            
+                for j in range(0,nbStates):
+                    x[i,j] = len(dic_x[n][j])
+            all_nodes_all_x_over_time[n] = x
+            fig10 = plt.figure(figsize=(16, 10)) # in inches!
+            plt.plot(mytime,x[:,0], 'red', label='Susceptible')
+            plt.plot(mytime,x[:,1], 'green', label='Infected')
+            plt.plot(mytime,x[:,2], 'blue', label='Recovered')
+            plt.legend()
+            plt.xlabel('Arbitrary time unit')
+            plt.ylabel('Population numbers')
+            string_for_title='SIROnGraphAgentBased, region num = '+str(n)+', k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+            plt.title(string_for_title)
+            string_for_savefig = 'SIROnGraphAgentBased_graph_type_'+str(params['graph_type'])+'_region_num='+str(n)+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            
+### --- MARWANE END   --- ### 
+def plot_SuperspreadersSemiAgentBased(params,outputs, G):
+    """
+    plot simple SEIR model and hopping between nodes of graph
+    with an additionnal state of a superspreader Iss which has a much 
+    faster rate
+    with an agent based fashion where we track every individual
+    depending values contained in params['plot_options'] we can either:
+    WellMixed: plot the well mixed limit by summing all compartments
+    AllNodes: plot the dynamic on every node separately
+    AllGraphs: plot all graphs over all time steps
+    FinalGraph: plot only the final graph at the final time step
+    """
+    print('plot_SuperspreadersSemiAgentBased')
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    mytime = np.zeros(nbTimeSteps)    
+    nbStates = params['nbStates']
+    nbReactions = params['nbReactions']
+    x = np.zeros([nbTimeSteps, nbStates])
+    dic_graphs = {}
+    # orders of states : S, E, I, Iss, R
+    for i in range(0,nbTimeSteps):
+        mytime[i] = outputs[i][0]
+        dic_x = outputs[i][1]        
+        for n in dic_x.keys():
+            for k in range(0,nbStates):
+                x[i,k] += len(dic_x[n][k])
+                
+    total_infected = []   
+    max_infected = 0
+    index_max_infected = 0
+    
+    for k in range(nbTimeSteps):
+        total_infected.append(x[k,4] + x[k,5])
+        if(max_infected < total_infected[k]):
+            max_infected = total_infected[k]
+            index_max_infected = k
+            
+    time_max_infected = mytime[index_max_infected]
+                
+    print("max number of infected people =", max_infected)
+    print("time of max infected =", time_max_infected)
+    
+    string_for_savefig = 'SuperspreadersSemiAgentBased_graph_type_'+str(params['graph_type'])\
+    +'_ratio_k='+str(params['k_SE_Iss'] / params['k_SE_I']) +'_ratio_ss='+str(params['S_ini'] / params['Sss_ini'])
     
     with open(params["outputs_dir"]+"/"+ "Informations" +str(string_for_savefig) + '.ini', 'w') as f:
         f.write("[" + string_for_savefig + "]" + "\n" + "\n")
         f.write("[informations]" + "\n")
-        #f.write("return_time = ")
-        #f.write(str(return_time) + "\n")
-        f.write("number of hoppings =")
-        f.write(str(nbTimeSteps) + "\n")
-        f.write("number of individuals with return time = ")
-        f.write(str(nb_rt) + "\n")
-        f.write("percentage of individuals with return time =")
-        f.write(str(pcRT) + "\n")
-        f.write("total number of return times =")
-        f.write(str(sum(nbReturn)) + "\n")
-        f.write("average_return_time1 = ")
-        f.write(str(average_rt1) + "\n")
-        f.write("average_return_time2 = ")
-        f.write(str(average_rt2) + "\n")
-        f.write("average_nodes_visited1 = ")
-        f.write(str(average_nv1) + "\n")
-        f.write("average_nodes_visited2 = ")
-        f.write(str(average_nv2) + "\n")
-        f.write("average_total_home_time = ")
-        f.write(str(avg_total_home_time) + "\n")
-        f.write("average_total_out_time = ")
-        f.write(str(avg_total_out_time) + "\n")
+        f.write("max_infected = ")
+        f.write(str(max_infected) + "\n")
+        f.write("time_max_infected = ")
+        f.write(str(time_max_infected))
     
-### --- MARWANE END   --- ### 
+    if ('WellMixed' in params['plot_options']):
+        print("Running: plot option: 'WellMixed'")
+        ### --- plot wellmixed model ( = sum over all compartments i.e. nodes of the graph)
+        fig10 = plt.figure(figsize=(16, 10)) # in inches!
+        plt.plot(mytime,x[:,0], 'orange', label='Susceptible')
+        plt.plot(mytime,x[:,1], 'red', label='Susceptible superspreader')
+        plt.plot(mytime,x[:,2], 'green', label='Exposed')
+        plt.plot(mytime,x[:,3], 'yellow', label='Exposed superspreader')
+        plt.plot(mytime,x[:,4], 'blue', label='Infected')
+        plt.plot(mytime,x[:,5], 'black', label='Infected superspreader')
+        plt.plot(mytime,x[:,6], 'pink', label='Recovered')
+        plt.legend()
+        plt.xlabel('Arbitrary time unit')
+        plt.ylabel('Population numbers')
+
+        string_for_savefig = 'SuperspreadersSemiAgentBased_graph_type_'+str(params['graph_type'])\
+          +'_k_SE_I='+str(params['k_SE_I']) +'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+          +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini'])+ '_Sss_ini='+ str(params['Sss_ini']) +'_E_ini='+ str(params['E_ini'])\
+          + '_Ess_ini='+ str(params['Ess_ini']) +'_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini']) 
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+    
+    if ('AllNodes' in params['plot_options']):
+        print("Running: plot option: 'AllNodes'")
+        ### --- loop over all saved data and plot SIRWellMixed on each region
+        # use dic_x available in node attributes from graph to get 
+        # number of nodes and number of reactions
+        dic_x = nx.get_node_attributes(G,'x')        
+        nbNodes = len(dic_x)
+        nbStates = len(dic_x[0])
+        nodes = G.nodes()
+        all_nodes_all_x_over_time = {}
+        for n in nodes:
+            x = np.zeros([nbTimeSteps, nbStates])
+            for i in range(0,nbTimeSteps):
+                dic_x = outputs[i][1]            
+                for j in range(0,nbStates):
+                    x[i,j] = len(dic_x[n][j])
+            all_nodes_all_x_over_time[n] = x
+            fig10 = plt.figure(figsize=(16, 10)) # in inches!
+            plt.plot(mytime,x[:,0], 'orange', label='Susceptible')
+            plt.plot(mytime,x[:,1], 'red', label='Susceptible superspreader')
+            plt.plot(mytime,x[:,2], 'green', label='Exposed')
+            plt.plot(mytime,x[:,3], 'yellow', label='Exposed superspreader')
+            plt.plot(mytime,x[:,4], 'blue', label='Infected')
+            plt.plot(mytime,x[:,5], 'black', label='Infected superspreader')
+            plt.plot(mytime,x[:,6], 'pink', label='Recovered')
+            plt.legend()
+            plt.xlabel('Arbitrary time unit')
+            plt.ylabel('Population numbers')
+            
+            string_for_savefig = 'SuperspreadersSemiAgentBased_graph_type_'+str(params['graph_type'])+'_region_num='+str(n)\
+            +'_k_SE_I='+str(params['k_SE_I']) +'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+            +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini'])+ '_Sss_ini='+ str(params['Sss_ini']) +'_E_ini='+ str(params['E_ini'])\
+            + '_Ess_ini='+ str(params['Ess_ini']) +'_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini']) 
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+                            
+    if ('AllGraphs' in params['plot_options']):
+        print("Running: plot option: 'AllGraphs'")
+        ### --- loop over all saved graph and plot at each saved time step    
+        for j in range(0,nbTimeSteps):
+            print("saving ",j," th time step = " ,mytime[j])        
+            # dic_x = outputs[j][1]
+            dic_x = copy.deepcopy(outputs[j][1])
+            dic_positions = nx.get_node_attributes(G,'positions')        
+            dic_S = {}
+            dic_I = {}
+            dic_R = {}
+            for i in dic_x.keys():
+                dic_S[i] = len(dic_x[i][0])
+                dic_I[i] = len(dic_x[i][2])
+                dic_R[i] = len(dic_x[i][4])
+            
+            list_S_values = [v for v in dic_S.values()]
+            list_I_values = [v for v in dic_I.values()]
+            list_R_values = [v for v in dic_R.values()]                        
+            fig20 = plt.figure(figsize=(16, 10)) # in inches!  
+            string_for_title='Susceptible population on Graph at time = '+str(round(mytime[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')    
+            string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+            plt.close()
+            
+            fig30 = plt.figure(figsize=(16, 10)) # in inches!
+            string_for_title='Infected population on Graph at time = '+str(round(mytime[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')    
+            string_for_savefig = 'Infected_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            
+            fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+            string_for_title='Recovered population on Graph at time = '+str(round(mytime[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')
+            string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            
+    if ('FinalGraph' in params['plot_options']):
+        print("Running: plot option: 'FinalGraph'")
+        # ### --- plot graph with final species update == state in Graph
+        dic_positions = nx.get_node_attributes(G,'positions')        
+        dic_x = nx.get_node_attributes(G,'x')
+        dic_S = {}
+        dic_I = {}
+        dic_R = {}
+        for i in dic_x.keys():
+            dic_S[i] = len(dic_x[i][0])
+            dic_I[i] = len(dic_x[i][2])
+            dic_R[i] = len(dic_x[i][4])
+        
+        list_S_values = [v for v in dic_S.values()]
+        list_I_values = [v for v in dic_I.values()]
+        list_R_values = [v for v in dic_R.values()]
+        fig20 = plt.figure(figsize=(16, 10)) # in inches!  
+        string_for_title='Susceptible population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')    
+        string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        fig30 = plt.figure(figsize=(16, 10)) # in inches!
+        string_for_title='Infected population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')    
+        string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+        string_for_title='Recovered population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')
+        string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+        plt.close()
+
+    if ('TrackSuperSpreaders' in params['plot_options']):
+        print("Running: plot option: 'TrackSuperSpreaders'")
+        dic_x_ini = nx.get_node_attributes(G,'x_ini')
+        nbNodes = G.number_of_nodes()
+        nbStates = params['nbStates']
+        nodes = G.nodes()
+        all_nodes_all_x_over_time = {}        
+        S_ini = params["S_ini"]
+        E_ini = params["E_ini"]
+        I_ini = params["I_ini"]
+        Iss_ini = params["Iss_ini"]
+        R_ini = params["R_ini"]
+        # because of conservation of mass, there are the same numeber 
+        # of individuals all along the simulation
+        N = S_ini + E_ini + I_ini + Iss_ini + R_ini 
+        
+        # --- first version to compute number of jumps: TOO SLOW
+        #______________________________________________________________#
+        
+        if False:
+            t0 = time.time()
+            all_individuals_id = np.arange(0,N)
+            
+            dic_all_individuals_residence_nodes = {}
+            for id_ in all_individuals_id:
+                dic_all_individuals_residence_nodes[id_] = []
+                for n in nodes:
+                    for j in range(0,nbStates):
+                        if (id_ in dic_x_ini[n][j]):
+                            starting_node = n
+                ref_node = starting_node
+                dic_all_individuals_residence_nodes[id_].append(ref_node)            
+                for i in range(0,nbTimeSteps):
+                    dic_x = outputs[i][1]
+                    for n in nodes:
+                        for j in range(0,nbStates):
+                            if (id_ in dic_x[n][j]):
+                                new_node = n
+                    if (new_node != ref_node):
+                        print('individual ', id_, ' initially in node ',  starting_node, ' hoped from node ', ref_node, ' to node ' , new_node, ' at time ' , mytime[i])
+                        ref_node = new_node
+                        dic_all_individuals_residence_nodes[id_].append(ref_node)
+                    
+            number_of_jumps = []
+            for id_ in dic_all_individuals_residence_nodes.keys():
+                # -1 because the first node is the starting node 
+                number_of_jumps.append(len(dic_all_individuals_residence_nodes[id_]) - 1)
+            number_of_jumps = np.array(number_of_jumps)
+            print(number_of_jumps)
+            t1 = time.time()
+            print("number of jumps ran for: ", t1 - t0, " seconds\n")
+            # --- plot distribution of number of jumps per id
+            plt.hist(number_of_jumps, bins=20, density=True, label='number of jumps distribution')
+            plt.legend()
+            plt.xlabel('Number of jumps')
+            plt.ylabel('PDF')
+            string_for_title='SEIIssROnGraphAgentBased, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+            plt.title(string_for_title)
+            string_for_savefig = 'SEIIssROnGraphAgentBased_number_of_jumps_distribution_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+        #______________________________________________________________#
+                
+        t0 = time.time()
+        dic_total_individual_jumps = {}        
+        # create dictionnary of all individuals in every node (node is the key)
+        dic_all_individuals_in_nodes_old = {}        
+        dic_x_ini = nx.get_node_attributes(G,'x_ini')
+        for n in nodes:
+            all_individuals_in_node_old = [dic_x_ini[n][i][j] for i in range(0,len(dic_x_ini[n])) for j in range(0,len(dic_x_ini[n][i]))]
+            dic_all_individuals_in_nodes_old[n] = all_individuals_in_node_old
+        for i in range(0,nbTimeSteps): # start from second time step
+            dic_x = outputs[i][1]
+            individuals_that_jumped_at_this_time_step = []
+            for n in nodes:
+                all_individuals_in_node_old = dic_all_individuals_in_nodes_old[n]
+                # concatenate lists of individuals
+                all_individuals_in_node_new = [dic_x[n][i][j] for i in range(0,len(dic_x[n])) for j in range(0,len(dic_x[n][i]))]                
+                # set is like a mathematical set
+                # test if there was a jump                
+                if (set(all_individuals_in_node_new) != set(all_individuals_in_node_old)):
+                    if (len(set(all_individuals_in_node_new)) > len(set(all_individuals_in_node_old))):
+                        individual_that_jumped = set(all_individuals_in_node_new) - set(all_individuals_in_node_old)                    
+                    else:
+                        individual_that_jumped = set(all_individuals_in_node_old) - set(all_individuals_in_node_new)                        
+                    if (len(individual_that_jumped) != 1): 
+                        print('two individuals jumped at the same time. ERROR')
+                        print(individual_that_jumped)
+                        exit(0)
+                    else:
+                        # transform set into integer                        
+                        individual_that_jumped = [i for i in individual_that_jumped][0]                        
+                        if (individual_that_jumped == 1818):
+                            print('superspreader jumped!')
+                        # initialize in case it is the first time we register a jump
+                        if not(individual_that_jumped in dic_total_individual_jumps):
+                            dic_total_individual_jumps[individual_that_jumped] = 0
+                        
+                        # prevent double jumps at the same time step:
+                        # e.g. we would count that id 1 leaves node 1 and that it arrives in node 2
+                        if not(individual_that_jumped in individuals_that_jumped_at_this_time_step):
+                            dic_total_individual_jumps[individual_that_jumped] += 1
+                            individuals_that_jumped_at_this_time_step.append(individual_that_jumped)
+                            # print('individual ',individual_that_jumped, ' left/entered node ',n,' at time ' , mytime[i])
+                        
+                        # update new into old
+                        all_individuals_in_node_old = all_individuals_in_node_new
+                        dic_all_individuals_in_nodes_old[n] = all_individuals_in_node_old
+                        
+        number_of_jumps_alternative = np.zeros(N)
+        for id_ in dic_total_individual_jumps.keys():
+            number_of_jumps_alternative[id_] = dic_total_individual_jumps[id_]
+        print('\n', number_of_jumps_alternative)
+        t1 = time.time()        
+
+        print('dic_total_individual_jumps=', dic_total_individual_jumps,'\n')
+        # --- plot distribution of number of jumps per id
+        plt.hist(number_of_jumps_alternative, bins=20, density=True, label='number of jumps distribution alternative')
+        # plt.legend()
+        plt.xlabel('Number of jumps')
+        plt.ylabel('PDF')
+        fig = plt.gcf()
+        fig.tight_layout()
+        string_for_savefig = 'SEIIssROnGraphAgentBased_number_of_jumps_distribution_alternatives_graph_type_'+str(params['graph_type'])\
+            +'_k_SE_I='+str(params['k_SE_I'])+'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+            +'_k_IR='+ str(params['k_IssR']) + '_S_ini='+ str(params['S_ini'])+ '_E_ini='+ str(params['E_ini'])\
+            + '_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        # --- track numer of infection each individual does
+        # save all id individuals that infected others        
+        dic_number_of_infectious_per_individual = {}
+        for i in range(0,nbTimeSteps): 
+            # it means we saved the id of the infected that trigger the infection
+            if (len(outputs[i]) == 3):
+                infected_id = outputs[i][2]
+                # intiialize in case it's the first time that this individual
+                # infects someone 
+                if not(infected_id in dic_number_of_infectious_per_individual):
+                    dic_number_of_infectious_per_individual[infected_id] = 0
+                dic_number_of_infectious_per_individual[infected_id] +=1
+            
+        number_of_infections_per_individual = np.zeros(len(dic_number_of_infectious_per_individual))
+        ii=0
+        for jj in dic_number_of_infectious_per_individual.keys():
+            number_of_infections_per_individual[ii] = dic_number_of_infectious_per_individual[jj]
+            ii+=1
+        
+        print('dic_number_of_infectious_per_individual=', dic_number_of_infectious_per_individual,'\n')
+        # --- plot distribution of number of jumps per id
+        plt.hist(number_of_infections_per_individual, bins=20, density=True, label='number of jumps distribution alternative')
+        plt.xlabel('Number of infections per individual')
+        plt.ylabel('PDF')
+        fig = plt.gcf()
+        fig.tight_layout()
+        string_for_savefig = 'SEIIssROnGraphAgentBased_number_of_infections_per_individual_graph_type_'+str(params['graph_type'])\
+              +'_k_SE_I='+str(params['k_SE_I']) +'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+              +'_k_IR='+ str(params['k_IssR']) + '_S_ini='+ str(params['S_ini'])+ '_E_ini='+ str(params['E_ini'])\
+              + '_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        # sorted_keys_dic_total_individual_jumps=sorted(dic_total_individual_jumps, key=dic_total_individual_jumps.get)
+        # for _id in sorted_keys_dic_total_individual_jumps:
+            # if _id in dic_number_of_infectious_per_individual:
+                # num_infections_by_id = dic_number_of_infectious_per_individual[_id]
+            # else:
+                # num_infections_by_id = 0
+            # print('id, total_jumps, number_of_infections=', _id, dic_total_individual_jumps[_id], num_infections_by_id)
+
+        num_max_infections = int(max(number_of_infections_per_individual))
+        num_jumps_vs_num_infections = np.zeros(num_max_infections+1)
+        ii = 0
+        # look for all number of infections from 0 to =max        
+        for ii in range(0,num_max_infections+1):
+            _count = 0
+            for kk in dic_number_of_infectious_per_individual:
+                # sorted_number_of_infections_per_individual[ii] = dic_number_of_infectious_per_individual[kk]
+                # get total number of jumps of individuals who infected ii other individuals
+                if (dic_number_of_infectious_per_individual[kk]==ii):
+                    # check if the individual jumped                    
+                    if (kk in dic_total_individual_jumps.keys()):                        
+                        num_jumps_vs_num_infections[ii] += dic_total_individual_jumps[kk]
+                    else:
+                        num_jumps_vs_num_infections[ii] += 0
+                    _count += 1
+            
+            if(_count >0):
+                num_jumps_vs_num_infections[ii] = float(num_jumps_vs_num_infections[ii]) / _count
+            else:
+                num_jumps_vs_num_infections[ii] = None
+            _count += 1
+        
+        print('\n num_jumps_vs_num_infections=',num_jumps_vs_num_infections,'\n')
+        # plot number of infection vs mean total jumps
+        plt.plot(np.arange(0,num_max_infections+1), num_jumps_vs_num_infections, marker='o', linestyle='')
+        plt.xlabel('Number of infections per individual')
+        plt.ylabel('Average total number of jumps')
+        # plt.xticks(np.arange(0,num_max_infections+1,10)) # have a tick every 10 infected
+        fig = plt.gcf()
+        fig.tight_layout()
+        string_for_savefig = 'SEIIssROnGraphAgentBased_number_of_jumps_vs_number_of_infections_graph_type_'+str(params['graph_type'])\
+              +'_k_SE_I='+str(params['k_SE_I']) +'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+              +'_k_IR='+ str(params['k_IssR']) + '_S_ini='+ str(params['S_ini'])+ '_E_ini='+ str(params['E_ini'])\
+              + '_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+
+def plot_SuperspreadersRealFullAgentBased(params,outputs, G):
+    """
+    plot simple SEIR model and hopping between nodes of graph
+    with an additionnal state of a superspreader Iss which has a much 
+    faster rate
+    with an agent based fashion where we track every individual
+    depending values contained in params['plot_options'] we can either:
+    WellMixed: plot the well mixed limit by summing all compartments
+    AllNodes: plot the dynamic on every node separately
+    AllGraphs: plot all graphs over all time steps
+    FinalGraph: plot only the final graph at the final time step
+    """
+    print('plot_SuperspreadersRealFullAgentBased')
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbTimeSteps = len(outputs)
+    mytime=np.zeros(nbTimeSteps)    
+    nbStates = params['nbStates']
+    nbReactions = params['nbReactions']
+    x = np.zeros([nbTimeSteps, nbStates])
+    dic_graphs = {}
+    # orders of states : S, E, I, Iss, R
+    for i in range(0,nbTimeSteps):
+        mytime[i] = outputs[i][0]
+        dic_x = outputs[i][1]        
+        for n in dic_x.keys():
+            for k in range(0,nbStates):
+                x[i,k] += len(dic_x[n][k])
+                
+    total_infected = []   
+    max_infected = 0
+    index_max_infected = 0
+    
+    for k in range(nbTimeSteps):
+        total_infected.append(x[k,4] + x[k,5])
+        if(max_infected < total_infected[k]):
+            max_infected = total_infected[k]
+            index_max_infected = k
+            
+    time_max_infected = mytime[index_max_infected]
+                
+    print("max number of infected people =", max_infected)
+    print("time of max infected =", time_max_infected)
+    
+    string_for_savefig = 'SuperspreadersRealFullAgentBased_graph_type_'+str(params['graph_type'])\
+    +'_ratio_k='+str(params['k_SE_Iss'] / params['k_SE_I']) +'_ratio_ss='+str(params['S_ini'] / params['Sss_ini'])
+    
+    with open(params["outputs_dir"]+"/"+ "Informations" +str(string_for_savefig) + '.ini', 'w') as f:
+        f.write("[" + string_for_savefig + "]" + "\n" + "\n")
+        f.write("[informations]" + "\n")
+        f.write("max_infected = ")
+        f.write(str(max_infected) + "\n")
+        f.write("time_max_infected = ")
+        f.write(str(time_max_infected))
+    
+    if ('WellMixed' in params['plot_options']):
+        print("Running: plot option: 'WellMixed'")
+        ### --- plot wellmixed model ( = sum over all compartments i.e. nodes of the graph)
+        fig10 = plt.figure(figsize=(16, 10)) # in inches!
+        plt.plot(mytime,x[:,0], 'orange', label='Susceptible')
+        plt.plot(mytime,x[:,1], 'red', label='Susceptible superspreader')
+        plt.plot(mytime,x[:,2], 'green', label='Exposed')
+        plt.plot(mytime,x[:,3], 'yellow', label='Exposed superspreader')
+        plt.plot(mytime,x[:,4], 'blue', label='Infected')
+        plt.plot(mytime,x[:,5], 'black', label='Infected superspreader')
+        plt.plot(mytime,x[:,6], 'pink', label='Recovered')
+        plt.legend()
+        plt.xlabel('Arbitrary time unit')
+        plt.ylabel('Population numbers')
+        # string_for_title='SEIIssROnGraphAgentBased, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+        # plt.title(string_for_title)
+        # string_for_savefig = 'SEIIssROnGraphAgentBased_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+        string_for_savefig = 'SuperspreadersRealFullAgentBased_graph_type_'+str(params['graph_type'])\
+          +'_k_SE_I='+str(params['k_SE_I']) +'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+          +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini'])+ '_Sss_ini='+ str(params['Sss_ini']) +'_E_ini='+ str(params['E_ini'])\
+          + '_Ess_ini='+ str(params['Ess_ini']) +'_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini']) 
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+    
+    if ('AllNodes' in params['plot_options']):
+        print("Running: plot option: 'AllNodes'")
+        ### --- loop over all saved data and plot SIRWellMixed on each region
+        # use dic_x available in node attributes from graph to get 
+        # number of nodes and number of reactions
+        dic_x = nx.get_node_attributes(G,'x')        
+        nbNodes = len(dic_x)
+        nbStates = len(dic_x[0])
+        nodes = G.nodes()
+        all_nodes_all_x_over_time = {}
+        for n in nodes:
+            x = np.zeros([nbTimeSteps, nbStates])
+            for i in range(0,nbTimeSteps):
+                dic_x = outputs[i][1]            
+                for j in range(0,nbStates):
+                    x[i,j] = len(dic_x[n][j])
+            all_nodes_all_x_over_time[n] = x
+            fig10 = plt.figure(figsize=(16, 10)) # in inches!
+            plt.plot(mytime,x[:,0], 'orange', label='Susceptible')
+            plt.plot(mytime,x[:,1], 'red', label='Susceptible superspreader')
+            plt.plot(mytime,x[:,2], 'green', label='Exposed')
+            plt.plot(mytime,x[:,3], 'yellow', label='Exposed superspreader')
+            plt.plot(mytime,x[:,4], 'blue', label='Infected')
+            plt.plot(mytime,x[:,5], 'black', label='Infected superspreader')
+            plt.plot(mytime,x[:,6], 'pink', label='Recovered')
+            plt.legend()
+            plt.xlabel('Arbitrary time unit')
+            plt.ylabel('Population numbers')
+            # string_for_title='SEIIssROnGraphAgentBased, region num = '+str(n)+', k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+            # plt.title(string_for_title)            
+            string_for_savefig = 'SuperspreadersRealFullAgentBased_graph_type_'+str(params['graph_type'])+'_region_num='+str(n)\
+            +'_k_SE_I='+str(params['k_SE_I']) +'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+            +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini'])+ '_Sss_ini='+ str(params['Sss_ini']) +'_E_ini='+ str(params['E_ini'])\
+            + '_Ess_ini='+ str(params['Ess_ini']) +'_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini']) 
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+                            
+    if ('AllGraphs' in params['plot_options']):
+        print("Running: plot option: 'AllGraphs'")
+        ### --- loop over all saved graph and plot at each saved time step    
+        for j in range(0,nbTimeSteps):
+            print("saving ",j," th time step = " ,mytime[j])        
+            # dic_x = outputs[j][1]
+            dic_x = copy.deepcopy(outputs[j][1])
+            dic_positions = nx.get_node_attributes(G,'positions')        
+            dic_S = {}
+            dic_I = {}
+            dic_R = {}
+            for i in dic_x.keys():
+                dic_S[i] = len(dic_x[i][0])
+                dic_I[i] = len(dic_x[i][2])
+                dic_R[i] = len(dic_x[i][4])
+            
+            list_S_values = [v for v in dic_S.values()]
+            list_I_values = [v for v in dic_I.values()]
+            list_R_values = [v for v in dic_R.values()]                        
+            fig20 = plt.figure(figsize=(16, 10)) # in inches!  
+            string_for_title='Susceptible population on Graph at time = '+str(round(mytime[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')    
+            string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+            plt.close()
+            
+            fig30 = plt.figure(figsize=(16, 10)) # in inches!
+            string_for_title='Infected population on Graph at time = '+str(round(mytime[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')    
+            string_for_savefig = 'Infected_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            
+            fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+            string_for_title='Recovered population on Graph at time = '+str(round(mytime[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')
+            string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            
+    if ('FinalGraph' in params['plot_options']):
+        print("Running: plot option: 'FinalGraph'")
+        # ### --- plot graph with final species update == state in Graph
+        dic_positions = nx.get_node_attributes(G,'positions')        
+        dic_x = nx.get_node_attributes(G,'x')
+        dic_S = {}
+        dic_I = {}
+        dic_R = {}
+        for i in dic_x.keys():
+            dic_S[i] = len(dic_x[i][0])
+            dic_I[i] = len(dic_x[i][2])
+            dic_R[i] = len(dic_x[i][4])
+        
+        list_S_values = [v for v in dic_S.values()]
+        list_I_values = [v for v in dic_I.values()]
+        list_R_values = [v for v in dic_R.values()]
+        fig20 = plt.figure(figsize=(16, 10)) # in inches!  
+        string_for_title='Susceptible population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')    
+        string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        fig30 = plt.figure(figsize=(16, 10)) # in inches!
+        string_for_title='Infected population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')    
+        string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+        string_for_title='Recovered population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')
+        string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+        plt.close()
+
+    if ('TrackSuperSpreaders' in params['plot_options']):
+        print("Running: plot option: 'TrackSuperSpreaders'")
+        dic_x_ini = nx.get_node_attributes(G,'x_ini')
+        nbNodes = G.number_of_nodes()
+        nbStates = params['nbStates']
+        nodes = G.nodes()
+        all_nodes_all_x_over_time = {}        
+        S_ini = params["S_ini"]
+        E_ini = params["E_ini"]
+        I_ini = params["I_ini"]
+        Iss_ini = params["Iss_ini"]
+        R_ini = params["R_ini"]
+        # because of conservation of mass, there are the same numeber 
+        # of individuals all along the simulation
+        N = S_ini + E_ini + I_ini + Iss_ini + R_ini 
+        
+        # --- first version to compute number of jumps: TOO SLOW
+        #______________________________________________________________#
+        
+        if False:
+            t0 = time.time()
+            all_individuals_id = np.arange(0,N)
+            
+            dic_all_individuals_residence_nodes = {}
+            for id_ in all_individuals_id:
+                dic_all_individuals_residence_nodes[id_] = []
+                for n in nodes:
+                    for j in range(0,nbStates):
+                        if (id_ in dic_x_ini[n][j]):
+                            starting_node = n
+                ref_node = starting_node
+                dic_all_individuals_residence_nodes[id_].append(ref_node)            
+                for i in range(0,nbTimeSteps):
+                    dic_x = outputs[i][1]
+                    for n in nodes:
+                        for j in range(0,nbStates):
+                            if (id_ in dic_x[n][j]):
+                                new_node = n
+                    if (new_node != ref_node):
+                        print('individual ', id_, ' initially in node ',  starting_node, ' hoped from node ', ref_node, ' to node ' , new_node, ' at time ' , mytime[i])
+                        ref_node = new_node
+                        dic_all_individuals_residence_nodes[id_].append(ref_node)
+                    
+            number_of_jumps = []
+            for id_ in dic_all_individuals_residence_nodes.keys():
+                # -1 because the first node is the starting node 
+                number_of_jumps.append(len(dic_all_individuals_residence_nodes[id_]) - 1)
+            number_of_jumps = np.array(number_of_jumps)
+            print(number_of_jumps)
+            t1 = time.time()
+            print("number of jumps ran for: ", t1 - t0, " seconds\n")
+            # --- plot distribution of number of jumps per id
+            plt.hist(number_of_jumps, bins=20, density=True, label='number of jumps distribution')
+            plt.legend()
+            plt.xlabel('Number of jumps')
+            plt.ylabel('PDF')
+            string_for_title='SEIIssROnGraphAgentBased, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+            plt.title(string_for_title)
+            string_for_savefig = 'SEIIssROnGraphAgentBased_number_of_jumps_distribution_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+        #______________________________________________________________#
+                
+        t0 = time.time()
+        dic_total_individual_jumps = {}        
+        # create dictionnary of all individuals in every node (node is the key)
+        dic_all_individuals_in_nodes_old = {}        
+        dic_x_ini = nx.get_node_attributes(G,'x_ini')
+        for n in nodes:
+            all_individuals_in_node_old = [dic_x_ini[n][i][j] for i in range(0,len(dic_x_ini[n])) for j in range(0,len(dic_x_ini[n][i]))]
+            dic_all_individuals_in_nodes_old[n] = all_individuals_in_node_old
+        for i in range(0,nbTimeSteps): # start from second time step
+            dic_x = outputs[i][1]
+            individuals_that_jumped_at_this_time_step = []
+            for n in nodes:
+                all_individuals_in_node_old = dic_all_individuals_in_nodes_old[n]
+                # concatenate lists of individuals
+                all_individuals_in_node_new = [dic_x[n][i][j] for i in range(0,len(dic_x[n])) for j in range(0,len(dic_x[n][i]))]                
+                # set is like a mathematical set
+                # test if there was a jump                
+                if (set(all_individuals_in_node_new) != set(all_individuals_in_node_old)):
+                    if (len(set(all_individuals_in_node_new)) > len(set(all_individuals_in_node_old))):
+                        individual_that_jumped = set(all_individuals_in_node_new) - set(all_individuals_in_node_old)                    
+                    else:
+                        individual_that_jumped = set(all_individuals_in_node_old) - set(all_individuals_in_node_new)                        
+                    if (len(individual_that_jumped) != 1): 
+                        print('two individuals jumped at the same time. ERROR')
+                        print(individual_that_jumped)
+                        exit(0)
+                    else:
+                        # transform set into integer                        
+                        individual_that_jumped = [i for i in individual_that_jumped][0]                        
+                        if (individual_that_jumped == 1818):
+                            print('superspreader jumped!')
+                        # initialize in case it is the first time we register a jump
+                        if not(individual_that_jumped in dic_total_individual_jumps):
+                            dic_total_individual_jumps[individual_that_jumped] = 0
+                        
+                        # prevent double jumps at the same time step:
+                        # e.g. we would count that id 1 leaves node 1 and that it arrives in node 2
+                        if not(individual_that_jumped in individuals_that_jumped_at_this_time_step):
+                            dic_total_individual_jumps[individual_that_jumped] += 1
+                            individuals_that_jumped_at_this_time_step.append(individual_that_jumped)
+                            # print('individual ',individual_that_jumped, ' left/entered node ',n,' at time ' , mytime[i])
+                        
+                        # update new into old
+                        all_individuals_in_node_old = all_individuals_in_node_new
+                        dic_all_individuals_in_nodes_old[n] = all_individuals_in_node_old
+                        
+        number_of_jumps_alternative = np.zeros(N)
+        for id_ in dic_total_individual_jumps.keys():
+            number_of_jumps_alternative[id_] = dic_total_individual_jumps[id_]
+        print('\n', number_of_jumps_alternative)
+        t1 = time.time()        
+
+        print('dic_total_individual_jumps=', dic_total_individual_jumps,'\n')
+        # --- plot distribution of number of jumps per id
+        plt.hist(number_of_jumps_alternative, bins=20, density=True, label='number of jumps distribution alternative')
+        # plt.legend()
+        plt.xlabel('Number of jumps')
+        plt.ylabel('PDF')
+        fig = plt.gcf()
+        fig.tight_layout()
+        string_for_savefig = 'SEIIssROnGraphAgentBased_number_of_jumps_distribution_alternatives_graph_type_'+str(params['graph_type'])\
+            +'_k_SE_I='+str(params['k_SE_I'])+'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+            +'_k_IR='+ str(params['k_IssR']) + '_S_ini='+ str(params['S_ini'])+ '_E_ini='+ str(params['E_ini'])\
+            + '_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        # --- track numer of infection each individual does
+        # save all id individuals that infected others        
+        dic_number_of_infectious_per_individual = {}
+        for i in range(0,nbTimeSteps): 
+            # it means we saved the id of the infected that trigger the infection
+            if (len(outputs[i]) == 3):
+                infected_id = outputs[i][2]
+                # intiialize in case it's the first time that this individual
+                # infects someone 
+                if not(infected_id in dic_number_of_infectious_per_individual):
+                    dic_number_of_infectious_per_individual[infected_id] = 0
+                dic_number_of_infectious_per_individual[infected_id] +=1
+            
+        number_of_infections_per_individual = np.zeros(len(dic_number_of_infectious_per_individual))
+        ii=0
+        for jj in dic_number_of_infectious_per_individual.keys():
+            number_of_infections_per_individual[ii] = dic_number_of_infectious_per_individual[jj]
+            ii+=1
+        
+        print('dic_number_of_infectious_per_individual=', dic_number_of_infectious_per_individual,'\n')
+        # --- plot distribution of number of jumps per id
+        plt.hist(number_of_infections_per_individual, bins=20, density=True, label='number of jumps distribution alternative')
+        plt.xlabel('Number of infections per individual')
+        plt.ylabel('PDF')
+        fig = plt.gcf()
+        fig.tight_layout()
+        string_for_savefig = 'SEIIssROnGraphAgentBased_number_of_infections_per_individual_graph_type_'+str(params['graph_type'])\
+              +'_k_SE_I='+str(params['k_SE_I']) +'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+              +'_k_IR='+ str(params['k_IssR']) + '_S_ini='+ str(params['S_ini'])+ '_E_ini='+ str(params['E_ini'])\
+              + '_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        # sorted_keys_dic_total_individual_jumps=sorted(dic_total_individual_jumps, key=dic_total_individual_jumps.get)
+        # for _id in sorted_keys_dic_total_individual_jumps:
+            # if _id in dic_number_of_infectious_per_individual:
+                # num_infections_by_id = dic_number_of_infectious_per_individual[_id]
+            # else:
+                # num_infections_by_id = 0
+            # print('id, total_jumps, number_of_infections=', _id, dic_total_individual_jumps[_id], num_infections_by_id)
+
+        num_max_infections = int(max(number_of_infections_per_individual))
+        num_jumps_vs_num_infections = np.zeros(num_max_infections+1)
+        ii = 0
+        # look for all number of infections from 0 to =max        
+        for ii in range(0,num_max_infections+1):
+            _count = 0
+            for kk in dic_number_of_infectious_per_individual:
+                # sorted_number_of_infections_per_individual[ii] = dic_number_of_infectious_per_individual[kk]
+                # get total number of jumps of individuals who infected ii other individuals
+                if (dic_number_of_infectious_per_individual[kk]==ii):
+                    # check if the individual jumped                    
+                    if (kk in dic_total_individual_jumps.keys()):                        
+                        num_jumps_vs_num_infections[ii] += dic_total_individual_jumps[kk]
+                    else:
+                        num_jumps_vs_num_infections[ii] += 0
+                    _count += 1
+            
+            if(_count >0):
+                num_jumps_vs_num_infections[ii] = float(num_jumps_vs_num_infections[ii]) / _count
+            else:
+                num_jumps_vs_num_infections[ii] = None
+            _count += 1
+        
+        print('\n num_jumps_vs_num_infections=',num_jumps_vs_num_infections,'\n')
+        # plot number of infection vs mean total jumps
+        plt.plot(np.arange(0,num_max_infections+1), num_jumps_vs_num_infections, marker='o', linestyle='')
+        plt.xlabel('Number of infections per individual')
+        plt.ylabel('Average total number of jumps')
+        # plt.xticks(np.arange(0,num_max_infections+1,10)) # have a tick every 10 infected
+        fig = plt.gcf()
+        fig.tight_layout()
+        string_for_savefig = 'SEIIssROnGraphAgentBased_number_of_jumps_vs_number_of_infections_graph_type_'+str(params['graph_type'])\
+              +'_k_SE_I='+str(params['k_SE_I']) +'_k_SE_Iss='+ str(params['k_SE_Iss'])+'_k_EI='+str(params['k_EI'])\
+              +'_k_IR='+ str(params['k_IssR']) + '_S_ini='+ str(params['S_ini'])+ '_E_ini='+ str(params['E_ini'])\
+              + '_I_ini='+str( params['I_ini']) + '_Iss_ini='+ str(params['Iss_ini']) + '_R_ini='+str( params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+
+def plot_SIRvariant(params,outputs, G):
+    """
+    plot plot_SIRvariant model results
+    S,I, R populations over time
+    depending values contained in params['plot_options'] we can either:
+    WellMixed: plot the well mixed limit by summing all compartments
+    AllNodes: plot the dynamic on every node separately
+    AllGraphs: plot all graphs over all time steps
+    FinalGraph: plot only the final graph at the final time step
+    """
+    print('plot_SIRvariant')
+    # save outputs
+    f = open(params['outputs_dir']+'/outputs.txt',"w")
+    f.write(str(outputs))
+    f.close()
+    
+    # save params inputs
+    f = open(params['outputs_dir']+'/params.txt',"w")
+    f.write(str(params))
+    f.close()
+    
+    nbStates = 3
+    nbTimeSteps = len(outputs)
+    time=np.zeros(nbTimeSteps)
+    x = np.zeros([nbTimeSteps, 3])
+    dic_graphs = {}
+    for i in range(0,nbTimeSteps):
+        time[i] = outputs[i][0]
+        dic_x = outputs[i][1]      
+        for n in dic_x.keys():
+            for k in range(0,nbStates):
+                x[i,k] += len(dic_x[n][k])   
+                
+    if('Variants' in params["plot_options"]):
+        print("Running: plot option: 'Variants'")
+        k_plus = params["k_plus"]
+        #print(k_plus[0].values())
+        string_for_savefig = 'SIRvariant_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+        k_SI_ini = params["k_SI_ini"]
+        I_ini = params["I_ini"]
+        
+        plt.hist(list(k_SI_ini.values()), bins = 30)
+        plt.xlabel("k_SI")
+        plt.ylabel("nb of individuals")
+        plt.title("Initial distribution")
+        plt.tight_layout()
+        string_for_savefig2 = 'k_SI_ini'+string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+ "Initial_distribution" + str(string_for_savefig2)+'.png')    
+        plt.close()
+        
+        plt.hist(list(k_plus[0].values()), bins = 30)
+        plt.xlabel("k_SI")
+        plt.ylabel("nb of individuals")
+        plt.title("Final distribution")
+        plt.tight_layout()
+        string_for_savefig2 = 'k_SI_final'+string_for_savefig
+        plt.savefig(params['outputs_dir']+'/'+ "Final_distribution"+str(string_for_savefig2)+'.png')    
+        plt.close()       
+        
+        avg_k_SI_ini = sum(list(k_SI_ini.values())) / I_ini
+        avg_k_SI_final = sum(list(k_plus[0].values())) / len(k_plus)
+        
+        with open(params["outputs_dir"]+"/"+ "Informations" +str(string_for_savefig) + '.ini', 'w') as f:
+            f.write("[" + string_for_savefig + "]" + "\n" + "\n")
+            f.write("[informations]" + "\n")
+            f.write("avg_k_SI_ini = ")
+            f.write(str(avg_k_SI_ini) + "\n")
+            f.write("avg_k_SI_final = " + "\n")
+            f.write(str(avg_k_SI_final) + "\n")
+            #f.write("k_SI_ini = " + "\n")
+            #f.write(str(k_SI_ini) + "\n")
+            #f.write("k_SI_final = " + "\n")
+            #f.write(str(k_plus))
+    
+    if ('WellMixed' in params['plot_options']):
+        print("Running: plot option: 'WellMixed'")
+        ### --- plot wellmixed model ( = sum over all compartments i.e. nodes of the graph)
+        fig10 = plt.figure(figsize=(16, 10)) # in inches!
+        plt.plot(time,x[:,0], 'red', label='Susceptible')
+        plt.plot(time,x[:,1], 'green', label='Infected')
+        plt.plot(time,x[:,2], 'blue', label='Recovered')
+        plt.legend()
+        plt.xlabel('Arbitrary time unit')
+        plt.ylabel('Population numbers')
+        string_for_title='SIRvariant, k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+        plt.title(string_for_title)
+        string_for_savefig = 'SIRvariant_graph_type_'+str(params['graph_type'])+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+    
+    if ('AllNodes' in params['plot_options']):
+        print("Running: plot option: 'AllNodes'")
+        ### --- loop over all saved data and plot SIRWellMixed on each region
+        # use dic_x available in node attributes from graph to get 
+        # number of nodes and number of reactions
+        dic_x = nx.get_node_attributes(G,'x')        
+        nbNodes = len(dic_x)
+        nbReactions = len(dic_x[0])
+        nodes = G.nodes()
+        all_nodes_all_x_over_time = {}
+        for n in nodes:
+            x = np.zeros([nbTimeSteps, nbReactions])
+            for i in range(0,nbTimeSteps):
+                dic_x = outputs[i][1]            
+                for j in range(0,nbReactions):
+                    x[i,j] = len(dic_x[n][j])                    
+            all_nodes_all_x_over_time[n] = x
+            fig10 = plt.figure(figsize=(16, 10)) # in inches!
+            plt.plot(time,x[:,0], 'red', label='Susceptible')
+            plt.plot(time,x[:,1], 'green', label='Infected')
+            plt.plot(time,x[:,2], 'blue', label='Recovered')
+            plt.legend()
+            plt.xlabel('Arbitrary time unit')
+            plt.ylabel('Population numbers')
+            string_for_title='SIRvariant, region num = '+str(n)+', k_SI ='+str(params['k_SI']) +', k_IR = '+ str(params['k_IR']) + ', S_ini = '+ str(params['S_ini']) + ', I_ini = '+str( params['I_ini']) + ', R_ini = '+ str(params['R_ini'])
+            plt.title(string_for_title)
+            string_for_savefig = 'SIRvariant_graph_type_'+str(params['graph_type'])+'_region_num='+str(n)+'_k_SI='+str(params['k_SI']) +'_k_IR='+ str(params['k_IR']) + '_S_ini='+ str(params['S_ini']) + '_I_ini='+str( params['I_ini']) + '_R_ini='+ str(params['R_ini'])
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+                            
+    if ('AllGraphs' in params['plot_options']):
+        print("Running: plot option: 'AllGraphs'")            
+        ### --- loop over all saved graph and plot at each saved time step    
+        for j in range(0,nbTimeSteps):
+            print("saving ",j," th time step = " ,time[j])        
+            # dic_x = outputs[j][1]
+            dic_x = copy.deepcopy(outputs[j][1])
+            dic_positions = nx.get_node_attributes(G,'positions')        
+            dic_S = {}
+            dic_I = {}
+            dic_R = {}
+            for i in dic_x.keys():
+                dic_S[i] = dic_x[i][0]
+                dic_I[i] = dic_x[i][1]
+                dic_R[i] = dic_x[i][2]
+            
+            list_S_values = [v for v in dic_S.values()]
+            list_I_values = [v for v in dic_I.values()]
+            list_R_values = [v for v in dic_R.values()]                        
+            fig20 = plt.figure(figsize=(16, 10)) # in inches!  
+            string_for_title='Susceptible population on Graph at time = '+str(round(time[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')    
+            string_for_savefig = 'Susceptible_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+            plt.close()
+            
+            fig30 = plt.figure(figsize=(16, 10)) # in inches!
+            string_for_title='Infected population on Graph at time = '+str(round(time[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')    
+            string_for_savefig = 'Infected_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+            
+            fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+            string_for_title='Recovered population on Graph at time = '+str(round(time[j],6))
+            plt.title(string_for_title)
+            ### --- drawing nodes and edges separately so we can capture collection for colobar
+            ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+            nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+            plt.colorbar(nc)
+            plt.axis('off')
+            string_for_savefig = 'Recovered_population_on_Graph_graph_type='+str(params['graph_type'])+'_'+str('%08d'%j)
+            plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+            plt.close()
+    if 'FinalGraph' in params['plot_options']:
+        print("Running: plot option: 'FinalGraph'")
+        # ### --- plot graph with final species update == state in Graph
+        dic_positions = nx.get_node_attributes(G,'positions')        
+        dic_x = nx.get_node_attributes(G,'x')
+        dic_S = {}
+        dic_I = {}
+        dic_R = {}
+        for i in dic_x.keys():
+            dic_S[i] = dic_x[i][0]
+            dic_I[i] = dic_x[i][1]
+            dic_R[i] = dic_x[i][2]
+        
+        list_S_values = [v for v in dic_S.values()]
+        list_I_values = [v for v in dic_I.values()]
+        list_R_values = [v for v in dic_R.values()]
+        fig20 = plt.figure(figsize=(16, 10)) # in inches!  
+        string_for_title='Susceptible population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_S_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')    
+        string_for_savefig = 'Susceptible_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        fig30 = plt.figure(figsize=(16, 10)) # in inches!
+        string_for_title='Infected population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_I_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')    
+        string_for_savefig = 'Infected_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')
+        plt.close()
+        
+        fig40 = plt.figure(figsize=(16, 10)) # in inches!            
+        string_for_title='Recovered population on Graph at time = '+str(round(G.graph['time'],6))
+        plt.title(string_for_title)
+        # ### --- drawing nodes and edges separately so we can capture collection for colobar
+        ec = nx.draw_networkx_edges(G, pos=dic_positions, alpha=0.2)
+        nc = nx.draw_networkx_nodes(G, pos=dic_positions, nodelist=G.nodes(), node_color=list_R_values, node_size=100 ,cmap=plt.cm.viridis)#, cmap=plt.cm.viridis)
+        plt.colorbar(nc)
+        plt.axis('off')
+        string_for_savefig = 'Recovered_population_on_Final_Graph_at_time='+str(round(G.graph['time'],6))
+        plt.savefig(params['outputs_dir']+'/'+str(string_for_savefig)+'.png')        
+        plt.close()

@@ -438,8 +438,62 @@ def InitParams(config_name):
         params["R_ini"] = config.getint("model", "R_ini")
     elif params["model_name"] == "TestSimpleReturnHomeModel":  # load parameters needed for this model
         ### --- MARWANE --- ###
-        params["k_S"] = config.getfloat("model", "k_S")
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
         params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["beta"] = config.getfloat("model", "beta")
+        params["d_tot"] = config.getint("model", "d_tot")
+        ### ...
+        ### --------------- ###
+    elif params["model_name"] == "SuperspreadersSemiAgentBased":  # load parameters needed for this model
+        ### --- MARWANE --- ###
+        params["k_SE_I"] = config.getfloat("model", "k_SE_I")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["k_SE_Iss"] = config.getfloat("model", "k_SE_Iss")
+        params["k_EI"] = config.getfloat("model", "k_EI")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["Sss_ini"] = config.getint("model", "Sss_ini")
+        params["Iss_ini"] = config.getint("model", "Iss_ini")
+        params["E_ini"] = config.getint("model", "E_ini")
+        params["Ess_ini"] = config.getint("model", "Ess_ini")
+        params["beta"] = config.getfloat("model", "beta")
+        params["betass"] = config.getfloat("model", "betass")
+        params["d_tot"] = config.getint("model", "d_tot")
+        ### ...
+        ### --------------- ###
+    elif params["model_name"] == "SuperspreadersRealFullAgentBased":  # load parameters needed for this model
+        ### --- MARWANE --- ###
+        params["k_SE_I"] = config.get("model", "k_SE_I")
+        params["k_SE_I"] = list(map(float, params["k_SE_I"].split()))
+        params["k_IR"] = config.get("model", "k_IR")
+        params["k_IR"] = list(map(float, params["k_IR"].split()))
+        params["k_SE_Iss"] = config.get("model", "k_SE_Iss")
+        params["k_SE_Iss"] = list(map(float, params["k_SE_Iss"].split()))
+        params["k_EI"] = config.get("model", "k_EI")
+        params["k_EI"] = list(map(float, params["k_EI"].split()))
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
+        params["Sss_ini"] = config.getint("model", "Sss_ini")
+        params["Iss_ini"] = config.getint("model", "Iss_ini")
+        params["E_ini"] = config.getint("model", "E_ini")
+        params["Ess_ini"] = config.getint("model", "Ess_ini")
+        params["beta"] = config.getfloat("model", "beta")
+        params["betass"] = config.getfloat("model", "betass")
+        params["d_tot"] = config.getint("model", "d_tot")
+        ### ...
+        ### --------------- ###
+    elif params["model_name"] == "SIRvariant":  # load parameters needed for this model
+        ### --- MARWANE --- ###
+        params["k_SI"] = config.getfloat("model", "k_SI")
+        params["k_IR"] = config.getfloat("model", "k_IR")
+        params["S_ini"] = config.getint("model", "S_ini")
+        params["I_ini"] = config.getint("model", "I_ini")
+        params["R_ini"] = config.getint("model", "R_ini")
         params["beta"] = config.getfloat("model", "beta")
         params["d_tot"] = config.getint("model", "d_tot")
         ### ...
@@ -684,17 +738,59 @@ def InitGraph(params):
                 if n1 != n2:
                     edge = (n1, n2)
                     G.add_edge(*edge)  # unpack edge tuple*
-
+                    
+    elif(params['graph_type'] == 'graph1D'):       
+        if(params['location'] == 'metropole'):
+            nbRegions = 13
+        else:
+            nbRegions = 18
+            
+        for k in range(nbRegions - 1):
+            G.add_nodes_from([k, k + 1])
+            G.add_edge(k, k + 1)
+            
+    elif(params['graph_type'] == 'star'):
+        if(params['location'] == 'metropole'):
+            nbRegions = 13
+        else:
+            nbRegions = 18
+        
+        G.add_node(0) #center of the star graph
+        for k in range(1, nbRegions):
+            G.add_node(k)
+            G.add_edge(0, k)
+            
+    elif(params['graph_type'] == 'fullstar'):
+        if(params['location'] == 'metropole'):
+            nbRegions = 13
+        else:
+            nbRegions = 18
+        
+        G.add_node(0) #center of the star graph
+        for k in range(1, nbRegions - 1):
+            G.add_nodes_from([k, k + 1])
+            G.add_edges_from([(0, k), (k, k + 1)])
+        G.add_edges_from([(k + 1, 1), (k + 1, 0)])
+        
+    elif(params['graph_type'] == 'randomGraph'):
+        if(params['location'] == 'metropole'):
+            nbRegions = 13
+        else:
+            nbRegions = 18
+            
+        nbEdges = 50
+        
+        G = nx.gnm_random_graph(nbRegions, nbEdges)
 
     # add  densities as  node_attribute so we don't have to compute it 
     # every time we need it
-    dic_densities = {}
+    """dic_densities = {}
     dic_areas = nx.get_node_attributes(G, 'areas')    
     dic_total_pop = nx.get_node_attributes(G, 'total_pop')   
     for id_node in G.nodes():
         dic_densities[id_node] = dic_total_population[id_node] / dic_areas[id_node]
         
-    nx.set_node_attributes(G, name='densities', values=dic_densities)
+    nx.set_node_attributes(G, name='densities', values=dic_densities)"""
     # print("num_edges = ", G.number_of_edges())
     # print("num_nodes = ", G.number_of_nodes())
     # print("nodes attributes = ", set([k for n in G.nodes for k in G.nodes[n].keys()]))
@@ -840,16 +936,22 @@ def LaunchModel(params, graph):
         dates_to_plot.insert(0, params['time_start_day'])        
         plotDataAndSEIRLDOnGraphResults(params, G, outputs, dates_to_plot)
     elif params["model_name"] == "SIROnGraphAgentBased":        
-        outputs, graph = SolveAgentBasedOnGraph(params, graph)
+        outputs, graph = SolveFauxAgentBasedOnGraph(params, graph)
         plot_SIROnGraphAgentBased(params, outputs, graph)
     elif params["model_name"] == "SEIIssROnGraphAgentBased":      
-        outputs, graph = SolveAgentBasedOnGraph(params, graph)
+        outputs, graph = SolveFauxAgentBasedOnGraph(params, graph)
         plot_SEIIssROnGraphAgentBased(params, outputs, graph)
     ### --- MARWANE START --- ###
     elif params["model_name"] == "TestSimpleReturnHomeModel":
-        outputs, graph = SolveOnGraphFullAgentBased(params, graph)
+        outputs, graph = SolveSemiAgentBasedOnGraph(params, graph)
         plot_TestSimpleReturnHomeModelAgentBased(params, outputs, graph)
     ### --- MARWANE END   --- ### 
+    elif params["model_name"] == "SuperspreadersSemiAgentBased":
+        outputs, graph = SolveSemiAgentBasedOnGraph(params, graph)
+        plot_SuperspreadersSemiAgentBased(params, outputs, graph)
+    elif params["model_name"] == "SIRvariant":
+        outputs, graph = SolveOnTrueAgentBasedGraphReal(params, graph)
+        plot_SIRvariant(params, outputs, graph)
     else:
         print("[ERROR]: invalid name in parser for model name. Exit here.\n")
         sys.exit(0)
